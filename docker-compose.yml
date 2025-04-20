@@ -9,6 +9,8 @@ services:
 
   worker:
     build: .
+    volumes:
+      - .:/app
     container_name: celery_worker
     restart: always
     depends_on:
@@ -17,6 +19,8 @@ services:
 
   beat:
     build: .
+    volumes:
+      - .:/app
     container_name: celery_beat
     restart: always
     depends_on:
