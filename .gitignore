@@ -1,0 +1,9 @@
+/.venv/
+/.env
+
+# Python
+__pycache__/
+
+# IDEs and tools
+.idea/
+/credentials.json
