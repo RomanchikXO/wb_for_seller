@@ -68,7 +68,9 @@ def process_data(url: str) -> None:
 
 @app.task
 def prices_table():
+    print("Обновляем таблицу с ценами")
     process_data(url_prices)
+    print("Таблица обновлена")
 
 
 
