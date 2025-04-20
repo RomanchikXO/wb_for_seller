@@ -74,7 +74,7 @@ def prices_table():
 
 @app.task
 def test_logger():
-    logger.info("тест логгера старт")
-    logger.info("тест логгера финиш")
+    logger.info("успех")
+    logger.info("успех")
 
 
