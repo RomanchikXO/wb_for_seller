@@ -17,8 +17,6 @@ docker-compose up --build -d
 # если надо остановить
 docker-compose down
 
-# если я сделал git pull и не менял Dockerfile или requirements.txt
-docker-compose up -d 
-# иначе
+# после git pull
 docker-compose down
 docker-compose up --build -d

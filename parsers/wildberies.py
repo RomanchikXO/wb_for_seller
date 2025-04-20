@@ -2,6 +2,7 @@ import random
 import httpx
 from typing import Union
 import time
+from celery_app.celery_config import logger
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36",
@@ -44,7 +45,7 @@ def get_data(method: str, url: str, i: int, response_type="json", **kwargs):
                     method.upper(), url, headers=headers, **kwargs
                 )
             if response.status_code == 404:
-                print(f"Bad link 404. {url}")
+                logger.info(f"Bad link 404. {url}")
                 return None
             if response_type == "json":
                 result = response.json()
@@ -53,7 +54,7 @@ def get_data(method: str, url: str, i: int, response_type="json", **kwargs):
             return result
         except:
             attempt += 1
-            print(f"Can't get data, retry {attempt}")
+            logger.info(f"Can't get data, retry {attempt}")
             time.sleep(attempt * 2)
 
 
@@ -79,7 +80,7 @@ def parse_link(
     data = get_data("get", api_url, 0, "json", headers=headers, params=params)
 
     if not data or not data["data"]["products"]:
-        print(f"Fail {link}")
+        logger.info(f"Fail {link}. Функция: parse_link. Data: {data}")
         return
 
     sku = data["data"]["products"][0]
@@ -101,7 +102,7 @@ def safe_parse_link(link):
         data = parse_link(link)
         return data
     except Exception as e:
-        print(f"Can't parse link. Url: {link}. Error: {e}")
+        logger.error(f"Can't parse link. Url: {link}. Error: {e}")
 
 def parse_by_links(links: list) -> list:
     tasks = [

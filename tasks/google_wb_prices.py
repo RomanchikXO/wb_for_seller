@@ -18,7 +18,7 @@ def get_count_pages(url: str) -> int:
         data = fetch_google_sheet_data(url, sheet_identifier=None)
         return len(data)
     except Exception as e:
-        print(e)
+        logger.error(f"Ошибка: {e}. Функция get_count_pages. Параметры: {url}")
 
 
 def get_data_lists(url: str) -> List[list]:
@@ -70,11 +70,3 @@ def prices_table():
     logger.info("Обновляем таблицу с ценами")
     process_data(url_prices)
     logger.info("Таблица обновлена ")
-
-
-@app.task
-def test_logger():
-    logger.info("успех")
-    logger.info("успех")
-
-

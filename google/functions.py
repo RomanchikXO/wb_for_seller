@@ -6,6 +6,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import os
+from celery_app.celery_config import logger
+
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
 CREDENTIALS_FILE = os.path.abspath(os.path.join(current_directory, "..", "credentials.json"))
@@ -69,7 +71,7 @@ def update_google_sheet_data(spreadsheet_url: str, sheet_identifier: int, data_r
     try:
         sheet.update(data_range, values)
     except Exception as e:
-        print(e)
+        logger.error(f"Ошибка обновления данных в гугл таблице:{e}. Функция update_google_sheet_data")
 
 
 def update_google_sheet_data_with_format(
@@ -132,7 +134,7 @@ def update_google_sheet_data_with_format(
                             row_data["values"].append({"userEnteredValue": {"stringValue": str(cell)}})
             rows.append(row_data)
     except Exception as e:
-        print(e)
+        logger.error(f"Ошибка обработки данных для гугл таблицы: {e}. Функция: update_google_sheet_data_with_format")
 
     # Формируем запрос
     request_body = {
@@ -159,7 +161,7 @@ def update_google_sheet_data_with_format(
             body=request_body
         ).execute()
     except Exception as e:
-        print(e)
+        logger.error(f"Ошибка обновления данных в гугл таблице: {e}. Функция: update_google_sheet_data_with_format")
 
 def add_nmids_to_google_table(data: list, range: str, index=0) -> None:
     # Задайте параметры таблицы

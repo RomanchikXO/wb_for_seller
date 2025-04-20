@@ -2,7 +2,7 @@ import requests
 from typing import List
 import time
 from loader import X_Mpstats_TOKEN
-
+from celery_app.celery_config import logger
 
 headers = {
     'X-Mpstats-TOKEN': X_Mpstats_TOKEN,
@@ -23,7 +23,7 @@ def get_data(method: str, url: str, response_type="json", **kwargs):
             return result
         except:
             attempt += 1
-            print(f"Can't get data, retry {attempt}")
+            logger.info(f"Can't get data, retry {attempt}")
             time.sleep(attempt * 2)
 
 
