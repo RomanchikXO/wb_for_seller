@@ -2,8 +2,8 @@ from typing import List
 from parsers.wildberies import parse
 from google.functions import fetch_google_sheet_data, update_google_sheet_data_with_format, get_column_letter, get_ids_pages_table
 from mpstat import get_revenue_mpstat
-from celery_app.celery_config import app
-
+# from celery_app.celery_config import app
+from celery import shared_task
 
 
 url_prices = "https://docs.google.com/spreadsheets/d/1EhjutxGw8kHlW1I3jbdgD-UMA5sE20aajMO865RzrlA/edit?gid=1101267699#gid=1101267699"
@@ -66,7 +66,8 @@ def process_data(url: str) -> None:
         update_google_sheet_data_with_format(url, sheet_id, 0, 0, page)
 
 
-@app.task
+# @app.task
+@shared_task
 def prices_table():
     print("Обновляем таблицу с ценами")
     process_data(url_prices)

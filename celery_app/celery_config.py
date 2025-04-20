@@ -13,6 +13,6 @@ app.conf.timezone = 'Europe/Moscow'
 app.conf.beat_schedule = {
     'update-prices-at-7am-and-7pm': {
         'task': 'tasks.google_wb_prices.prices_table',
-        'schedule': crontab(hour='7,20', minute=0),
+        'schedule': crontab(hour='7,21', minute=0),
     },
 }
