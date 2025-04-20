@@ -20,7 +20,7 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour='7,19', minute=0),
     },
     'test-logger-every-minute': {
-        'task': 'tasks.test_logger',
+        'task': 'tasks.google_wb_prices.test_logger',
         'schedule': crontab(minute='*'),  # Задача будет выполняться каждую минуту
     },
 }
