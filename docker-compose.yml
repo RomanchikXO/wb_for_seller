@@ -11,6 +11,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /etc/localtime:/etc/localtime:ro
     container_name: celery_worker
     restart: always
     depends_on:
@@ -21,6 +22,7 @@ services:
     build: .
     volumes:
       - .:/app
+      - /etc/localtime:/etc/localtime:ro
     container_name: celery_beat
     restart: always
     depends_on:
