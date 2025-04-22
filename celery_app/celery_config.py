@@ -13,10 +13,10 @@ app = Celery(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app.conf.timezone = 'Europe/Moscow'
+# app.conf.timezone = 'Europe/Moscow'
 app.conf.beat_schedule = {
     'update-prices-at-7am-and-7pm': {
         'task': 'tasks.google_wb_prices.prices_table',
-        'schedule': crontab(hour='7,19', minute=0),
+        'schedule': crontab(hour='7,19', minute=20),
     },
 }
