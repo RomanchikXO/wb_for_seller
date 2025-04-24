@@ -31,7 +31,7 @@ services:
         python django_app/manage.py makemigrations && 
         python django_app/manage.py migrate && 
         python django_app/manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='${DJANGO_SUPERUSER_USERNAME}').exists() or User.objects.create_superuser('${DJANGO_SUPERUSER_USERNAME}', '${DJANGO_SUPERUSER_EMAIL}', '${DJANGO_SUPERUSER_PASSWORD}')\" && 
-        gunicorn django_app.django_app.wsgi:application --bind 0.0.0.0:8000
+        gunicorn django_app.wsgi:application --bind 0.0.0.0:8000
       "
     volumes:
       - .:/app
