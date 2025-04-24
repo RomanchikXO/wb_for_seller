@@ -1,0 +1,18 @@
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+
+X_Mpstats_TOKEN = os.getenv("X-Mpstats-TOKEN")
+
+POSTGRES_DB=os.getenv("POSTGRES_DB")
+POSTGRES_USER=os.getenv("POSTGRES_USER")
+POSTGRES_PASSWORD=os.getenv("POSTGRES_PASSWORD")
+
+DJANGO_SUPERUSER_USERNAME=os.getenv("DJANGO_SUPERUSER_USERNAME")
+DJANGO_SUPERUSER_PASSWORD=os.getenv("DJANGO_SUPERUSER_PASSWORD")
+DJANGO_SUPERUSER_EMAIL=os.getenv("DJANGO_SUPERUSER_EMAIL")
+
+DEBUG=os.getenv("DEBUG")
+ALLOWED_HOSTS=os.getenv("ALLOWED_HOSTS")
