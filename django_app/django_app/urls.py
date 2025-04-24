@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.shortcuts import redirect
 
 urlpatterns = [
-    path('', lambda request: redirect('/admin/')),  # Редирект на админку временно
+    # path('', lambda request: redirect('/admin/')),  # Редирект на админку временно
     path('admin/', admin.site.urls),
     path('myapp/', include('myapp.urls')),
 ]
