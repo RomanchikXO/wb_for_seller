@@ -17,6 +17,12 @@ SCOPES = [
 ]
 
 
+colors = {
+    "white": {"red": 1.0, "green": 1.0, "blue": 1.0},
+    "light_green": {"red": 0.8, "green": 1.0, "blue": 0.8},
+    "light_red": {"red": 1.0, "green": 0.8, "blue": 0.8},
+}
+
 def get_column_letter(n: int):
     """
     Вернуть название столбца по его индексу
@@ -74,6 +80,19 @@ def update_google_sheet_data(spreadsheet_url: str, sheet_identifier: int, data_r
         logger.error(f"Ошибка обновления данных в гугл таблице:{e}. Функция update_google_sheet_data")
 
 
+def cleare_num(cell: str) -> Union[int, bool]:
+    """
+    привести строку в число либо вернуть False
+    :param cell:
+    :return:
+    """
+    try:
+        result = int(str(cell).replace(" ", "").replace("\xa0", "").strip())
+        return result
+    except:
+        return False
+
+
 def update_google_sheet_data_with_format(
         spreadsheet_url: str,
         sheet_id: int,
@@ -102,10 +121,10 @@ def update_google_sheet_data_with_format(
     indexes_row_sizes.append(len(values))
     # Преобразуем values → rows with userEnteredValue
     try:
-        for ind_1, row in enumerate(values):
+        for ind_1, row in enumerate(values): # тут итерация по строкам
             row_data = {"values": []}
             if ind_1 == 0:
-                for ind_2, cell in enumerate(row):
+                for ind_2, cell in enumerate(row): # тут итерация по клеткам первой строки
                     try:
                         int(cell.replace(" ", "").replace("\xa0", "").strip())
                         letter = get_column_letter(ind_2+1)
@@ -114,14 +133,14 @@ def update_google_sheet_data_with_format(
                         row_data["values"].append({"userEnteredValue": {"formulaValue": f"=SUM({formula})"}})
                     except:
                         row_data["values"].append({"userEnteredValue": {"stringValue": str(cell)}})
-            elif re.match(r'^\d+х\d+$', row[0]):
+            elif re.match(r'^\d+х\d+$', row[0]): # серые строки с размерами
                 for ind_2, cell in enumerate(row):
                     if cell and not re.match(r'^\d+х\d+$', cell):
                         row_data["values"].append({"userEnteredValue": {"formulaValue": f"=SUM({get_column_letter(ind_2+1)}{ind_1+2}:{get_column_letter(ind_2+1)}{indexes_row_sizes[indexes_row_sizes.index(ind_1)+1]})"}})
                     else:
                         row_data["values"].append({"userEnteredValue": {"stringValue": str(cell)}})
             else:
-                for ind_3, cell in enumerate(row):
+                for ind_3, cell in enumerate(row): # итерация по клеткам с ценами и доходом
                     if ind_3 == 1:
                         count_column = len(values[0]) // 4
                         list_column_letter = [f"{get_column_letter(i * 4)}{ind_1+1}" for i in range(1, count_column+1)]
@@ -129,7 +148,30 @@ def update_google_sheet_data_with_format(
                         row_data["values"].append({"userEnteredValue": {"formulaValue": f"=SUM({formula})"}})
                     else:
                         try:
-                            row_data["values"].append({"userEnteredValue": {"numberValue": int(str(cell).replace(" ", "").replace("\xa0", "").strip())}})
+                            numberValue = cleare_num(cell)
+                            if not numberValue: raise
+
+                            profits = [cleare_num(cell) for cell in row[3::4]]
+                            max_profit = max(profits)
+                            min_profit = min(profits)
+
+                            if numberValue == max_profit:
+                                backgroundColor = colors["light_green"]
+                            elif numberValue == min_profit:
+                                backgroundColor = colors["light_red"]
+                            else:
+                                backgroundColor = colors["white"]
+
+                            row_data["values"].append(
+                                {
+                                    "userEnteredValue": {
+                                        "numberValue": numberValue,
+                                        "userEnteredFormat": {
+                                            "backgroundColor": backgroundColor,
+                                        }
+                                    }
+                                }
+                            )
                         except:
                             row_data["values"].append({"userEnteredValue": {"stringValue": str(cell)}})
             rows.append(row_data)
@@ -149,7 +191,7 @@ def update_google_sheet_data_with_format(
                         "endColumnIndex": len(values[0])
                     },
                     "rows": rows,
-                    "fields": "userEnteredValue"  # ВАЖНО: только данные, без форматирования
+                    "fields": "userEnteredValue,userEnteredFormat.backgroundColor"  # ВАЖНО: данные, и цвета
                 }
             }
         ]

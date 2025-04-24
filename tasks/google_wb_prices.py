@@ -39,7 +39,7 @@ def get_data_lists(url: str) -> List[list]:
 
 
 def process_data(url: str) -> None:
-
+    # основная функция для работы с таблицей с ценами
     data = get_data_lists(url)
 
     for index_page, page in enumerate(data): #итерация по листам
