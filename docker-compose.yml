@@ -27,13 +27,12 @@ services:
     container_name: django_app
     command: >
       sh -c "
-        python django_app/wait_for_db.py &&
-        python django_app/manage.py migrate &&
-        python django_app/manage.py shell -c '
-          from django.contrib.auth import get_user_model; 
-          User = get_user_model(); 
-          User.objects.filter(username=\"${DJANGO_SUPERUSER_USERNAME}\").exists() or 
-          User.objects.create_superuser(\"${DJANGO_SUPERUSER_USERNAME}\", \"${DJANGO_SUPERUSER_EMAIL}\", \"${DJANGO_SUPERUSER_PASSWORD}\")' &&
+        python django_app/wait_for_db.py && 
+        python django_app/manage.py migrate && 
+        python django_app/manage.py shell -c \"from django.contrib.auth import get_user_model; 
+        User = get_user_model(); 
+        User.objects.filter(username='${DJANGO_SUPERUSER_USERNAME}').exists() or 
+        User.objects.create_superuser('${DJANGO_SUPERUSER_USERNAME}', '${DJANGO_SUPERUSER_EMAIL}', '${DJANGO_SUPERUSER_PASSWORD}')\" && 
         gunicorn myproject.wsgi:application --bind 0.0.0.0:8000
       "
     volumes:
