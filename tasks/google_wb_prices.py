@@ -39,7 +39,11 @@ def get_data_lists(url: str) -> List[list]:
 
 
 def process_data(url: str) -> None:
-    # основная функция для работы с таблицей с ценами
+    """
+    основная функция для работы с таблицей с ценами
+    :param url:
+    :return:
+    """
     data = get_data_lists(url)
 
     for index_page, page in enumerate(data): #итерация по листам
@@ -70,3 +74,6 @@ def prices_table():
     logger.info("Обновляем таблицу с ценами")
     process_data(url_prices)
     logger.info("Таблица обновлена ")
+
+
+prices_table()
