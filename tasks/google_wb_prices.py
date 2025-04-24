@@ -75,5 +75,3 @@ def prices_table():
     process_data(url_prices)
     logger.info("Таблица обновлена ")
 
-
-prices_table()
