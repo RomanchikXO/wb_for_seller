@@ -25,8 +25,9 @@ services:
     container_name: django_app
     command: >
       sh -c "
-        /wait-for-it.sh db:5432 -- python django/manage.py migrate &&
-        /wait-for-it.sh db:5432 -- python django/manage.py shell -c '
+        python django/manage.py wait_for_db &&
+        python django/manage.py migrate &&
+        python django/manage.py shell -c '
           from django.contrib.auth import get_user_model; 
           User = get_user_model(); 
           User.objects.filter(username=\"${DJANGO_SUPERUSER_USERNAME}\").exists() or 
