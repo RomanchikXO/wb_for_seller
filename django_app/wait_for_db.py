@@ -19,7 +19,7 @@ def wait_for_db():
                 user=db_user,
                 password=db_password,
                 host=db_host,
-                port=db_port,
+                port=db_port
             )
             conn.close()
             print("✅ PostgreSQL is available!")
