@@ -2,8 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Установим зависимости и curl
-RUN apt-get update && apt-get install -y curl
+# Изменим источники репозиториев на архивные зеркала
+RUN echo "deb http://archive.debian.org/debian/ bookworm main" > /etc/apt/sources.list
+RUN echo "deb http://archive.debian.org/debian-security bookworm-security main" >> /etc/apt/sources.list
+
+# Установим curl с использованием IPv4
+RUN apt-get update -o Acquire::ForceIPv4=true && apt-get install -y curl
 
 # Установим зависимости Python
 COPY requirements.txt .
