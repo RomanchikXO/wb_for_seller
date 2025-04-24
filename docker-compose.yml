@@ -25,7 +25,7 @@ services:
     container_name: django_app
     command: >
       sh -c "
-        python django_app/manage.py wait_for_db &&
+        python django_app/wait_for_db.py &&
         python django_app/manage.py migrate &&
         python django_app/manage.py shell -c '
           from django.contrib.auth import get_user_model; 
@@ -49,6 +49,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      PYTHONPATH: /app
 
   worker:
     build: .
