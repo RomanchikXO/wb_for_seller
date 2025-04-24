@@ -70,3 +70,6 @@ services:
     depends_on:
       - redis
     command: ["celery", "-A", "celery_app.celery_config", "beat", "--loglevel=info"]
+
+volumes:
+  pgdata:
