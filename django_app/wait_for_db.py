@@ -7,8 +7,8 @@ def wait_for_db():
     db_name = POSTGRES_DB
     db_user = POSTGRES_USER
     db_password = POSTGRES_PASSWORD
-    db_host = 'db',
-    db_port = 5432,
+    db_host = 'db'
+    db_port = 5432
 
     print("⏳ Waiting for PostgreSQL to be ready...")
 
