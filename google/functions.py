@@ -166,10 +166,11 @@ def update_google_sheet_data_with_format(
                                 {
                                     "userEnteredValue": {
                                         "numberValue": numberValue,
-                                        "userEnteredFormat": {
-                                            "backgroundColor": backgroundColor,
-                                        }
+                                    },
+                                    "userEnteredFormat": {
+                                        "backgroundColor": backgroundColor,
                                     }
+
                                 }
                             )
                         except:
