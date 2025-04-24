@@ -24,8 +24,8 @@ def wait_for_db():
             conn.close()
             print("✅ PostgreSQL is available!")
             break
-        except OperationalError:
-            print("🔁 PostgreSQL not ready yet, retrying in 1s...")
+        except Exception as e:
+            print(f"🔁 PostgreSQL not ready yet, retrying in 1s... Error: {e}")
             time.sleep(1)
 
 if __name__ == "__main__":
