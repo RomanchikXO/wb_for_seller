@@ -1,12 +1,13 @@
 from typing import Union, List
 import re
-
 import aiohttp
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import os
 from celery_app.celery_config import logger
+from parsers.wildberies import wb_api
+from database.funcs_db import get_data_from_db
 
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -283,25 +284,13 @@ def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, N
     return data
 
 
-async def test_():
+async def get_products_and_prices(param=None):
+    tokens = await get_data_from_db("wb_lk", ["name", "token"], conditions={'group': 1})
+
+
     async with aiohttp.ClientSession() as session:
         counter = 0
         while counter < 5:
             result = await wb_api(session, param)
             cards = result["cards"]
             print(cards[38].keys())
-            headers = [
-                [
-                    'nmID', 'imtID', 'nmUUID', 'subjectID', 'subjectName', 'vendorCode', 'brand', 'title', 'description',
-                    'video', 'needKiz', 'photos', 'dimensions', 'characteristics', 'sizes', 'tags', 'createdAt',
-                    'updatedAt'
-                ]
-            ]
-            data = headers + [
-                [str(card.get(header, "")) for header in headers[0]]
-                for index, card in enumerate(cards)
-                if index != 0
-            ]
-
-            add_nmids_to_google_table(data, "A1:R50")
-            return

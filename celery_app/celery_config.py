@@ -1,3 +1,7 @@
+"""
+Тут настраивается периодичность задач
+"""
+
 from celery import Celery
 from celery.schedules import crontab
 import logging
