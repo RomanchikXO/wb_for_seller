@@ -64,7 +64,7 @@ async def add_set_data_from_db(
 
     :param table_name: Название таблицы
     :param data: Словарь с данными (ключ = имя поля)
-    :param conflict_fields: Список полей, по которым проверяем конфликт (например, ["nmID", "lk"]). Если не передан, используется ["id"]
+    :param conflict_fields: Список полей, по которым проверяем конфликт (например, ["nmid", "lk_id"]). Если не передан, используется ["id"]
     :return: None
     """
     need_close = False

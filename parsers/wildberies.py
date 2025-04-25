@@ -311,7 +311,7 @@ async def get_products_and_prices():
                                     clubdiscount=item["clubDiscount"],
                                     editablesizeprice=item["editableSizePrice"],
                                 ),
-                                conflict_fields=["nmID", "lk"]
+                                conflict_fields=["nmid", "lk_id"]
                             )
                         )
                     results = await asyncio.gather(*data)
