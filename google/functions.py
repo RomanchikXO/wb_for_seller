@@ -177,12 +177,12 @@ def update_google_sheet_data_with_format(
                             max_profit = max(profits)
                             min_profit = min(profits)
 
-                            if max_profit == min_profit:
-                                backgroundColor = colors["white"]
-                            elif numberValue == max_profit:
-                                backgroundColor = colors["light_green"]
-                            elif numberValue == min_profit:
+                            if numberValue < max_profit and ind_3 == 3: #если наша цена меньше других цен
                                 backgroundColor = colors["light_red"]
+                            elif ind_3 == 3 and numberValue == max_profit: #если наша цена и самая большая
+                                backgroundColor = colors["light_green"]
+                            elif numberValue == max_profit and ind_3 != 3: #если не наша цена и самая большая
+                                backgroundColor = colors["light_green"]
                             else:
                                 backgroundColor = colors["white"]
 
