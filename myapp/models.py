@@ -43,4 +43,4 @@ class Price(models.Model):
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
 
     def __str__(self):
-        return f"{self.vendorCode} - {self.nmID}"
+        return f"{self.vendorcode} - {self.nmid}"
