@@ -39,5 +39,8 @@ class Price(models.Model):
     clubdiscount = models.IntegerField(default=0)
     editablesizeprice = models.IntegerField(default=0)
 
+    class Meta:
+        unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
+
     def __str__(self):
         return f"{self.vendorCode} - {self.nmID}"
