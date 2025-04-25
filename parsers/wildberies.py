@@ -287,35 +287,40 @@ async def get_products_and_prices():
 
         results = await asyncio.gather(*data.values())
         id_to_result = {name: result for name, result in zip(data.keys(), results)}
-        conn = await async_connect_to_database()
-        if not conn:
-            logger.warning("Ошибка подключения к БД")
-            return
-        for key, value in id_to_result.items():
-            value = value["data"]["listGoods"]
-            data = []
-            try:
-                for item in value:
-                    data.append(
-                        add_set_data_from_db(
-                            conn=conn,
-                            table_name="myapp_price",
-                            data=dict(
-                                lk_id=key,
-                                nmID=item["nmID"],
-                                vendorCode=item["vendorCode"],
-                                sizes=item["sizes"],
-                                discount=item["discount"],
-                                clubDiscount=item["clubDiscount"],
-                                editableSizePrice=item["editableSizePrice"],
-                            ),
-                            conflict_fields=["nmID", "lk"]
+
+        try:
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.warning("Ошибка подключения к БД")
+                raise
+            for key, value in id_to_result.items():
+                value = value["data"]["listGoods"]
+                data = []
+                try:
+                    for item in value:
+                        data.append(
+                            add_set_data_from_db(
+                                conn=conn,
+                                table_name="myapp_price",
+                                data=dict(
+                                    lk_id=key,
+                                    nmID=item["nmID"],
+                                    vendorCode=item["vendorCode"],
+                                    sizes=item["sizes"],
+                                    discount=item["discount"],
+                                    clubDiscount=item["clubDiscount"],
+                                    editableSizePrice=item["editableSizePrice"],
+                                ),
+                                conflict_fields=["nmID", "lk"]
+                            )
                         )
-                    )
-                results = await asyncio.gather(*data)
-            except Exception as e:
-                logger.error(f"Ошибка при добавлении продуктов и цен {e}")
-        conn.close()
+                    results = await asyncio.gather(*data)
+                except Exception as e:
+                    logger.error(f"Ошибка при добавлении продуктов и цен {e}")
+        except:
+            return
+        finally:
+            await conn.close()
 
 # loop = asyncio.get_event_loop()
 # loop.run_until_complete(get_products_and_prices())
