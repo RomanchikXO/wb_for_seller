@@ -82,7 +82,7 @@ def parse_link(
         "dest": -4734876,
         "nm": link,
     }
-    data = get_data("get", api_url, 0, "json", headers=headers, params=params)
+    data = get_data("get", api_url, "json", headers=headers, params=params)
 
     if not data or not data["data"]["products"]:
         logger.info(f"Fail {link}. Функция: parse_link. Data: {data}")
