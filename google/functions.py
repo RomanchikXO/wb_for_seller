@@ -23,6 +23,7 @@ colors = {
     "light_green": {"red": 0.8, "green": 1.0, "blue": 0.8},
     "light_red": {"red": 1.0, "green": 0.8, "blue": 0.8},
     "dark_grey": {"red": 0.741, "green": 0.741, "blue": 0.741},
+    "light_yellow": {"red": 1.0, "green": 1.0, "blue": 0.6},
 }
 
 def get_column_letter(n: int):
@@ -246,7 +247,107 @@ def add_nmids_to_google_table(data: list, range: str, index=0) -> None:
     try:
         res = update_google_sheet_data(SPREADSHEET_URL, SHEET_IDENTIFIER, DATA_RANGE, data)
     except Exception as e:
-        print(e)
+        logger.error(f"Ошибка в add_nmids_to_google_table. Error: {e}")
+
+
+def update_google_prices_data_with_format(
+        spreadsheet_url: str,
+        sheet_id: int,
+        start_row: int,
+        start_col: int,
+        values: List[list],
+        **kwargs
+):
+    """
+    Обновить данные в таблице с сохранением форматирования
+    :param spreadsheet_url: url таблицы
+    :param sheet_id: номер листа (это число после '=' в ссылке)
+    :param start_row: индекс строки (начиная с 0)
+    :param start_col: индекс столбца (начиная с 0)
+    :param values: Данные для обновления в виде списка списков
+    :return:
+    """
+    credentials = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
+    service = build('sheets', 'v4', credentials=credentials)
+
+    spreadsheet_id = spreadsheet_url.split("/")[-2]  # ID_ТАБЛИЦЫ
+    rows = []
+
+    try:
+        for ind_1, row in enumerate(values): # итерация по строкам
+            row_data = {"values": []}
+            for ind_2, cell in enumerate(row):
+                if ind_1 == 0:
+                    if ind_2 == 8:
+                        row_data["values"].append({
+                            "userEnteredValue": {"stringValue": str(cell)},
+                            "userEnteredFormat": {
+                                "textFormat": {"bold": True},
+                                "backgroundColor": colors["light_yellow"]
+                            }
+                        })
+                    else:
+                        if ind_2 == (len(row)-1):
+                            row_data["values"].append({
+                                "userEnteredValue": {"stringValue": f"{kwargs['discount']}%"}
+                            })
+                        else:
+                            row_data["values"].append({
+                                "userEnteredValue": {"stringValue": str(cell)},
+                                "userEnteredFormat": {
+                                    "textFormat": {
+                                        "bold": True
+                                    }
+                                }
+                            })
+                else:
+                    if ind_2 == 8:
+                        row_data["values"].append({
+                            "userEnteredValue": {"numberValue": cleare_num(cell)},
+                            "userEnteredFormat": {
+                                "backgroundColor": colors["light_yellow"]
+                            }
+                        })
+                    try:
+                        numberValue = cleare_num(cell)
+                        row_data["values"].append({
+                            "userEnteredValue": {"numberValue": numberValue},
+                        })
+                    except:
+                        row_data["values"].append({
+                            "userEnteredValue": {"stringValue": cell},
+                        })
+            rows.append(row_data)
+    except Exception as e:
+        logger.error(f"Ошибка обработки данных для гугл таблицы: {e}. Функция: update_google_sheet_data_with_format")
+
+
+    # Формируем запрос
+    request_body = {
+        "requests": [
+            {
+                "updateCells": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": start_row,
+                        "startColumnIndex": start_col,
+                        "endRowIndex": len(values),
+                        "endColumnIndex": len(values[0])
+                    },
+                    "rows": rows,
+                    "fields": "userEnteredValue,userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.bold"  # ВАЖНО: данные, цвета, шрифт
+                }
+            }
+        ]
+    }
+
+    try:
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body=request_body
+        ).execute()
+    except Exception as e:
+        logger.error(f"Ошибка обновления данных в гугл таблице: {e}. Функция: update_google_prices_data_with_format")
 
 
 def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, None], data_range=None):
@@ -254,7 +355,7 @@ def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, N
     Функция для извлечения данных из Google Таблицы.
 
     :param spreadsheet_url: URL таблицы (Google Spreadsheet URL)
-    :param sheet_identifier: Идентификатор листа (индекс или имя листа)
+    :param sheet_identifier: Идентификатор листа (индекс начиная с 0 или имя листа)
     :param data_range: Диапазон данных в формате A1 (например, 'W4:AA34') или None для всего листа
     :return: Данные как список списков
     """

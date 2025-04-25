@@ -73,7 +73,7 @@ def calculate_card_price(price: Union[int, float]) -> int:
 
 
 def parse_link(
-    link: Union[int, str],
+    link: Union[int, str], type
 ):
     api_url = "https://card.wb.ru/cards/detail"
     params = {
@@ -100,27 +100,33 @@ def parse_link(
         prices = [price, promo_price]
         price = prices[1]
         promo_price = prices[0]
-
+    if type:
+        if isinstance(type, list):
+            return [price, promo_price]
+        elif type == "price":
+            return price
+        elif type == "promo_price":
+            return promo_price
     card_price = calculate_card_price(promo_price) if promo_price else calculate_card_price(price)
     return card_price
 
-def safe_parse_link(link):
+def safe_parse_link(link, type):
     try:
-        data = parse_link(link)
+        data = parse_link(link, type)
         return data
     except Exception as e:
         logger.error(f"Can't parse link. Url: {link}. Error: {e}")
 
-def parse_by_links(links: list) -> list:
+def parse_by_links(links: list, type) -> list:
     tasks = [
-        safe_parse_link(link)
+        safe_parse_link(link, type)
         for link in links
     ]
     return tasks
 
 
-def parse(links: list) -> list:
-    response = parse_by_links(links)
+def parse(links: list, type: Union[str, list] = None) -> list:
+    response = parse_by_links(links, type)
     return response
 
 async def wb_api(session, param):
