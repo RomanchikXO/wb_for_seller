@@ -1,7 +1,7 @@
 import time
 import psycopg2
 from psycopg2 import OperationalError
-from loader_django import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+from loader import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
 
 def wait_for_db():
     db_name = POSTGRES_DB
