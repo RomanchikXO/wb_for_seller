@@ -11,7 +11,7 @@ app = Celery(
     'pearhome',
     broker='redis://redis:6379/0',
     backend='redis://redis:6379/0',
-    include=['tasks.google_wb_prices']  # подключаем задачи
+    include=['tasks.google_wb_prices', 'tasks.google_our_prices']  # подключаем задачи
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +25,6 @@ app.conf.beat_schedule = {
     },
     'update-product-and-prices-db': {
         'task': 'tasks.google_our_prices.get_prices_and_products',
-        'schedule': crontab(minute=20),
+        'schedule': crontab(minute=26),
     }
 }
