@@ -308,15 +308,16 @@ def update_google_prices_data_with_format(
                                 "backgroundColor": colors["light_yellow"]
                             }
                         })
-                    try:
+                    else:
                         numberValue = cleare_num(cell)
-                        row_data["values"].append({
-                            "userEnteredValue": {"numberValue": numberValue},
-                        })
-                    except:
-                        row_data["values"].append({
-                            "userEnteredValue": {"stringValue": cell},
-                        })
+                        if numberValue:
+                            row_data["values"].append({
+                                "userEnteredValue": {"numberValue": numberValue},
+                            })
+                        else:
+                            row_data["values"].append({
+                                "userEnteredValue": {"stringValue": cell},
+                            })
             rows.append(row_data)
     except Exception as e:
         logger.error(f"Ошибка обработки данных для гугл таблицы: {e}. Функция: update_google_sheet_data_with_format")
