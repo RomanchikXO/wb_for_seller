@@ -307,4 +307,4 @@ async def get_products_and_prices():
                 )
 
 
-asyncio.run(get_products_and_prices())
+# asyncio.run(get_products_and_prices())
