@@ -29,6 +29,9 @@ DEBUG = DEBUG
 
 ALLOWED_HOSTS = ALLOWED_HOSTS.split(",")
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://wbautopro.ru",
+]
 
 # Application definition
 
