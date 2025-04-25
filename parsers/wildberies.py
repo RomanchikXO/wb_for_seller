@@ -273,6 +273,11 @@ async def wb_api(session, param):
 
 
 async def get_products_and_prices():
+    """
+    получаем товары и цены и пишем их в бд
+    :return:
+    """
+
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
     data = {}

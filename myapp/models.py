@@ -13,7 +13,7 @@ class Groups(models.Model):
 # Модель для таблицы wb_lk
 class WbLk(models.Model):
     # myapp_wblk
-    groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True) #groups_id_id в бд
+    groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True) #groups_id в бд
     name = models.CharField(max_length=255)
     token = models.CharField(max_length=400)
 

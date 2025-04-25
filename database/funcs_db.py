@@ -6,13 +6,16 @@ from typing import List, Optional, Dict, Any
 async def get_data_from_db(
         table_name: str,
         columns: Optional[List[str]] = None,
-        conditions: Optional[dict] = None
+        conditions: Optional[dict] = None,
+        additional_conditions: Optional[str] = None
 ):
     """
     Получить данные из бд
     :param table_name: Название таблицы
     :param columns: Названия столбцов например ['id', 'name']
     :param conditions: Условия например {'id': '70', 'name': ['иван', 'олег']}
+    :param additional_conditions: Дополнительные условия для JOIN или других фильтров
+
     :return:
     """
     if columns is None:
@@ -36,6 +39,12 @@ async def get_data_from_db(
                 conditions_str = f"WHERE {key} = {value}"
             else:
                 f"WHERE {key} IN {tuple(value)}"
+
+    if additional_conditions:
+        if conditions is None:
+            conditions_str = f" WHERE {additional_conditions}"
+        else:
+            conditions_str += f" AND {additional_conditions}"
 
     conn = await async_connect_to_database()
 
