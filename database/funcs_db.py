@@ -42,10 +42,11 @@ async def get_data_from_db(
         return
 
     try:
-        all_fields = await conn.fetch(f"SELECT {columns_str} FROM {table_name} {conditions_str}")
+        request = f"SELECT {columns_str} FROM {table_name} {conditions_str}"
+        all_fields = await conn.fetch(request)
         return all_fields
     except Exception as e:
-        logger.error(f"Ошибка получения данных из {table_name}. Error: {e}")
+        logger.error(f"Ошибка получения данных из {table_name}. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
 
