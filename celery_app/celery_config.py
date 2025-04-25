@@ -27,8 +27,8 @@ app.conf.beat_schedule = {
         'task': 'tasks.google_our_prices.get_prices_and_products',
         'schedule': crontab(minute=23),
     },
-    'test_func': {
+    'update_prices_on_google': {
         'task': 'tasks.google_our_prices.update_prices_on_google',
-        'schedule': crontab(minute=18),
+        'schedule': crontab(minute=22),
     }
 }

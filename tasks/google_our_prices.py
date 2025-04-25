@@ -42,7 +42,7 @@ async def set_prices_on_google():
                 discount = round(abs(((prices_parse[0][1] / (prices_parse[0][0] * 0.1)) - 1) * 100))
 
         if sizes:=result_dict.get(nmID):
-            price = sizes[0]["price"]
+            price = int(sizes[0]["price"])
             google_data[index][8] = price
 
     url = "https://docs.google.com/spreadsheets/d/1PEhnRK9k8z8rMyeFCZT_WhO4DYkgjrqQgqLhE7XlTfA/edit?gid=1041007463#gid=1041007463"
