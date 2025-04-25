@@ -286,7 +286,7 @@ async def get_products_and_prices():
 
         results = await asyncio.gather(*data.values())
         id_to_result = {name: result for name, result in zip(data.keys(), results)}
-        for key, value in id_to_result.values():
+        for key, value in id_to_result.items():
             value = value["data"]["listGoods"]
             data = []
             try:
