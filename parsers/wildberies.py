@@ -271,7 +271,7 @@ async def wb_api(session, param):
 
 
 async def get_products_and_prices():
-    cabinets = await get_data_from_db("wb_lk", ["id", "name", "token"], conditions={'group': 1})
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'group': 1})
 
     data = {}
 
@@ -293,7 +293,7 @@ async def get_products_and_prices():
                 for item in value:
                     data.append(
                         add_set_data_from_db(
-                            table_name="prices",
+                            table_name="myapp_price",
                             data=dict(
                                 lk=key,
                                 nmID=item["nmID"],
