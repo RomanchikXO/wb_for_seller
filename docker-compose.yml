@@ -28,8 +28,8 @@ services:
     command: >
       sh -c "
         python wait_for_db.py && 
-        python manage.py makemigrations && 
-        python manage.py migrate && 
+        python manage.py makemigrations --noinput && 
+        python manage.py migrate --noinput && 
         python manage.py shell -c \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='${DJANGO_SUPERUSER_USERNAME}').exists() or User.objects.create_superuser('${DJANGO_SUPERUSER_USERNAME}', '${DJANGO_SUPERUSER_EMAIL}', '${DJANGO_SUPERUSER_PASSWORD}')\" && 
         gunicorn django_app.wsgi:application --bind 0.0.0.0:8000
       "
