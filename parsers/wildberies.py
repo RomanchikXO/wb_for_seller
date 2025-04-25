@@ -305,11 +305,11 @@ async def get_products_and_prices():
                                 data=dict(
                                     lk_id=key,
                                     nmid=item["nmID"],
-                                    vendorCode=item["vendorCode"],
+                                    vendorcode=item["vendorCode"],
                                     sizes=item["sizes"],
                                     discount=item["discount"],
-                                    clubDiscount=item["clubDiscount"],
-                                    editableSizePrice=item["editableSizePrice"],
+                                    clubdiscount=item["clubDiscount"],
+                                    editablesizeprice=item["editableSizePrice"],
                                 ),
                                 conflict_fields=["nmID", "lk"]
                             )

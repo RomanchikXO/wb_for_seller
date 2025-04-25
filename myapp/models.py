@@ -33,11 +33,11 @@ class Price(models.Model):
     # myapp_price
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
     nmid = models.IntegerField(default=0)
-    vendorCode = models.CharField(max_length=255)
+    vendorcode = models.CharField(max_length=255)
     sizes = models.JSONField()  # Массив JSON для хранения размеров
     discount = models.IntegerField()
-    clubDiscount = models.IntegerField()
-    editableSizePrice = models.IntegerField()
+    clubdiscount = models.IntegerField(default=0)
+    editablesizeprice = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.vendorCode} - {self.nmID}"
