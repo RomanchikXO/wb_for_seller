@@ -47,7 +47,7 @@ async def set_prices_on_google():
 
     url = "https://docs.google.com/spreadsheets/d/1PEhnRK9k8z8rMyeFCZT_WhO4DYkgjrqQgqLhE7XlTfA/edit?gid=1041007463#gid=1041007463"
     update_google_prices_data_with_format(
-        url, int(url.split("=")[-1]), 0, 0, google_data, {"discount": discount}
+        url, int(url.split("=")[-1]), 0, 0, google_data, **{"discount": discount}
     )
 
 
