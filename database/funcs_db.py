@@ -31,7 +31,7 @@ async def get_data_from_db(
         else:
             key, value = next(iter(conditions.items()))
             conditions_str = (
-                f"WHERE {key} = '{value}'" if isinstance(value, str)
+                f"WHERE {key} = '{value}'" if isinstance(value, str) or isinstance(value, int)
                 else f"WHERE {key} IN {tuple(value)}"
             )
 
