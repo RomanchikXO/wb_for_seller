@@ -301,7 +301,7 @@ async def get_products_and_prices():
                             conn=conn,
                             table_name="myapp_price",
                             data=dict(
-                                lk=key,
+                                lk_id=key,
                                 nmID=item["nmID"],
                                 vendorCode=item["vendorCode"],
                                 sizes=item["sizes"],
