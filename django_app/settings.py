@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
-from loader_django import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DEBUG, ALLOWED_HOSTS
+from loader import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DEBUG, ALLOWED_HOSTS
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapp',
-    'django_app',
 ]
 
 MIDDLEWARE = [
