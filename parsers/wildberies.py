@@ -271,7 +271,7 @@ async def wb_api(session, param):
 
 
 async def get_products_and_prices():
-    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups': 1})
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
     data = {}
 
