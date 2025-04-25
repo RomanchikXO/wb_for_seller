@@ -54,6 +54,7 @@ async def get_data_from_db(
 
 
 async def add_set_data_from_db(
+    conn,
     table_name: str,
     data: Dict[str, Any],
     conflict_fields: list = None,
@@ -75,10 +76,11 @@ async def add_set_data_from_db(
     if not conflict_fields:
         conflict_fields = ["id"]
 
-    conn = await async_connect_to_database()
     if not conn:
-        logger.warning("Ошибка подключения к БД в add_set_data_from_db")
-        return
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.warning("Ошибка подключения к БД в add_set_data_from_db")
+            return
 
     try:
         columns = list(data.keys())

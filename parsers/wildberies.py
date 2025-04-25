@@ -6,6 +6,7 @@ import time
 from celery_app.celery_config import logger
 import aiohttp
 
+from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
 
 headers = {
@@ -286,6 +287,10 @@ async def get_products_and_prices():
 
         results = await asyncio.gather(*data.values())
         id_to_result = {name: result for name, result in zip(data.keys(), results)}
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.warning("Ошибка подключения к БД")
+            return
         for key, value in id_to_result.items():
             value = value["data"]["listGoods"]
             data = []
@@ -293,6 +298,7 @@ async def get_products_and_prices():
                 for item in value:
                     data.append(
                         add_set_data_from_db(
+                            conn=conn,
                             table_name="myapp_price",
                             data=dict(
                                 lk=key,
