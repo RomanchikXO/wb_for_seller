@@ -30,10 +30,12 @@ async def get_data_from_db(
             )
         else:
             key, value = next(iter(conditions.items()))
-            conditions_str = (
-                f"WHERE {key} = '{value}'" if isinstance(value, str) or isinstance(value, int)
-                else f"WHERE {key} IN {tuple(value)}"
-            )
+            if isinstance(value, str):
+                conditions_str = f"WHERE {key} = '{value}'"
+            elif isinstance(value, int):
+                conditions_str = f"WHERE {key} = {value}"
+            else:
+                f"WHERE {key} IN {tuple(value)}"
 
     conn = await async_connect_to_database()
 
