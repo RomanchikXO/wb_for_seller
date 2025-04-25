@@ -29,6 +29,8 @@ DEBUG = DEBUG
 
 ALLOWED_HOSTS = ALLOWED_HOSTS.split(",")
 
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = [
     "https://wbautopro.ru",
 ]
