@@ -1,19 +1,20 @@
 from django.db import models
 import json
 
-# Модель для таблицы wb_lk
-class WbLk(models.Model):
-    group = models.IntegerField()
+
+# Модель для таблицы group
+class Groups(models.Model):
     name = models.CharField(max_length=255)
-    token = models.CharField(max_length=400)
+    permissions = models.JSONField()  # Используем JSONField для хранения списка разрешений
 
     def __str__(self):
         return self.name
 
-# Модель для таблицы group
-class Group(models.Model):
+# Модель для таблицы wb_lk
+class WbLk(models.Model):
+    groups = models.ForeignKey(Groups, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    permissions = models.JSONField()  # Используем JSONField для хранения списка разрешений
+    token = models.CharField(max_length=400)
 
     def __str__(self):
         return self.name
