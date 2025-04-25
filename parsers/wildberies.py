@@ -5,6 +5,7 @@ from typing import Union
 import time
 from celery_app.celery_config import logger
 import aiohttp
+import json
 
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
@@ -306,7 +307,7 @@ async def get_products_and_prices():
                                     lk_id=key,
                                     nmid=item["nmID"],
                                     vendorcode=item["vendorCode"],
-                                    sizes=item["sizes"],
+                                    sizes=json.dumps(item["sizes"]),
                                     discount=item["discount"],
                                     clubdiscount=item["clubDiscount"],
                                     editablesizeprice=item["editableSizePrice"],
