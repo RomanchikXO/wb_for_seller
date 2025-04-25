@@ -29,6 +29,6 @@ app.conf.beat_schedule = {
     },
     'update_prices_on_google': {
         'task': 'tasks.google_our_prices.update_prices_on_google',
-        'schedule': crontab(minute=31),
+        'schedule': crontab(hour='6,9,13,17,21', minute=0),
     }
 }
