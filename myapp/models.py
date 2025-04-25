@@ -28,6 +28,7 @@ class User(models.Model):
 
 # Модель для таблицы prices
 class Price(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE)
     nmID = models.IntegerField()
     vendorCode = models.CharField(max_length=255)
     sizes = models.JSONField()  # Массив JSON для хранения размеров

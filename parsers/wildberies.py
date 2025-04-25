@@ -271,10 +271,8 @@ async def wb_api(session, param):
 
 
 async def get_products_and_prices():
-    # cabinets = await get_data_from_db("wb_lk", ["id", "name", "token"], conditions={'group': 1})
+    cabinets = await get_data_from_db("wb_lk", ["id", "name", "token"], conditions={'group': 1})
 
-    cabinets = [{"name": "Стеапанов", "token": "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMTE4djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc0OTA4MDE2MCwiaWQiOiIwMTkzOTE3NC1hMjdmLTcxNWUtOGE4Zi04NWM0YTFhODRjMGEiLCJpaWQiOjQyNzAwOTgwLCJvaWQiOjEwNDY2MSwicyI6MzgzOCwic2lkIjoiYjA5YTI5ODctZTY0Zi01MDM5LWJkZGItYmZiNGRlMTgxN2YwIiwidCI6ZmFsc2UsInVpZCI6NDI3MDA5ODB9.B-VEoDGb9Qn9RFpLnK7d_vN30Lme-iqBz_Qz2OLGwgPRGe-b4kPmnGP_FmXRU4wwMrT0Ll-4FAcO1e6r4WWCHg"},
-                {"name": "Бутусова", "token": "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMTE4djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc0OTA4MDQzMSwiaWQiOiIwMTkzOTE3OC1jNWE2LTc0YmQtOTZlOS0wMDhlOTc5NjlhOTUiLCJpaWQiOjQyNzAwOTgwLCJvaWQiOjEyMDkyMTcsInMiOjM4MzgsInNpZCI6IjgwZDQ4M2Q1LThmMzAtNGFmYS1hNjI5LTRiYmNiZjA1OWJhYiIsInQiOmZhbHNlLCJ1aWQiOjQyNzAwOTgwfQ.bHUvZcuUOegzOYE2BoQbCpfggbYXwDrR7ryfHMmlWmR2lJv5hjNqxsDpckIEHOlihWf_hSCg0fytKVtPQ_xM4g"}]
     data = {}
 
     async with aiohttp.ClientSession() as session:
@@ -297,13 +295,15 @@ async def get_products_and_prices():
                         add_set_data_from_db(
                             table_name="prices",
                             data=dict(
+                                lk=key,
                                 nmID=item["nmID"],
                                 vendorCode=item["vendorCode"],
                                 sizes=item["sizes"],
                                 discount=item["discount"],
                                 clubDiscount=item["clubDiscount"],
                                 editableSizePrice=item["editableSizePrice"],
-                            )
+                            ),
+                            conflict_fields=["nmID", "lk"]
                         )
                     )
                 results = await asyncio.gather(*data)

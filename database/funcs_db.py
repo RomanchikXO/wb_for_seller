@@ -53,29 +53,24 @@ async def get_data_from_db(
 async def add_set_data_from_db(
     table_name: str,
     data: Dict[str, Any],
-    conflict_field: str = "id",  # по умолчанию обновляем по id
+    conflict_fields: list = None,
 ) -> None:
     """
     Добавить или обновить данные в таблице БД (UPSERT по conflict_field).
 
     :param table_name: Название таблицы
     :param data: Словарь с данными (ключ = имя поля)
-    :param conflict_field: Поле, по которому проверяем конфликт (обычно id)
+    :param conflict_fields: Список полей, по которым проверяем конфликт (например, ["nmID", "lk"]). Если не передан, используется ["id"]
     :return: None
-
-    Пример:
-    await add_set_data_from_db(
-    table_name="users",
-    data={
-        "id": 42,
-        "name": "Alice",
-        "email": "alice@example.com"
-    }
-)
     """
+
     if not data:
         logger.warning("Нет данных для вставки/обновления.")
         return
+
+    # Если conflict_fields не передан, используем ["id"] как значение по умолчанию
+    if not conflict_fields:
+        conflict_fields = ["id"]
 
     conn = await async_connect_to_database()
     if not conn:
@@ -89,17 +84,22 @@ async def add_set_data_from_db(
         placeholders = ", ".join(f"${i+1}" for i in range(len(columns)))
         columns_str = ", ".join(columns)
 
+        # Строим строку для конфликтующих полей
+        conflict_columns_str = ", ".join(conflict_fields)
+
         # Строим update-часть для ON CONFLICT
         update_str = ", ".join(
-            f"{col} = EXCLUDED.{col}" for col in columns if col != conflict_field
+            f"{col} = EXCLUDED.{col}" for col in columns if col not in conflict_fields
         )
 
+        # Формируем запрос
         query = f"""
             INSERT INTO {table_name} ({columns_str})
             VALUES ({placeholders})
-            ON CONFLICT ({conflict_field}) DO UPDATE SET {update_str}
+            ON CONFLICT ({conflict_columns_str}) DO UPDATE SET {update_str}
         """
 
+        # Выполняем запрос
         await conn.execute(query, *values)
         logger.info(f"UPSERT в {table_name} прошел успешно")
 
