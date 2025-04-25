@@ -33,6 +33,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://wbautopro.ru",
 ]
 
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 # Application definition
 
 INSTALLED_APPS = [
