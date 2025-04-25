@@ -10,7 +10,7 @@ async def set_prices_on_google():
     data = await get_data_from_db(
         table_name="myapp_price",
         columns=["vendorcode", "sizes"],
-        additional_conditions="EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.lk_id = myapp_price.lk_id AND myapp_wblk.groups_id = 1)"
+        additional_conditions="EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.id = myapp_price.lk_id AND myapp_wblk.groups_id = 1)"
     )
     logger.info(data)
 
