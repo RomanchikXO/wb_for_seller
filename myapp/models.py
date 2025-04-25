@@ -32,7 +32,7 @@ class User(models.Model):
 class Price(models.Model):
     # myapp_price
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
-    nmid = models.IntegerField()
+    nmid = models.IntegerField(default=0)
     vendorCode = models.CharField(max_length=255)
     sizes = models.JSONField()  # Массив JSON для хранения размеров
     discount = models.IntegerField()
