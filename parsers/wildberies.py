@@ -291,20 +291,23 @@ async def get_products_and_prices():
         for key, value in id_to_result.values():
             value = value["data"]["listGoods"]
             data = []
-            for item in value:
-                data.append(
-                    add_set_data_from_db(
-                        table_name="prices",
-                        data=dict(
-                            nmID=item["nmID"],
-                            vendorCode=item["vendorCode"],
-                            sizes=item["sizes"],
-                            discount=item["discount"],
-                            clubDiscount=item["clubDiscount"],
-                            editableSizePrice=item["editableSizePrice"],
+            try:
+                for item in value:
+                    data.append(
+                        add_set_data_from_db(
+                            table_name="prices",
+                            data=dict(
+                                nmID=item["nmID"],
+                                vendorCode=item["vendorCode"],
+                                sizes=item["sizes"],
+                                discount=item["discount"],
+                                clubDiscount=item["clubDiscount"],
+                                editableSizePrice=item["editableSizePrice"],
+                            )
                         )
                     )
-                )
+                results = await asyncio.gather(*data)
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении продуктов и цен {e}")
 
 
-# asyncio.run(get_products_and_prices())

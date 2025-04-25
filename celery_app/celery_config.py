@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 
 # app.conf.timezone = 'Europe/Moscow'
 app.conf.beat_schedule = {
-    'update-prices-at-7am-and-7pm': {
+    'update-prices-in-google-table': {
         'task': 'tasks.google_wb_prices.prices_table',
         'schedule': crontab(hour='7,10,14,18', minute=0),
     },
+    'update-product-and-prices-db': {
+        'task': 'tasks.get_prices_and_products',
+        'schedule': crontab(minute=55),
+    }
 }
