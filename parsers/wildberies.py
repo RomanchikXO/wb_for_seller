@@ -315,6 +315,7 @@ async def get_products_and_prices():
                 results = await asyncio.gather(*data)
             except Exception as e:
                 logger.error(f"Ошибка при добавлении продуктов и цен {e}")
+        conn.close()
 
 # loop = asyncio.get_event_loop()
 # loop.run_until_complete(get_products_and_prices())

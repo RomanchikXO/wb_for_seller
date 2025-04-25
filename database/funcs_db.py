@@ -67,7 +67,7 @@ async def add_set_data_from_db(
     :param conflict_fields: Список полей, по которым проверяем конфликт (например, ["nmID", "lk"]). Если не передан, используется ["id"]
     :return: None
     """
-
+    need_close = False
     if not data:
         logger.warning("Нет данных для вставки/обновления.")
         return
@@ -77,6 +77,7 @@ async def add_set_data_from_db(
         conflict_fields = ["id"]
 
     if not conn:
+        need_close = True
         conn = await async_connect_to_database()
         if not conn:
             logger.warning("Ошибка подключения к БД в add_set_data_from_db")
@@ -111,4 +112,5 @@ async def add_set_data_from_db(
     except Exception as e:
         logger.exception(f"Ошибка при UPSERT в {table_name}: {e}")
     finally:
-        await conn.close()
+        if need_close:
+            await conn.close()

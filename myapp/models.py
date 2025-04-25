@@ -12,7 +12,8 @@ class Groups(models.Model):
 
 # Модель для таблицы wb_lk
 class WbLk(models.Model):
-    groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True)
+    # myapp_wblk
+    groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True) #groups_id_id в бд
     name = models.CharField(max_length=255)
     token = models.CharField(max_length=400)
 
@@ -29,7 +30,8 @@ class User(models.Model):
 
 # Модель для таблицы prices
 class Price(models.Model):
-    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+    # myapp_price
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
     nmID = models.IntegerField()
     vendorCode = models.CharField(max_length=255)
     sizes = models.JSONField()  # Массив JSON для хранения размеров
