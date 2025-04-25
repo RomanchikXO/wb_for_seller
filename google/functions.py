@@ -284,13 +284,3 @@ def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, N
     return data
 
 
-async def get_products_and_prices(param=None):
-    tokens = await get_data_from_db("wb_lk", ["name", "token"], conditions={'group': 1})
-
-
-    async with aiohttp.ClientSession() as session:
-        counter = 0
-        while counter < 5:
-            result = await wb_api(session, param)
-            cards = result["cards"]
-            print(cards[38].keys())

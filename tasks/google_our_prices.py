@@ -8,9 +8,9 @@ from database.funcs_db import get_data_from_db
 
 async def set_prices_on_google():
     data = await get_data_from_db(
-        table_name="prices",
+        table_name="myapp_price",
         columns=["vendorcode", "sizes"],
-        additional_conditions="EXISTS (SELECT 1 FROM wb_lk WHERE wb_lk.lk_id = prices.lk_id AND wb_lk.groups_id = 1)"
+        additional_conditions="EXISTS (SELECT 1 FROM wb_lk WHERE wb_lk.lk_id = myapp_price.lk_id AND wb_lk.groups_id = 1)"
     )
     logger.info(data)
 
