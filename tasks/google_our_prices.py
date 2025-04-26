@@ -1,13 +1,11 @@
 import json
 
-from celery import shared_task
 from celery.utils.log import get_task_logger
 from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
 from parsers.wildberies import get_products_and_prices, parse
-import asyncio
 from database.funcs_db import get_data_from_db
 
-# Все таски находятся внизу !!!
+
 logger = get_task_logger("core")
 
 async def set_prices_on_google():
@@ -51,26 +49,3 @@ async def set_prices_on_google():
         url, int(url.split("=")[-1]), 0, 0, google_data, **{"discount": discount}
     )
 
-
-
-
-
-
-@shared_task
-def update_prices_on_google():
-    logger.info("Устанавливаем цены в гугл таблицу")
-    asyncio.run(set_prices_on_google())
-    logger.info("Цены в гугл таблицу установлены")
-
-
-@shared_task
-def get_prices_and_products():
-    logger.info("Собираем товары и цены")
-    asyncio.run(get_products_and_prices())
-    logger.info("Товары и цены собраны в БД")
-
-
-@shared_task
-def some_task():
-    logger.info("Тестируем. Ща вернет 'test'")
-    return "test"

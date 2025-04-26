@@ -2,7 +2,6 @@ from typing import List
 from parsers.wildberies import parse
 from google.functions import fetch_google_sheet_data, update_google_sheet_data_with_format, get_column_letter, get_ids_pages_table
 from mpstat import get_revenue_mpstat
-from celery import shared_task
 from celery.utils.log import get_task_logger
 
 logger = get_task_logger("core")
@@ -68,11 +67,4 @@ def process_data(url: str) -> None:
     for index, page in enumerate(data):
         sheet_id = numbers_pages[index]
         update_google_sheet_data_with_format(url, sheet_id, 0, 0, page)
-
-
-@shared_task
-def prices_table():
-    logger.info("Обновляем таблицу с ценами")
-    process_data(url_prices)
-    logger.info("Таблица обновлена ")
 
