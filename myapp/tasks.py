@@ -5,7 +5,7 @@ from tasks.google_our_prices import set_prices_on_google, get_products_and_price
 from tasks.google_wb_prices import process_data
 
 
-logger = get_task_logger("core")
+logger = get_task_logger("myapp")
 
 @shared_task
 def update_prices_on_google():
