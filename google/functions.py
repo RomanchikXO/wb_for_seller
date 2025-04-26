@@ -1,13 +1,13 @@
+from datetime import datetime, timedelta
 from typing import Union, List
 import re
-import aiohttp
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import os
-from celery_app.celery_config import logger
-from parsers.wildberies import wb_api
-from database.funcs_db import get_data_from_db
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger("google")
 
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -385,4 +385,17 @@ def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, N
 
     return data
 
+
+def get_time_msk() -> datetime:
+    """
+    Получает текущее время в часовом поясе Москвы (UTC+3).
+
+    Функция рассчитывает время в часовом поясе Москвы,
+    добавляя три часа к текущему времени UTC.
+
+    Returns:
+        datetime: Объект datetime с текущим временем в часовом поясе Москвы.
+    """
+    now = datetime.utcnow() + timedelta(hours=3)
+    return now
 

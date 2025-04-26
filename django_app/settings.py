@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from loader import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DEBUG, ALLOWED_HOSTS
-
+from logg_set import LOGGING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +27,10 @@ SECRET_KEY = 'django-insecure-^pi8=2)2!tp-_q*4*nvoq7u#@(exe9s%gr@ur9&xatu-+t#%+e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = DEBUG
 
-ALLOWED_HOSTS = ALLOWED_HOSTS.split(",")
+if not DEBUG:
+    ALLOWED_HOSTS = ALLOWED_HOSTS.split(",")
+else:
+    ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1']
 
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -48,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapp',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -61,6 +65,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'django_app.urls'
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
 
 TEMPLATES = [
     {

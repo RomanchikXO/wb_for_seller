@@ -2,7 +2,9 @@ import requests
 from typing import List
 import time
 from loader import X_Mpstats_TOKEN
-from celery_app.celery_config import logger
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger("mpstat")
 
 headers = {
     'X-Mpstats-TOKEN': X_Mpstats_TOKEN,

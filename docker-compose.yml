@@ -59,7 +59,7 @@ services:
     restart: always
     depends_on:
       - redis
-    command: ["celery", "-A", "celery_app.celery_config", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "django_app.celery_config", "worker", "--loglevel=info", "--pidfile="]
 
   beat:
     build: .
@@ -70,7 +70,7 @@ services:
     restart: always
     depends_on:
       - redis
-    command: ["celery", "-A", "celery_app.celery_config", "beat", "--loglevel=info"]
+    command: ["celery", "-A", "django_app.celery_config", "beat", "--loglevel=info", "--pidfile=", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
 
 volumes:
   pgdata:

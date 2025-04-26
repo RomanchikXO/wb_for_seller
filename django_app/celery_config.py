@@ -1,0 +1,13 @@
+from celery import Celery
+import os
+
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_app.settings')
+
+app = Celery('pearhome')
+app.config_from_object('django.conf:settings', namespace='CELERY')
+app.autodiscover_tasks()
+
+
+# Использование DatabaseScheduler для хранения расписания в базе данных
+app.conf.beat_scheduler = 'django_celery_beat.schedulers:DatabaseScheduler'

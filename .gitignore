@@ -7,3 +7,4 @@ __pycache__/
 # IDEs and tools
 .idea/
 /credentials.json
+/static/

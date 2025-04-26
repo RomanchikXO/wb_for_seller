@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, Groups, User, Price
+from .models import WbLk, Groups, User, Price, CeleryLog
 
 
 class PriceAdmin(admin.ModelAdmin):
@@ -13,6 +13,12 @@ class PriceAdmin(admin.ModelAdmin):
 
     get_lk_name.short_description = 'Личный кабинет'
 
+class CeleryLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'level', 'message')
+    list_filter = ('level', 'timestamp')
+    search_fields = ('message',)
+
+admin.site.register(CeleryLog, CeleryLogAdmin)
 admin.site.register(WbLk)
 admin.site.register(Groups)
 admin.site.register(User)

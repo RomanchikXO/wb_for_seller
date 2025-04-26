@@ -1,6 +1,8 @@
 from database.DataBase import async_connect_to_database
-from celery_app.celery_config import logger
+from celery.utils.log import get_task_logger
 from typing import List, Optional, Dict, Any
+
+logger = get_task_logger("database")
 
 
 async def get_data_from_db(

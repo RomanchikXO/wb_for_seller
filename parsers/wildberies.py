@@ -3,12 +3,15 @@ import random
 import httpx
 from typing import Union
 import time
-from celery_app.celery_config import logger
+from celery.utils.log import get_task_logger
 import aiohttp
 import json
-
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
+
+
+logger = get_task_logger("parsers")
+
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36",
