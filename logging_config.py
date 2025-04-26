@@ -19,7 +19,7 @@ class DBLogHandler(logging.Handler):
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO adverts_celerylog (timestamp, level, message)
+                    INSERT INTO myapp_celerylog (timestamp, level, message)
                     VALUES (%s, %s, %s)
                     """,
                     (current_time, record.levelname, formatted_message)
@@ -28,6 +28,6 @@ class DBLogHandler(logging.Handler):
         except Exception as e:
             print(f"Error saving log to DB: {e}")
         finally:
-            conn.close()  # Закрываем соединение
+            conn.close()
 
 

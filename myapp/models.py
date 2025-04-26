@@ -45,6 +45,7 @@ class Price(models.Model):
     def __str__(self):
         return f"{self.vendorcode} - {self.nmid}"
 
+
 class CeleryLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     level = models.CharField(max_length=50)
