@@ -27,4 +27,4 @@ docker-compose up --build -d
 # при изменениях в django_app/ logg_set.py
 # автоматически на сервере django_app перезапускается
 
-# Удачи
+# Удачи!
