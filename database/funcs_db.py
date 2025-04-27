@@ -118,7 +118,6 @@ async def add_set_data_from_db(
 
         # Выполняем запрос
         await conn.execute(query, *values)
-        logger.info(f"UPSERT в {table_name} прошел успешно")
 
     except Exception as e:
         logger.exception(f"Ошибка при UPSERT в {table_name}: {e}")
