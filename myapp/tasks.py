@@ -23,7 +23,7 @@ def get_prices_and_products():
 
 @shared_task
 def some_task():
-    logger.info("Тестируем. Ща вернет 'test'")
+    logger.info("Тестируем. Ща вернет 'test' или не вернет")
     return "test"
 
 
