@@ -40,6 +40,7 @@ async def set_prices_on_google():
                 prices_parse = parse([nmID], ["promo_price", "price"])
                 if prices_parse[0] and all(prices_parse[0]):
                     discount = round(abs(((prices_parse[0][1] / (prices_parse[0][0] * 0.1)) - 1) * 100))
+                    logger.info(f"Discount is {discount} set.")
 
         if sizes:=result_dict.get(nmID):
             price = int(sizes[0]["price"])
