@@ -32,4 +32,4 @@ def prices_table():
     url_prices = "https://docs.google.com/spreadsheets/d/1EhjutxGw8kHlW1I3jbdgD-UMA5sE20aajMO865RzrlA/edit?gid=1101267699#gid=1101267699"
     logger.info("Обновляем гугл таблицу с ценами конкурентов и доходом")
     process_data(url_prices)
-    logger.info("Таблица обновлена ")
+    logger.info("Гугл таблица с ценами конкурентов и доходом обновлена ")
