@@ -5,7 +5,7 @@ from .models import WbLk, Groups, User, Price, CeleryLog
 class PriceAdmin(admin.ModelAdmin):
     list_display = ('get_lk_name', 'nmid', 'vendorcode', 'updated_at')  # Определяет, какие поля будут отображаться в списке
     search_fields = ('lk__name', 'nmid', 'vendorcode') # Поля для поиска
-    ordering = ('nmid',)  # Сортировка по умолчанию
+    ordering = ('updated_at',)  # Сортировка по умолчанию
     list_filter = ('lk',)  # Фильтр по полю 'lk'
 
     def get_lk_name(self, obj):
