@@ -45,7 +45,8 @@ async def set_prices_on_google():
             if index != 0:
                 prices_parse = parse([nmID], ["promo_price", "price"])
                 if prices_parse[0] and all(prices_parse[0]):
-                    discount = round(abs(((prices_parse[0][1] / (prices_parse[0][0] * 0.1)) - 1) * 100))
+                    discount = str(round(abs(((prices_parse[0][1] / (prices_parse[0][0] * 0.1)) - 1) * 100), 1))
+                    discount = discount.replace('.', ',')
                     logger.info(f"Discount is {discount} set.")
 
         if nm_info:=result_dict.get(nmID):
