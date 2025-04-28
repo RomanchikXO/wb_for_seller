@@ -38,6 +38,7 @@ class Price(models.Model):
     discount = models.IntegerField()
     clubdiscount = models.IntegerField(default=0)
     editablesizeprice = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk

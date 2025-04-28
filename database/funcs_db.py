@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from database.DataBase import async_connect_to_database
 from celery.utils.log import get_task_logger
 from typing import List, Optional, Dict, Any
@@ -95,6 +97,7 @@ async def add_set_data_from_db(
             return
 
     try:
+        data["updated_at"] = datetime.now()
         columns = list(data.keys())
         values = list(data.values())
 
