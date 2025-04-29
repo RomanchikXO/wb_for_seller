@@ -435,35 +435,65 @@ async def get_nmids():
                     param["updatedAt"] = response["cursor"]["updatedAt"]
                     param["nmID"] = response["cursor"]["nmID"]
 
-# async def get_stocks_data_2_weeks():
-#     # cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+async def get_stocks_data_2_weeks():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_stocks_data",
+                "API_KEY": cab["token"],
+                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
+            }
+            response = await wb_api(session, param)
+
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.warning("Ошибка подключения к БД")
+                raise
+            try:
+                for quant in response:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="myapp_stocks",
+                        data=dict(
+                            lk_id=cab["id"],
+                            lastchangedate=parse_datetime(quant["lastChangeDate"]),
+                            supplierarticle=quant["supplierArticle"],
+                            nmid=quant["nmID"],
+                            barcode=quant["barcode"],
+                            quantity=quant["quantity"],
+                            inwaytoclient=quant["inWayToClient"],
+                            inwayfromclient=quant["inWayFromClient"],
+                            quantityfull=quant["quantityFull"],
+                            category=quant["category"],
+                            techsize=quant["techSize"],
+                            issupply=quant["isSupply"],
+                            isrealization=quant["isRealization"],
+                            sccode=quant["SCCode"],
+                            added_db=datetime.now() + timedelta(hours=3)
+
+                        ),
+                        conflict_fields=['nmid', 'lk', 'supplierarticle']
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
+            finally:
+                conn.close()
+
+
+        # param = {
+        #     "type": "orders",
+        #     "API_KEY": "",
+        #     "date_from": "2025-04-15T00:00:00",
+        #     "flag": 0
+        # }
+        # order = 0
+        # response = await wb_api(session, param)
+        # for i in response:
+        #     if i["nmId"] == 219934666 and datetime.fromisoformat("2025-04-29T00:00:00") >= datetime.fromisoformat(i["date"]) >= datetime.fromisoformat("2025-04-15T00:00:00"):
+        #         order +=1
+        # a = order
 #
-#     async with aiohttp.ClientSession() as session:
-#         param = {
-#             "type": "get_stocks_data",
-#             "API_KEY": "",
-#             "dateFrom": "2025-04-28T17:16:00", #вчерашний день с текущим временем
-#         }
-#         quantity = 0
-#         response = await wb_api(session, param)
-#         for i in response:
-#             if i["nmId"] == 219934666:
-#                 quantity += i["quantity"]
-#         a = quantity
 #
-#         param = {
-#             "type": "orders",
-#             "API_KEY": "",
-#             "date_from": "2025-04-15T00:00:00",
-#             "flag": 0
-#         }
-#         order = 0
-#         response = await wb_api(session, param)
-#         for i in response:
-#             if i["nmId"] == 219934666 and datetime.fromisoformat("2025-04-29T00:00:00") >= datetime.fromisoformat(i["date"]) >= datetime.fromisoformat("2025-04-15T00:00:00"):
-#                 order +=1
-#         a = order
-# #
-# #
-# loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stocks_data_2_weeks())
+loop = asyncio.get_event_loop()
+res = loop.run_until_complete(get_stocks_data_2_weeks())
