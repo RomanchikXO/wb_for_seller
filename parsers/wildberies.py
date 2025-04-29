@@ -5,7 +5,6 @@ from typing import Union
 import time
 from celery.utils.log import get_task_logger
 import aiohttp
-import json
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
 from datetime import datetime, timezone, timedelta
@@ -414,7 +413,7 @@ async def get_nmids():
                                 needkiz=resp["needKiz"],
                                 dimensions=json.dumps(resp["dimensions"]),
                                 characteristics=json.dumps(resp["characteristics"]),
-                                size=json.dumps(resp["sizes"]),
+                                sizes=json.dumps(resp["sizes"]),
                                 created_at=parse_datetime(resp["createdAt"]),
                                 updated_at=parse_datetime(resp["updatedAt"]),
                                 added_db=datetime.now(moscow_tz)
