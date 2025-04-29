@@ -388,39 +388,42 @@ async def get_nmids():
             while True:
                 response = await wb_api(session, param)
                 if not response.get("cards"):
-                    logger.error("Ошибка при получении артикулов")
+                    logger.error(f"Ошибка при получении артикулов: {response}")
                     raise
                 conn = await async_connect_to_database()
                 if not conn:
                     logger.warning("Ошибка подключения к БД")
                     raise
                 try:
-                    await add_set_data_from_db(
-                        conn=conn,
-                        table_name="myapp_nmids",
-                        data=dict(
-                            lk_id=cab["id"],
-                            nmid=response["nmID"],
-                            nmuuid=response["nmuuid"],
-                            subjectid=response["subjectid"],
-                            subjectname=response["subjectname"],
-                            vendorcode=response["vendorcode"],
-                            brand=response["brand"],
-                            title=response["title"],
-                            description=response["description"],
-                            needkiz=response["needkiz"],
-                            dimensions=json.dumps(response["dimensions"]),
-                            characteristics=json.dumps(response["characteristics"]),
-                            size=json.dumps(response["sizes"]),
-                            creates_at=parse_datetime(response["creates_at"]),
-                            updates_at=parse_datetime(response["updates_at"]),
-                            added_db=datetime.now(moscow_tz)
-                        ),
-                        conflict_fields=["nmid", "lk_id"]
-                    )
+                    for resp in response["cards"]:
+                        await add_set_data_from_db(
+                            conn=conn,
+                            table_name="myapp_nmids",
+                            data=dict(
+                                lk_id=cab["id"],
+                                nmid=resp["nmID"],
+                                nmuuid=resp["nmuuid"],
+                                subjectid=resp["subjectid"],
+                                subjectname=resp["subjectname"],
+                                vendorcode=resp["vendorcode"],
+                                brand=resp["brand"],
+                                title=resp["title"],
+                                description=resp["description"],
+                                needkiz=resp["needkiz"],
+                                dimensions=json.dumps(resp["dimensions"]),
+                                characteristics=json.dumps(resp["characteristics"]),
+                                size=json.dumps(resp["sizes"]),
+                                creates_at=parse_datetime(resp["creates_at"]),
+                                updates_at=parse_datetime(resp["updates_at"]),
+                                added_db=datetime.now(moscow_tz)
+                            ),
+                            conflict_fields=["nmid", "lk_id"]
+                        )
                 except Exception as e:
-                    logger.error("Ошибка при добавлении артикулов в бд")
+                    logger.error(f"Ошибка при добавлении артикулов в бд {e}")
                     raise
+                finally:
+                    conn.close()
 
 
                 if response["cursor"]["total"] < 100:
