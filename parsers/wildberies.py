@@ -460,7 +460,7 @@ async def get_stocks_data_2_weeks():
                             lastchangedate=parse_datetime(quant["lastChangeDate"]),
                             supplierarticle=quant["supplierArticle"],
                             nmid=quant["nmId"],
-                            barcode=quant["barcode"],
+                            barcode=int(quant["barcode"]),
                             quantity=quant["quantity"],
                             inwaytoclient=quant["inWayToClient"],
                             inwayfromclient=quant["inWayFromClient"],
