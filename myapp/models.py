@@ -78,22 +78,28 @@ class nmids(models.Model):
         return f"{self.nmid} – {self.title} ({self.brand})"
 
 
-# class Stocks(models.Model):
-#     lastChangeDate = models.DateTimeField()
-#     warehouseName = models.CharField(max_length=255, default=0)
-#     supplierArticle = models.CharField(max_length=255, default=0)
-#     nmid = models.IntegerField(default=0)
-#     barcode = models.IntegerField(default=0)
-#     quantity = models.IntegerField(default=0)
-#     inWayToClient = models.IntegerField(default=0)
-#     quantityFull = models.IntegerField(default=0)
-#     category = models.CharField(max_length=255, null=True)
-#     subject = models.CharField(max_length=255, null=True)
-#     brand = models.CharField(max_length=255, null=True)
-#     techSize = models.CharField(max_length=255, null=True)
-#     isSupply = models.BooleanField(default=False)
-#     isRealization = models.BooleanField(default=False)
-#     sccode = models.CharField(max_length=255, null=True)
+class Stocks(models.Model):
+    lastchangedate = models.DateTimeField() #Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)
+    warehousename = models.CharField(max_length=255) #Название склада
+    supplierarticle = models.CharField(max_length=255) #Артикул продавца
+    nmid = models.IntegerField() #Артикул
+    barcode = models.IntegerField() #Баркод
+    quantity = models.IntegerField() #Количество, доступное для продажи (сколько можно добавить в корзину)
+    inwaytoclient = models.IntegerField() #В пути к клиенту
+    inwayfromclient = models.IntegerField() #В пути от клиента
+    quantityfull = models.IntegerField(default=0) #Полное (непроданное) количество, которое числится за складом (= quantity + в пути)
+    category = models.CharField(max_length=255, null=True) #Категория
+    techsize = models.CharField(max_length=255, null=True) #Размер
+    issupply = models.BooleanField(default=False) #Договор поставки (внутренние технологические данные)
+    isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
+    sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
+
+    class Meta:
+        unique_together = ['nmid', 'lk', 'supplierarticle']
+        verbose_name_plural = "Отстаки товаров на складах"
+
+    def __str__(self):
+        return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
 
 class CeleryLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
