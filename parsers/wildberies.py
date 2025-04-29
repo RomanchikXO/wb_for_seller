@@ -8,10 +8,11 @@ import aiohttp
 import json
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
-
+from datetime import datetime, timezone, timedelta
+from django.utils.dateparse import parse_datetime
 
 logger = get_task_logger("parsers")
-
+moscow_tz = timezone(timedelta(hours=3))
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36",
@@ -160,10 +161,12 @@ async def wb_api(session, param):
         view = "get"
 
     if param["type"] == "orders":
+        # Максимум 1 запрос в минуту на один аккаунт продавца
         API_URL = "https://statistics-api.wildberries.ru/api/v1/supplier/orders"
         params = {
-            "dateFrom": param["date_from"],
-            "flag": param["flag"]
+            "dateFrom": param["date_from"], #Дата и время последнего изменения по заказу. `2019-06-20` `2019-06-20T23:59:59`
+            "flag": param["flag"],  #если flag=1 то только за выбранный день если 0 то
+            # со дня до сегодня но не более 100000 строк
         }
         view = "get"
 
@@ -202,6 +205,7 @@ async def wb_api(session, param):
 
     if param["type"] == "get_nmids":
         # получить все артикулы
+        # Максимум 100 запросов в минуту для всех методов категории Контент на один аккаунт продавца
         API_URL = "https://content-api.wildberries.ru/content/v2/get/cards/list"
 
         data = {
@@ -214,6 +218,10 @@ async def wb_api(session, param):
                 },
             }
         }
+        if param.get("updatedAt"):
+            data["settings"]["cursor"]["updatedAt"] = param["updatedAt"]
+        if param.get("nmID"):
+            data["settings"]["cursor"]["nmID"] = param["nmID"]
         view = "post"
 
     if param["type"] == "get_products_and_prices":
@@ -230,12 +238,12 @@ async def wb_api(session, param):
         API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/nm-report/detail"
         data = {
             "period": {
-                "begin": param['begin'],
-                "end": param['end'],
+                "begin": param["begin"],
+                "end": param["end"],
             },
             "page": 1
         }
-        view = 'post'
+        view = "post"
 
     if param["type"] == "get_feedback":
         # Максимум 1 запрос в секунду
@@ -256,6 +264,35 @@ async def wb_api(session, param):
         if param.get("dateTo"):  # int: Дата конца периода в формате Unix timestamp
             params["dateTo"] = param["dateTo"]
         view = "get"
+
+    if param["type"] == "warehouse_data":
+        # Максимум 3 запроса в минуту на один аккаунт продавца
+        # Метод формирует набор данных об остатках по складам.
+        # Данные по складам Маркетплейс (FBS) приходят в агрегированном виде — по всем сразу, без детализации по
+        # конкретным складам — эти записи будут с "regionName":"Маркетплейс" и "offices":[].
+        API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/offices"
+
+        data = {
+            "currentPeriod": {
+                "start": param["start"], #"2024-02-10" Не позднее end. Не ранее 3 месяцев от текущей даты
+                "end": param["end"], #Дата окончания периода. Не ранее 3 месяцев от текущей даты
+            },
+            "stockType": "" if not param.get("stockType") else param["stockType"], #"" — все wb—Склады WB mp—Склады Маркетплейс (FBS)
+            "skipDeletedNm": True if not param.get("skipDeletedNm") else param["skipDeletedNm"], #Скрыть удалённые товары
+        }
+
+        view = 'post'
+
+    if param["type"] == "get_stocks_data":
+        # Метод предоставляет количество остатков товаров на складах WB.
+        # Данные обновляются раз в 30 минут.
+        # Максимум 1 запрос в минуту на один аккаунт продавца
+
+        params = {"dateFrom": param["dateFrom"]} #"2019-06-20"  Время передаётся в часовом поясе Мск (UTC+3).
+        API_URL = "https://statistics-api.wildberries.ru/api/v1/supplier/stocks"
+
+        view = "get"
+
 
     headers = {
         "Authorization": f"Bearer {param['API_KEY']}"  # Или просто API_KEY, если нужно
@@ -337,5 +374,90 @@ async def get_products_and_prices():
         finally:
             await conn.close()
 
+
+async def get_nmids():
+    # получаем все карточки товаров
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_nmids",
+                "API_KEY": cab["token"],
+            }
+            while True:
+                response = await wb_api(session, param)
+                if not response.get("cards"):
+                    logger.error("Ошибка при получении артикулов")
+                    raise
+                conn = await async_connect_to_database()
+                if not conn:
+                    logger.warning("Ошибка подключения к БД")
+                    raise
+                try:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="myapp_nmids",
+                        data=dict(
+                            lk_id=cab["id"],
+                            nmid=response["nmID"],
+                            nmuuid=response["nmuuid"],
+                            subjectid=response["subjectid"],
+                            subjectname=response["subjectname"],
+                            vendorcode=response["vendorcode"],
+                            brand=response["brand"],
+                            title=response["title"],
+                            description=response["description"],
+                            needkiz=response["needkiz"],
+                            dimensions=json.dumps(response["dimensions"]),
+                            characteristics=json.dumps(response["characteristics"]),
+                            size=json.dumps(response["sizes"]),
+                            creates_at=parse_datetime(response["creates_at"]),
+                            updates_at=parse_datetime(response["updates_at"]),
+                            added_db=datetime.now(moscow_tz)
+                        ),
+                        conflict_fields=["nmid", "lk_id"]
+                    )
+                except Exception as e:
+                    logger.error("Ошибка при добавлении артикулов в бд")
+                    raise
+
+
+                if response["cursor"]["total"] < 100:
+                    break
+                else:
+                    param["updatedAt"] = response["cursor"]["updatedAt"]
+                    param["nmID"] = response["cursor"]["nmID"]
+
+# async def get_stocks_data():
+#     # cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+#
+#     async with aiohttp.ClientSession() as session:
+#         param = {
+#             "type": "get_stocks_data",
+#             "API_KEY": "",
+#             "dateFrom": "2025-04-28T17:16:00", #вчерашний день с текущим временем
+#         }
+#         quantity = 0
+#         response = await wb_api(session, param)
+#         for i in response:
+#             if i["nmId"] == 219934666:
+#                 quantity += i["quantity"]
+#         a = res
+#
+#         param = {
+#             "type": "orders",
+#             "API_KEY": "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMTE4djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc0OTE1NjE0NCwiaWQiOiIwMTkzOTVmYy0wZGFhLTdiOGUtYTk5MC0zMDc3ZjIwNzliZWQiLCJpaWQiOjE0ODU3Mzg5Nywib2lkIjo0MDY3NjgwLCJzIjozODM4LCJzaWQiOiI2Y2UwYjFiMy1jOGU0LTRjYzYtYThjYS01MmRmNTQ4ZTk5MjUiLCJ0IjpmYWxzZSwidWlkIjoxNDg1NzM4OTd9.DrVmBZGRyBGwpCaCrspxkX1aokpo09gmLmj1IUIiqR4MutSLxzPU5gxjeKvdktLzzDkptodtvvSBm7Ga4j5ZHw",
+#             "date_from": "2025-04-15T00:00:00",
+#             "flag": 0
+#         }
+#         order = 0
+#         response = await wb_api(session, param)
+#         for i in response:
+#             if i["nmId"] == 219934666 and datetime.fromisoformat("2025-04-29T00:00:00") >= datetime.fromisoformat(i["date"]) >= datetime.fromisoformat("2025-04-15T00:00:00"):
+#                 order +=1
+#         a = order
+#
+#
 # loop = asyncio.get_event_loop()
-# loop.run_until_complete(get_products_and_prices())
+# res = loop.run_until_complete(get_nmids())

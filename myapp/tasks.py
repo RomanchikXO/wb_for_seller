@@ -1,6 +1,8 @@
 from celery import shared_task
 from celery.utils.log import get_task_logger
 import asyncio
+
+from parsers.wildberies import get_nmids
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices
 from tasks.google_wb_prices import process_data
 
@@ -33,3 +35,10 @@ def prices_table():
     logger.info("Обновляем гугл таблицу с ценами конкурентов и доходом")
     process_data(url_prices)
     logger.info("Гугл таблица с ценами конкурентов и доходом обновлена ")
+
+
+@shared_task
+def get_nmids_to_db():
+    logger.info("Обновляем таблицу со всеми артикулами")
+    asyncio.run(get_nmids())
+    logger.info("Таблица со всеми артикулами обновлена")
