@@ -426,7 +426,7 @@ async def get_nmids():
                     logger.error(f"Ошибка при добавлении артикулов в бд {e}")
                     raise
                 finally:
-                    conn.close()
+                    await conn.close()
 
 
                 if response["cursor"]["total"] < 100:
@@ -478,7 +478,7 @@ async def get_stocks_data_2_weeks():
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
             finally:
-                conn.close()
+                await conn.close()
 
 
         # param = {
