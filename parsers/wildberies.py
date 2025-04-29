@@ -495,5 +495,5 @@ async def get_stocks_data_2_weeks():
         # a = order
 #
 #
-loop = asyncio.get_event_loop()
-res = loop.run_until_complete(get_stocks_data_2_weeks())
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(get_stocks_data_2_weeks())
