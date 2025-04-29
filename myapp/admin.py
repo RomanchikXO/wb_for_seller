@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, Groups, User, Price, CeleryLog
+from .models import WbLk, Groups, User, Price, CeleryLog, nmids
 
 
 class PriceAdmin(admin.ModelAdmin):
@@ -18,6 +18,18 @@ class CeleryLogAdmin(admin.ModelAdmin):
     list_filter = ('level', 'timestamp')
     search_fields = ('message',)
 
+class NmidsAdmin(admin.ModelAdmin):
+    list_display = (
+        'nmid', 'title', 'brand', 'vendorcode', 'subjectname', 'needkiz',
+        'lk', 'created_at', 'updated_at', 'added_db'
+    )
+    list_filter = ('brand', 'subjectname', 'needkiz', 'lk')
+    search_fields = ('nmid', 'vendorcode', 'title', 'brand', 'nmuuid')
+    ordering = ('-added_db',)
+    date_hierarchy = 'added_db'
+
+
+admin.site.register(nmids, NmidsAdmin)
 admin.site.register(CeleryLog, CeleryLogAdmin)
 admin.site.register(WbLk)
 admin.site.register(Groups)
