@@ -97,7 +97,8 @@ async def add_set_data_from_db(
             return
 
     try:
-        data["updated_at"] = datetime.now()
+        if not data.get("updated_at"):
+            data["updated_at"] = datetime.now()
         columns = list(data.keys())
         values = list(data.values())
 

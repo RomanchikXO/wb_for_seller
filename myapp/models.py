@@ -94,6 +94,7 @@ class Stocks(models.Model):
     isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
     sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
     added_db = models.DateTimeField(auto_now_add=True, null=True)  # по МСК
+    updated_at = models.DateTimeField(auto_now_add=True, null=True) # по сути то же что и выше но в UTC
 
     class Meta:
         unique_together = ['nmid', 'lk', 'supplierarticle']

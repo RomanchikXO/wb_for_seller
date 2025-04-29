@@ -473,7 +473,7 @@ async def get_stocks_data_2_weeks():
                             added_db=datetime.now() + timedelta(hours=3)
 
                         ),
-                        conflict_fields=['nmid', 'lk', 'supplierarticle']
+                        conflict_fields=['nmid', 'lk_id', 'supplierarticle']
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
