@@ -30,12 +30,12 @@ class NmidsAdmin(admin.ModelAdmin):
 
 class StocksAdmin(admin.ModelAdmin):
     list_display = (
-        'supplierarticle', 'techsize', 'nmid', 'barcode',
+        'supplierarticle', 'nmid', 'barcode',
         'quantity', 'inwaytoclient', 'inwayfromclient',
         'quantityfull', 'warehousename', 'lastchangedate',
         'issupply', 'isrealization',
     )
-    list_filter = ('warehousename', 'techsize', 'issupply', 'isrealization')
+    list_filter = ('warehousename', 'issupply', 'isrealization')
     search_fields = ('supplierarticle', 'barcode', 'nmid')
     ordering = ('-lastchangedate',)
 

@@ -458,6 +458,7 @@ async def get_stocks_data_2_weeks():
                         data=dict(
                             lk_id=cab["id"],
                             lastchangedate=parse_datetime(quant["lastChangeDate"]),
+                            warehousename=quant["warehouseName"],
                             supplierarticle=quant["supplierArticle"],
                             nmid=quant["nmId"],
                             barcode=int(quant["barcode"]) if quant.get("barcode") else None,
