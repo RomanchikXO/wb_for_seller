@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.db import models
 import json
 
@@ -94,7 +96,7 @@ class Stocks(models.Model):
     issupply = models.BooleanField(default=False) #Договор поставки (внутренние технологические данные)
     isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
     sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
-    added_db = models.DateTimeField()  # по МСК
+    added_db = models.DateTimeField(auto_now_add=True, default=datetime.now() + timedelta(hours=3))  # по МСК
 
     class Meta:
         unique_together = ['nmid', 'lk', 'supplierarticle']
