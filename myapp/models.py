@@ -67,7 +67,7 @@ class nmids(models.Model):
     sizes = models.JSONField() # Размеры товара
     created_at = models.DateTimeField() # Дата создания карточки товара (по данным WB)
     updated_at = models.DateTimeField() # Дата изменения карточки товара (по данным WB)
-    added_db = models.DateTimeField(auto_now_add=True) # по UTC
+    added_db = models.DateTimeField(auto_now_add=True) # по МСК
 
     class Meta:
         unique_together = ['nmid', 'lk']
@@ -94,6 +94,7 @@ class Stocks(models.Model):
     issupply = models.BooleanField(default=False) #Договор поставки (внутренние технологические данные)
     isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
     sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
+    added_db = models.DateTimeField(auto_now_add=True)  # по МСК
 
     class Meta:
         unique_together = ['nmid', 'lk', 'supplierarticle']
