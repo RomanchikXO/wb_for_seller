@@ -7,13 +7,13 @@ from celery.utils.log import get_task_logger
 import aiohttp
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils.dateparse import parse_datetime
 import json
-from zoneinfo import ZoneInfo
+
 
 logger = get_task_logger("parsers")
-moscow_time = datetime.now(ZoneInfo("Europe/Moscow"))
+
 
 
 headers = {
@@ -418,7 +418,7 @@ async def get_nmids():
                                 sizes=json.dumps(resp["sizes"]),
                                 created_at=parse_datetime(resp["createdAt"]),
                                 updated_at=parse_datetime(resp["updatedAt"]),
-                                added_db=moscow_time
+                                added_db=datetime.now() + timedelta(hours=3)
                             ),
                             conflict_fields=["nmid", "lk_id"]
                         )
