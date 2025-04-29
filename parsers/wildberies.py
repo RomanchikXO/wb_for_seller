@@ -10,6 +10,7 @@ from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
 from datetime import datetime, timezone, timedelta
 from django.utils.dateparse import parse_datetime
+import json
 
 logger = get_task_logger("parsers")
 moscow_tz = timezone(timedelta(hours=3))
@@ -402,19 +403,20 @@ async def get_nmids():
                             data=dict(
                                 lk_id=cab["id"],
                                 nmid=resp["nmID"],
-                                nmuuid=resp["nmuuid"],
-                                subjectid=resp["subjectid"],
-                                subjectname=resp["subjectname"],
-                                vendorcode=resp["vendorcode"],
+                                imtid=resp["imtID"],
+                                nmuuid=resp["nmUUID"],
+                                subjectid=resp["subjectID"],
+                                subjectname=resp["subjectName"],
+                                vendorcode=resp["vendorCode"],
                                 brand=resp["brand"],
                                 title=resp["title"],
                                 description=resp["description"],
-                                needkiz=resp["needkiz"],
+                                needkiz=resp["needKiz"],
                                 dimensions=json.dumps(resp["dimensions"]),
                                 characteristics=json.dumps(resp["characteristics"]),
                                 size=json.dumps(resp["sizes"]),
-                                creates_at=parse_datetime(resp["creates_at"]),
-                                updates_at=parse_datetime(resp["updates_at"]),
+                                created_at=parse_datetime(resp["createdAt"]),
+                                updated_at=parse_datetime(resp["updatedAt"]),
                                 added_db=datetime.now(moscow_tz)
                             ),
                             conflict_fields=["nmid", "lk_id"]
