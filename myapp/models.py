@@ -83,7 +83,7 @@ class Stocks(models.Model):
     warehousename = models.CharField(max_length=255, null=True) #Название склада
     supplierarticle = models.CharField(max_length=255) #Артикул продавца
     nmid = models.IntegerField() #Артикул
-    barcode = models.BigIntegerField() #Баркод
+    barcode = models.BigIntegerField(null=True) #Баркод
     quantity = models.IntegerField() #Количество, доступное для продажи (сколько можно добавить в корзину)
     inwaytoclient = models.IntegerField() #В пути к клиенту
     inwayfromclient = models.IntegerField() #В пути от клиента
