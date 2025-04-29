@@ -17,6 +17,9 @@ class WbLk(models.Model):
     name = models.CharField(max_length=255)
     token = models.CharField(max_length=400)
 
+    class Meta:
+        verbose_name = "Личный кабинет"
+        verbose_name_plural = "Личные кабинеты"
     def __str__(self):
         return self.name
 
