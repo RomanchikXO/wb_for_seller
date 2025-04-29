@@ -7,12 +7,14 @@ from celery.utils.log import get_task_logger
 import aiohttp
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from django.utils.dateparse import parse_datetime
 import json
+from zoneinfo import ZoneInfo
 
 logger = get_task_logger("parsers")
-moscow_tz = timezone(timedelta(hours=3))
+moscow_time = datetime.now(ZoneInfo("Europe/Moscow"))
+
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36",
@@ -416,7 +418,7 @@ async def get_nmids():
                                 sizes=json.dumps(resp["sizes"]),
                                 created_at=parse_datetime(resp["createdAt"]),
                                 updated_at=parse_datetime(resp["updatedAt"]),
-                                added_db=datetime.now(moscow_tz)
+                                added_db=moscow_time
                             ),
                             conflict_fields=["nmid", "lk_id"]
                         )
@@ -433,7 +435,7 @@ async def get_nmids():
                     param["updatedAt"] = response["cursor"]["updatedAt"]
                     param["nmID"] = response["cursor"]["nmID"]
 
-# async def get_stocks_data():
+# async def get_stocks_data_2_weeks():
 #     # cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 #
 #     async with aiohttp.ClientSession() as session:
@@ -447,11 +449,11 @@ async def get_nmids():
 #         for i in response:
 #             if i["nmId"] == 219934666:
 #                 quantity += i["quantity"]
-#         a = res
+#         a = quantity
 #
 #         param = {
 #             "type": "orders",
-#             "API_KEY": "eyJhbGciOiJFUzI1NiIsImtpZCI6IjIwMjQxMTE4djEiLCJ0eXAiOiJKV1QifQ.eyJlbnQiOjEsImV4cCI6MTc0OTE1NjE0NCwiaWQiOiIwMTkzOTVmYy0wZGFhLTdiOGUtYTk5MC0zMDc3ZjIwNzliZWQiLCJpaWQiOjE0ODU3Mzg5Nywib2lkIjo0MDY3NjgwLCJzIjozODM4LCJzaWQiOiI2Y2UwYjFiMy1jOGU0LTRjYzYtYThjYS01MmRmNTQ4ZTk5MjUiLCJ0IjpmYWxzZSwidWlkIjoxNDg1NzM4OTd9.DrVmBZGRyBGwpCaCrspxkX1aokpo09gmLmj1IUIiqR4MutSLxzPU5gxjeKvdktLzzDkptodtvvSBm7Ga4j5ZHw",
+#             "API_KEY": "",
 #             "date_from": "2025-04-15T00:00:00",
 #             "flag": 0
 #         }
@@ -461,7 +463,7 @@ async def get_nmids():
 #             if i["nmId"] == 219934666 and datetime.fromisoformat("2025-04-29T00:00:00") >= datetime.fromisoformat(i["date"]) >= datetime.fromisoformat("2025-04-15T00:00:00"):
 #                 order +=1
 #         a = order
-#
-#
+# #
+# #
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_nmids())
+# res = loop.run_until_complete(get_stocks_data_2_weeks())
