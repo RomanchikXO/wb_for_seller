@@ -80,7 +80,7 @@ class nmids(models.Model):
 class Stocks(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
     lastchangedate = models.DateTimeField() #Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)
-    warehousename = models.CharField(max_length=255) #Название склада
+    warehousename = models.CharField(max_length=255, null=True) #Название склада
     supplierarticle = models.CharField(max_length=255) #Артикул продавца
     nmid = models.IntegerField() #Артикул
     barcode = models.BigIntegerField() #Баркод
