@@ -539,7 +539,7 @@ async def get_orders():
             except Exception as e:
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
-                conn.close()
+                await conn.close()
 
 
 
