@@ -517,7 +517,7 @@ async def get_orders():
                             nmid=order["nmId"],
                             barcode=int(order["barcode"]) if order.get("barcode") else None,
                             category=order["category"],
-                            subject=order["subjectName"],
+                            subject=order["subject"],
                             brand=order["brand"],
                             techsize=order["techSize"],
                             incomeid=order["incomeID"],
