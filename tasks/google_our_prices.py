@@ -84,14 +84,17 @@ async def get_black_price_spp():
         await conn.close()
 
     response = get_full_mpstat(list(result.keys()))
-
-    updates = {
-        result[nmid]: {
-            "blackprice": data["price"]["final_price"],
-            "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
+    try:
+        updates = {
+            result[nmid]: {
+                "blackprice": data["price"]["final_price"],
+                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
+            }
+            for nmid, data in response
         }
-        for nmid, data in response
-    }
+    except Exception as e:
+        logger.error(f"Ошибка: {e}. Response: {response}")
+        return
     values = [(id_, data["blackprice"], data["spp"]) for id_, data in updates.items()]
 
     conn = await async_connect_to_database()
