@@ -19,7 +19,7 @@ async def get_orders_in_db() -> dict:
     try:
         request = (f"SELECT supplierarticle, COUNT(*) AS total "
                    f"FROM myapp_orders "
-                   f"WHERE date >= {date_from} AND date < {date_to} "
+                   f"WHERE date >= '{date_from}' AND date < '{date_to}' "
                    f"AND EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.id = myapp_orders.lk_id AND myapp_wblk.groups_id = 1)"
                    f"GROUP BY supplierarticle")
         all_fields = await conn.fetch(request)
