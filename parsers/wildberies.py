@@ -164,6 +164,7 @@ async def wb_api(session, param):
 
     if param["type"] == "orders":
         # Максимум 1 запрос в минуту на один аккаунт продавца
+        # Данные обновляются раз в 30 минут.
         API_URL = "https://statistics-api.wildberries.ru/api/v1/supplier/orders"
         params = {
             "dateFrom": param["date_from"], #Дата и время последнего изменения по заказу. `2019-06-20` `2019-06-20T23:59:59`
@@ -482,19 +483,70 @@ async def get_stocks_data_2_weeks():
                 await conn.close()
 
 
-        # param = {
-        #     "type": "orders",
-        #     "API_KEY": "",
-        #     "date_from": "2025-04-15T00:00:00",
-        #     "flag": 0
-        # }
-        # order = 0
-        # response = await wb_api(session, param)
-        # for i in response:
-        #     if i["nmId"] == 219934666 and datetime.fromisoformat("2025-04-29T00:00:00") >= datetime.fromisoformat(i["date"]) >= datetime.fromisoformat("2025-04-15T00:00:00"):
-        #         order +=1
-        # a = order
-#
-#
+async def get_orders():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=14)).replace(hour=0, minute=0, second=0, microsecond=0)
+            param = {
+                "type": "orders",
+                "API_KEY": cab["token"],
+                "date_from": str(date_from),
+                "flag": 0
+            }
+            response = await wb_api(session, param)
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.warning("Ошибка подключения к БД")
+                raise
+            try:
+                for order in response:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="myapp_orders",
+                        data=dict(
+                            lk_id=cab["id"],
+                            date=parse_datetime(order["date"]),
+                            lastchangedate=parse_datetime(order["lastChangeDate"]),
+                            warehousename=order["warehouseName"],
+                            warehousetype=order["warehouseType"],
+                            countryname=order["countryName"],
+                            oblastokrugname=order["oblastOkrugName"],
+                            regionname=order["regionName"],
+                            supplierarticle=order["supplierArticle"],
+                            nmid=order["nmId"],
+                            barcode=int(order["barcode"]) if order.get("barcode") else None,
+                            category=order["category"],
+                            subject=order["subjectName"],
+                            brand=order["brand"],
+                            techsize=order["techSize"],
+                            incomeid=order["incomeID"],
+                            issupply=order["isSupply"],
+                            isrealization=order["isRealization"],
+                            totalprice=order["totalPrice"],
+                            discountpercent=order["discountPercent"],
+                            spp=order["spp"],
+                            finishedprice=float(order["finishedPrice"]),
+                            pricewithdisc=float(order["priceWithDisc"]),
+                            iscancel=order["isCancel"],
+                            canceldate=parse_datetime(order["cancelDate"]),
+                            sticker=order["sticker"],
+                            gnumber=order["gNumber"],
+                            srid=order["srid"],
+                        ),
+                        conflict_fields=['nmid', 'lk_id', 'gnumber']
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
+            finally:
+                conn.close()
+
+
+
+
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stocks_data_2_weeks())
+# res = loop.run_until_complete(get_orders())
+
+# if i["nmId"] == 219936476 and datetime.fromisoformat("2025-04-30T00:00:00") > datetime.fromisoformat(
+#         i["date"]) >= datetime.fromisoformat("2025-04-16T00:00:00"):
+#     order += 1

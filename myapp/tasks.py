@@ -2,7 +2,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 import asyncio
 
-from parsers.wildberies import get_nmids, get_stocks_data_2_weeks
+from parsers.wildberies import get_nmids, get_stocks_data_2_weeks, get_orders
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices
 from tasks.google_wb_prices import process_data
 
@@ -39,13 +39,20 @@ def prices_table():
 
 @shared_task
 def get_nmids_to_db():
-    logger.info("Обновляем таблицу со всеми артикулами")
+    logger.info("Обновляем таблицу со всеми артикулами в бд")
     asyncio.run(get_nmids())
     logger.info("Таблица со всеми артикулами обновлена")
 
 
 @shared_task
 def get_stocks_to_db():
-    logger.info("Обновляем таблицу с остатками товаров на складах")
+    logger.info("Обновляем таблицу с остатками товаров на складах в бд")
     asyncio.run(get_stocks_data_2_weeks())
     logger.info("Таблица с остатками товаров на складах обновлена")
+
+
+@shared_task
+def get_orders_to_db():
+    logger.info("Обновляем таблицу с заказами в бд")
+    asyncio.run(get_orders())
+    logger.info("Таблица с заказами в бд обновлена")
