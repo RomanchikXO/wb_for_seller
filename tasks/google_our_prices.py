@@ -57,6 +57,8 @@ async def set_prices_on_google():
             google_data[index][10] = "0"
             google_data[index][11] = "0%"
 
+    logger.info(google_data)
+    return
     update_google_prices_data_with_format(
         url, int(url.split("=")[-1]), 0, 0, google_data
     )
