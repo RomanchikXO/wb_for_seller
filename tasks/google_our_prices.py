@@ -90,7 +90,7 @@ async def get_black_price_spp():
                 "blackprice": data["price"]["final_price"],
                 "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
             }
-            for nmid, data in response
+            for nmid, data in response.items()
         }
     except Exception as e:
         logger.error(f"Ошибка: {e}. Response: {response}")
