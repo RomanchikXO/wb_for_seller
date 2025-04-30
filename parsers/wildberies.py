@@ -443,7 +443,7 @@ async def get_stocks_data_2_weeks():
             param = {
                 "type": "get_stocks_data",
                 "API_KEY": cab["token"],
-                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
+                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=14)), #вчерашний день с текущим временем
             }
             response = await wb_api(session, param)
 
@@ -475,7 +475,7 @@ async def get_stocks_data_2_weeks():
                             added_db=datetime.now() + timedelta(hours=3)
 
                         ),
-                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
+                        conflict_fields=['nmid', 'lk_id', 'barcode']
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
