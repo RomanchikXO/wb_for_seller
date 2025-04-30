@@ -305,7 +305,7 @@ def update_google_prices_data_with_format(
                         })
                     else:
                         numberValue = cleare_num(cell)
-                        if numberValue:
+                        if numberValue or numberValue == 0:
                             row_data["values"].append({
                                 "userEnteredValue": {"numberValue": numberValue},
                             })
