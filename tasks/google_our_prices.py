@@ -44,7 +44,7 @@ async def set_prices_on_google():
 
 
     for index, _string in enumerate(google_data):
-        nmID = int(_string[2])
+        nmID = int(_string[2]) if not index == 0 else _string[2]
 
         if nm_info:=result_dict.get(nmID):
             price = int(nm_info["sizes"][0]["price"])
