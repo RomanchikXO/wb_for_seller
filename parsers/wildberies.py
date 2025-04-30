@@ -438,12 +438,13 @@ async def get_nmids():
 
 async def get_stocks_data_2_weeks():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
             param = {
                 "type": "get_stocks_data",
                 "API_KEY": cab["token"],
-                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=60)), #вчерашний день с текущим временем
+                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=1)), #вчерашний день с текущим временем
             }
             response = await wb_api(session, param)
 
@@ -475,7 +476,7 @@ async def get_stocks_data_2_weeks():
                             added_db=datetime.now() + timedelta(hours=3)
 
                         ),
-                        conflict_fields=['nmid', 'lk_id', 'barcode', 'warehousename']
+                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
@@ -540,3 +541,7 @@ async def get_orders():
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
                 await conn.close()
+
+
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(get_stocks_data_2_weeks())

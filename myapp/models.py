@@ -99,7 +99,7 @@ class Stocks(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True, null=True) # по сути то же что и выше но в UTC
 
     class Meta:
-        unique_together = ['nmid', 'lk', 'barcode', 'warehousename']
+        unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
         verbose_name_plural = "Отстаки товаров на складах"
 
     def __str__(self):
