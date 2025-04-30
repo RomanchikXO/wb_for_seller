@@ -70,11 +70,11 @@ async def get_black_price_spp():
         logger.warning(f"Ошибка подключения к БД в fetch_data__get_adv_id")
         return
 
-
+    result = {}
     try:
         request = ("SELECT nmids.nmid, nmids.id, nmids.discount "
                     "FROM myapp_nmids AS nmids "
-                    "join myapp_wblk AS wblk"
+                    "join myapp_wblk AS wblk "
                     "ON wblk.id = nmids.lk_id AND wblk.groups_id = 1")
         all_fields = await conn.fetch(request)
         result = {row["nmid"]: {"id": row["id"], "discount": row["discount"]} for row in all_fields}
