@@ -136,7 +136,7 @@ class Orders(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True, null=True)  # время обновления в бд в UTC
 
     class Meta:
-        unique_together = ['nmid', 'lk', 'gnumber']
+        unique_together = ['nmid', 'lk', 'srid']
         verbose_name = "Заказ WB"
         verbose_name_plural = "Заказы WB"
 

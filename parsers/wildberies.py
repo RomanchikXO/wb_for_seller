@@ -534,7 +534,7 @@ async def get_orders():
                             gnumber=order["gNumber"],
                             srid=order["srid"],
                         ),
-                        conflict_fields=['nmid', 'lk_id', 'gnumber']
+                        conflict_fields=['nmid', 'lk_id', 'srid']
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
