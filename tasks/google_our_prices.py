@@ -35,18 +35,16 @@ async def set_prices_on_google():
         }
         for item in data
     }
-    logger.info(result_dict)
 
     google_data = fetch_google_sheet_data(
         spreadsheet_url=url,
         sheet_identifier=9,
 
     )
-    logger.info(google_data)
-    return
+
 
     for index, _string in enumerate(google_data):
-        nmID = _string[2]
+        nmID = int(_string[2])
 
         if nm_info:=result_dict.get(nmID):
             price = int(nm_info["sizes"][0]["price"])
