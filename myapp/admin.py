@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, Groups, User, Price, CeleryLog, nmids, Stocks
+from .models import WbLk, Groups, User, Price, CeleryLog, nmids, Stocks, Orders
 
 
 class PriceAdmin(admin.ModelAdmin):
@@ -33,13 +33,24 @@ class StocksAdmin(admin.ModelAdmin):
         'supplierarticle', 'nmid', 'barcode',
         'quantity', 'inwaytoclient', 'inwayfromclient',
         'quantityfull', 'warehousename', 'lastchangedate',
-        'issupply', 'isrealization',
+        'isrealization',
     )
     list_filter = ('warehousename', 'issupply', 'isrealization')
     search_fields = ('supplierarticle', 'barcode', 'nmid')
     ordering = ('-lastchangedate',)
 
+class OrdersAdmin(admin.ModelAdmin):
+    list_display = (
+        'date', 'lastchangedate', 'supplierarticle',
+        'nmid', 'barcode', 'warehousename', 'countryname',
+        'brand', 'totalprice', 'finishedprice', 'iscancel'
+    )
+    list_filter = ('iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
+    search_fields = ('supplierarticle', 'nmid', 'barcode', 'gnumber', 'srid')
+    ordering = ('-date',)
 
+
+admin.site.register(Orders, OrdersAdmin)
 admin.site.register(Stocks, StocksAdmin)
 admin.site.register(nmids, NmidsAdmin)
 admin.site.register(CeleryLog, CeleryLogAdmin)
