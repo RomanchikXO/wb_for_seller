@@ -287,19 +287,14 @@ def update_google_prices_data_with_format(
                             }
                         })
                     else:
-                        if ind_2 == (len(row)-1):
-                            row_data["values"].append({
-                                "userEnteredValue": {"stringValue": f"{kwargs['discount']}%"}
-                            })
-                        else:
-                            row_data["values"].append({
-                                "userEnteredValue": {"stringValue": str(cell)},
-                                "userEnteredFormat": {
-                                    "textFormat": {
-                                        "bold": True
-                                    }
+                        row_data["values"].append({
+                            "userEnteredValue": {"stringValue": str(cell)},
+                            "userEnteredFormat": {
+                                "textFormat": {
+                                    "bold": True
                                 }
-                            })
+                            }
+                        })
                 else:
                     if ind_2 == 8:
                         row_data["values"].append({
