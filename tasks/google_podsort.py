@@ -1,9 +1,10 @@
+import asyncio
 from datetime import datetime, timedelta
 
 from celery.utils.log import get_task_logger
 
 from database.DataBase import async_connect_to_database
-
+from google.functions import fetch_google_sheet_data, update_google_sheet_data
 
 logger = get_task_logger("core")
 
@@ -52,15 +53,41 @@ async def get_quantity_in_db(supplierarticles: list) -> dict:
         await conn.close()
 
 
-async def set_orders_quantity_in_google():
+async def set_orders_quantity_in_google()->None:
+    """
+    Получаем заказы из БД
+    Получаем остатки из БД
+    Получаем данные из гугл таблицы
+    Обновляем данные гугл таблицы и записываем обратно
+    Returns:
+
+    """
+    url = "https://docs.google.com/spreadsheets/d/1zsuNRaHFiYwfp-YuHtxJYxsI5Htt05PyOv0yo9mJrdA/edit?gid=362718067#gid=362718067"
+
     orders = await get_orders_in_db()
     articles = list(orders.keys())
 
     quantity = await get_quantity_in_db(articles)
 
-    logger.info(f"Заказы: {orders}")
-    logger.info(f"Остатки: {quantity}")
+    orders_to_table = []
+    quantity_to_table = []
+
+    google_data = fetch_google_sheet_data(url, 2)
+    for row in google_data[2:]: # итерация по строкам начиная со второй
+        ord_new = int(orders.get(row[0], 0))
+        quantity_new = int(quantity.get(row[0], 0))
+
+        orders_to_table.append([ord_new])
+        quantity_to_table.append([quantity_new])
+
+
+
+    try:
+        update_google_sheet_data(url, 2, f"C3:C{len(orders_to_table)+3}", orders_to_table)
+        update_google_sheet_data(url, 2, f"G3:G{len(quantity_to_table) + 3}", quantity_to_table)
+    except Exception as e:
+        logger.error(f"Ошибка обновления таблицы с остатками и заказами. Error: {e}")
 
 
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_orders())
+# res = loop.run_until_complete(set_orders_quantity_in_google())
