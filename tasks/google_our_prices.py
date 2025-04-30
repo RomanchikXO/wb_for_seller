@@ -95,6 +95,8 @@ async def get_black_price_spp():
     except Exception as e:
         logger.error(f"Ошибка: {e}. Response: {response}")
         return
+    logger.info(updates)
+    return
     values = [(id_, data["blackprice"], data["spp"]) for id_, data in updates.items()]
 
     conn = await async_connect_to_database()
@@ -103,7 +105,8 @@ async def get_black_price_spp():
         return
     try:
         query = """
-            UPDATE myapp_price AS p SET
+            UPDATE myapp_price AS p 
+            SET
                 blackprice = v.blackprice,
                 spp = v.spp
             FROM (VALUES
