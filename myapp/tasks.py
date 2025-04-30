@@ -19,7 +19,7 @@ def update_prices_on_google():
 
 @shared_task
 def get_prices_and_products():
-    logger.info("🟢 Собираем товары и цены")
+    logger.info("🟢 Собираем товары и цены в БД")
     asyncio.run(get_products_and_prices())
     logger.info("Товары и цены собраны в БД")
 
