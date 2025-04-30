@@ -24,9 +24,9 @@ def get_data(method: str, url: str, response_type="json", **kwargs):
             elif response_type == "text":
                 result = response.text
             return result
-        except:
+        except Exception as e:
             attempt += 1
-            logger.info(f"Can't get data, retry {attempt}")
+            logger.info(f"Can't get data, retry {attempt}. Url: {url}. Error: {e}")
             time.sleep(attempt * 2)
 
 
@@ -76,3 +76,6 @@ def get_full_mpstat(ids: List[str or int]):
         result[id] = response
 
     return result
+
+
+# get_full_mpstat([70497717,70497718, 70497720, 70497721, 70497722, 70498242, 70498243, 74512722, 74512723, 74512724, 75663661, 75663662, 75663663, 77455845])
