@@ -18,11 +18,13 @@ def get_data(method: str, url: str, response_type="json", **kwargs):
     while attempt <= max_attemps:
         try:
             response = requests.request(method, url, **kwargs)
-            response.raise_for_status()
             if response_type == "json":
                 result = response.json()
+                if result.get("message") == "SKU не найден":
+                    return result
             elif response_type == "text":
                 result = response.text
+            response.raise_for_status()
             return result
         except Exception as e:
             attempt += 1
@@ -72,10 +74,11 @@ def get_full_mpstat(ids: List[str or int]):
             response_type="json",
             headers=headers,
         )
-
+        if response.get("message") == "SKU не найден":
+            continue
         result[id] = response
 
     return result
 
 
-# get_full_mpstat([70497717,70497718, 70497720, 70497721, 70497722, 70498242, 70498243, 74512722, 74512723, 74512724, 75663661, 75663662, 75663663, 77455845])
+# get_full_mpstat([386568079])
