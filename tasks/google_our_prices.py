@@ -72,12 +72,12 @@ async def get_black_price_spp():
 
     result = {}
     try:
-        request = ("SELECT nmids.nmid, nmids.id, nmids.discount "
+        request = ("SELECT nmids.nmid, nmids.id "
                     "FROM myapp_nmids AS nmids "
                     "join myapp_wblk AS wblk "
                     "ON wblk.id = nmids.lk_id AND wblk.groups_id = 1")
         all_fields = await conn.fetch(request)
-        result = {row["nmid"]: {"id": row["id"], "discount": row["discount"]} for row in all_fields}
+        result = {row["nmid"]: row["id"] for row in all_fields}
     except Exception as e:
         logger.error(f"Ошибка получения данных из myapp_nmids. Запрос {request}. Error: {e}")
     finally:
@@ -86,7 +86,7 @@ async def get_black_price_spp():
     response = get_full_mpstat(list(result.keys()))
 
     updates = {
-        result[nmid]["id"]: {
+        result[nmid]: {
             "blackprice": data["price"]["final_price"],
             "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
         }
