@@ -53,8 +53,8 @@ async def set_prices_on_google():
             google_data[index][10] = discount_table
             google_data[index][11] = spp_table
         else:
-            google_data[index][8] = 0
-            google_data[index][10] = 0
+            google_data[index][8] = "0"
+            google_data[index][10] = "0"
             google_data[index][11] = "0%"
 
     update_google_prices_data_with_format(

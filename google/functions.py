@@ -1,4 +1,3 @@
-import math
 from datetime import datetime, timedelta
 from typing import Union, List
 import re
@@ -306,14 +305,13 @@ def update_google_prices_data_with_format(
                         })
                     else:
                         numberValue = cleare_num(cell)
-
-                        if isinstance(numberValue, (int, float)) and not math.isnan(numberValue):
+                        if numberValue:
                             row_data["values"].append({
                                 "userEnteredValue": {"numberValue": numberValue},
                             })
                         else:
                             row_data["values"].append({
-                                "userEnteredValue": {"stringValue": str(cell) if cell is not None else ""},
+                                "userEnteredValue": {"stringValue": cell},
                             })
             rows.append(row_data)
     except Exception as e:
