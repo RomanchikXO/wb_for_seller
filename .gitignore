@@ -8,3 +8,4 @@ __pycache__/
 .idea/
 /credentials.json
 /static/
+/tests_some.py

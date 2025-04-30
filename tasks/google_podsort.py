@@ -38,7 +38,7 @@ async def get_quantity_in_db(supplierarticles: list) -> dict:
         logger.warning(f"Ошибка подключения к БД в fetch_data__get_adv_id")
         raise
     try:
-        request = ("SELECT supplierarticle, COUNT(*) AS total "
+        request = ("SELECT supplierarticle, sum(quantity) AS total "
                    "FROM myapp_stocks "
                    "WHERE supplierarticle = ANY($1) "
                    "AND EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.id = myapp_stocks.lk_id AND myapp_wblk.groups_id = 1)"
