@@ -79,6 +79,3 @@ def get_full_mpstat(ids: List[str or int]):
         result[id] = response
 
     return result
-
-
-# get_full_mpstat([386568079])

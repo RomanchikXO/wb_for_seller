@@ -70,23 +70,23 @@ async def get_black_price_spp():
         logger.warning(f"Ошибка подключения к БД в fetch_data__get_adv_id")
         return
 
-    result = {}
+    result = []
     try:
-        request = ("SELECT nmids.nmid, nmids.id "
+        request = ("SELECT nmids.nmid "
                     "FROM myapp_nmids AS nmids "
                     "join myapp_wblk AS wblk "
                     "ON wblk.id = nmids.lk_id AND wblk.groups_id = 1")
         all_fields = await conn.fetch(request)
-        result = {row["nmid"]: row["id"] for row in all_fields}
+        result = [row["nmid"] for row in all_fields]
     except Exception as e:
         logger.error(f"Ошибка получения данных из myapp_nmids. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
 
-    response = get_full_mpstat(list(result.keys()))
+    response = get_full_mpstat(list(result))
     try:
         updates = {
-            result[nmid]: {
+            nmid: {
                 "blackprice": data["price"]["final_price"],
                 "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0
             }
@@ -95,9 +95,8 @@ async def get_black_price_spp():
     except Exception as e:
         logger.error(f"Ошибка: {e}. Response: {response}")
         return
-    logger.info(updates)
-    return
-    values = [(id_, data["blackprice"], data["spp"]) for id_, data in updates.items()]
+
+    values = [(nmid, data["blackprice"], data["spp"]) for nmid, data in updates.items()]
 
     conn = await async_connect_to_database()
     if not conn:
@@ -111,10 +110,10 @@ async def get_black_price_spp():
                 spp = v.spp
             FROM (VALUES
                 {}
-            ) AS v(id, blackprice, spp)
-            WHERE v.id = p.id
+            ) AS v(nmid, blackprice, spp)
+            WHERE v.nmid = p.nmid
         """.format(", ".join(
-            f"({id_}, {blackprice}, {spp})" for id_, blackprice, spp in values
+            f"({nmid}, {blackprice}, {spp})" for nmid, blackprice, spp in values
         ))
         await conn.execute(query)
     except Exception as e:
