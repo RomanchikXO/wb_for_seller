@@ -45,7 +45,7 @@ class OrdersAdmin(admin.ModelAdmin):
         'nmid', 'barcode', 'warehousename', 'countryname',
         'brand', 'totalprice', 'finishedprice', 'iscancel'
     )
-    list_filter = ('iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
+    list_filter = ('lk', 'iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
     search_fields = ('supplierarticle', 'nmid', 'barcode', 'gnumber', 'srid')
     ordering = ('-date',)
 
