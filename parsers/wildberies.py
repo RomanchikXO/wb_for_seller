@@ -508,7 +508,7 @@ async def get_orders():
                             lk_id=cab["id"],
                             date=parse_datetime(order["date"]),
                             lastchangedate=parse_datetime(order["lastChangeDate"]),
-                            warehousename=order["warehouseName"].split("Виртуальный ")[-1] if order["warehouseName"].startswith("Виртуальный") else order["warehouseName"],
+                            warehousename=order["warehouseName"].replace("Виртуальный ", "") if order["warehouseName"].startswith("Виртуальный") else order["warehouseName"],
                             warehousetype=order["warehouseType"],
                             countryname=order["countryName"],
                             oblastokrugname=order["oblastOkrugName"],
