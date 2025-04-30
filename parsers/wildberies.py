@@ -540,13 +540,3 @@ async def get_orders():
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
                 await conn.close()
-
-
-
-
-# loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_orders())
-
-# if i["nmId"] == 219936476 and datetime.fromisoformat("2025-04-30T00:00:00") > datetime.fromisoformat(
-#         i["date"]) >= datetime.fromisoformat("2025-04-16T00:00:00"):
-#     order += 1

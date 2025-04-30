@@ -4,6 +4,7 @@ import asyncio
 
 from parsers.wildberies import get_nmids, get_stocks_data_2_weeks, get_orders
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices
+from tasks.google_podsort import set_orders_quantity_in_google
 from tasks.google_wb_prices import process_data
 
 
@@ -56,3 +57,10 @@ def get_orders_to_db():
     logger.info("Обновляем таблицу с заказами в бд")
     asyncio.run(get_orders())
     logger.info("Таблица с заказами в бд обновлена")
+
+
+@shared_task
+def get_set_ord_quant_to_google():
+    logger.info("Получаем заказы и остатки из бд")
+    asyncio.run(set_orders_quantity_in_google())
+    logger.info("Получены заказы и остатки из бд")
