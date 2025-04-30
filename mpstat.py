@@ -3,6 +3,7 @@ from typing import List
 import time
 from loader import X_Mpstats_TOKEN
 from celery.utils.log import get_task_logger
+from datetime import datetime, timedelta
 
 logger = get_task_logger("mpstat")
 
@@ -51,5 +52,27 @@ def get_revenue_mpstat(ids: List[str or int]):
             count_sales += record["sales"]
             total_price_sale += (record["client_price"] * record["sales"])
         result[id] = total_price_sale
+
+    return result
+
+
+def get_full_mpstat(ids: List[str or int]):
+    """
+        Получить полную статистику по id товара из mpstat
+        :param ids: id товаров (артикул)
+        :return:
+        """
+    result = {}
+
+    for id in ids:
+        url = f"https://mpstats.io/api/wb/get/item/{id}/full"
+        response = get_data(
+            method="get",
+            url=url,
+            response_type="json",
+            headers=headers,
+        )
+
+        result[id] = response
 
     return result

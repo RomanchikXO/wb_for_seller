@@ -1,7 +1,10 @@
 import json
 
 from celery.utils.log import get_task_logger
+
+from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
+from mpstat import get_full_mpstat
 from parsers.wildberies import get_products_and_prices, parse
 from database.funcs_db import get_data_from_db
 
@@ -60,3 +63,55 @@ async def set_prices_on_google():
         url, int(url.split("=")[-1]), 0, 0, google_data, **{"discount": discount}
     )
 
+async def get_black_price_spp():
+    conn = await async_connect_to_database()
+
+    if not conn:
+        logger.warning(f"Ошибка подключения к БД в fetch_data__get_adv_id")
+        return
+
+
+    try:
+        request = ("SELECT nmids.nmid, nmids.id, nmids.discount "
+                    "FROM myapp_nmids AS nmids "
+                    "join myapp_wblk AS wblk"
+                    "ON wblk.id = nmids.lk_id AND wblk.groups_id = 1")
+        all_fields = await conn.fetch(request)
+        result = {row["nmid"]: {"id": row["id"], "discount": row["discount"]} for row in all_fields}
+    except Exception as e:
+        logger.error(f"Ошибка получения данных из myapp_nmids. Запрос {request}. Error: {e}")
+    finally:
+        await conn.close()
+
+    response = get_full_mpstat(list(result.keys()))
+
+    updates = {
+        result[nmid]["id"]: {
+            "blackprice": data["price"]["final_price"],
+            "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
+        }
+        for nmid, data in response
+    }
+    values = [(id_, data["blackprice"], data["spp"]) for id_, data in updates.items()]
+
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning("Ошибка подключения к БД в add_set_data_from_db")
+        return
+    try:
+        query = """
+            UPDATE myapp_price AS p SET
+                blackprice = v.blackprice,
+                spp = v.spp
+            FROM (VALUES
+                {}
+            ) AS v(id, blackprice, spp)
+            WHERE v.id = p.id
+        """.format(", ".join(
+            f"({id_}, {blackprice}, {spp})" for id_, blackprice, spp in values
+        ))
+        await conn.execute(query)
+    except Exception as e:
+        logger.error(f"Ошибка обновления spp и blackprice в myapp_price. Error: {e}")
+    finally:
+        await conn.close()
