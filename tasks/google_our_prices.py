@@ -88,7 +88,7 @@ async def get_black_price_spp():
         updates = {
             result[nmid]: {
                 "blackprice": data["price"]["final_price"],
-                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100)
+                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0
             }
             for nmid, data in response.items()
         }
