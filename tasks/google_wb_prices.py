@@ -1,3 +1,4 @@
+import time
 from typing import List
 from parsers.wildberies import parse
 from google.functions import fetch_google_sheet_data, update_google_sheet_data_with_format, get_column_letter, get_ids_pages_table
@@ -14,11 +15,15 @@ def get_count_pages(url: str) -> int:
     :param url: url таблы
     :return: кол-во листов в таблице
     """
-    try:
-        data = fetch_google_sheet_data(url, sheet_identifier=None)
-        return len(data)
-    except Exception as e:
-        logger.error(f"Ошибка: {e}. Функция get_count_pages. Параметры: {url}")
+    i = 0
+    while i < 5:
+        try:
+            data = fetch_google_sheet_data(url, sheet_identifier=None)
+            return len(data)
+        except Exception as e:
+            i += 1
+            time.sleep(i * 2)
+            logger.error(f"Ошибка: {e}. Функция get_count_pages. Параметры: {url}")
 
 
 def get_data_lists(url: str) -> List[list]:
