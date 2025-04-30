@@ -35,12 +35,15 @@ async def set_prices_on_google():
         }
         for item in data
     }
+    logger.info(result_dict)
 
     google_data = fetch_google_sheet_data(
         spreadsheet_url=url,
         sheet_identifier=9,
 
     )
+    logger.info(google_data)
+    return
 
     for index, _string in enumerate(google_data):
         nmID = _string[2]
@@ -57,8 +60,6 @@ async def set_prices_on_google():
             google_data[index][10] = "0"
             google_data[index][11] = "0%"
 
-    logger.info(google_data)
-    return
     update_google_prices_data_with_format(
         url, int(url.split("=")[-1]), 0, 0, google_data
     )
