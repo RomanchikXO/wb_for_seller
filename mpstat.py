@@ -20,7 +20,7 @@ def get_data(method: str, url: str, response_type="json", **kwargs):
             response = requests.request(method, url, **kwargs)
             if response_type == "json":
                 result = response.json()
-                if result.get("message") == "SKU не найден":
+                if isinstance(result, dict) and result.get("message") == "SKU не найден":
                     return result
             elif response_type == "text":
                 result = response.text
