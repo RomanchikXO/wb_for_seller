@@ -1,5 +1,4 @@
 from celery import shared_task
-from celery.utils.log import get_task_logger
 import asyncio
 
 from parsers.wildberies import get_nmids, get_stocks_data_2_weeks, get_orders
@@ -7,10 +6,15 @@ from tasks.google_our_prices import set_prices_on_google, get_products_and_price
 from tasks.google_podsort import set_orders_quantity_in_google
 from tasks.google_wb_prices import process_data
 
+import logging
+from decorators import with_task_context
+from context_logger import ContextLogger
 
-logger = get_task_logger("myapp")
+logger = ContextLogger(logging.getLogger("myapp"))
+
 
 @shared_task
+@with_task_context("update_prices_on_google")
 def update_prices_on_google():
     logger.info("🟢 Устанавливаем цены в гугл таблицу")
     asyncio.run(set_prices_on_google())
@@ -18,6 +22,7 @@ def update_prices_on_google():
 
 
 @shared_task
+@with_task_context("get_prices_and_products")
 def get_prices_and_products():
     logger.info("🟢 Собираем товары и цены в БД")
     asyncio.run(get_products_and_prices())
@@ -25,12 +30,14 @@ def get_prices_and_products():
 
 
 @shared_task
+@with_task_context("some_task")
 def some_task():
     logger.info("🟢 Тестируем. Ща вернет 'test' или не вернет")
     return "test"
 
 
 @shared_task
+@with_task_context("prices_table")
 def prices_table():
     url_prices = "https://docs.google.com/spreadsheets/d/1EhjutxGw8kHlW1I3jbdgD-UMA5sE20aajMO865RzrlA/edit?gid=1101267699#gid=1101267699"
     logger.info("🟢 Обновляем гугл таблицу с ценами конкурентов и доходом")
@@ -39,6 +46,7 @@ def prices_table():
 
 
 @shared_task
+@with_task_context("get_nmids_to_db")
 def get_nmids_to_db():
     logger.info("🟢 Обновляем таблицу со всеми артикулами в бд")
     asyncio.run(get_nmids())
@@ -46,6 +54,7 @@ def get_nmids_to_db():
 
 
 @shared_task
+@with_task_context("get_stocks_to_db")
 def get_stocks_to_db():
     logger.info("🟢 Обновляем таблицу с остатками товаров на складах в бд")
     asyncio.run(get_stocks_data_2_weeks())
@@ -53,6 +62,7 @@ def get_stocks_to_db():
 
 
 @shared_task
+@with_task_context("get_orders_to_db")
 def get_orders_to_db():
     logger.info("🟢 Обновляем таблицу с заказами в бд")
     asyncio.run(get_orders())
@@ -60,6 +70,7 @@ def get_orders_to_db():
 
 
 @shared_task
+@with_task_context("get_set_ord_quant_to_google")
 def get_set_ord_quant_to_google():
     logger.info("🟢 Обновляем остатки и заказы в гугл таблице")
     asyncio.run(set_orders_quantity_in_google())
@@ -67,6 +78,7 @@ def get_set_ord_quant_to_google():
 
 
 @shared_task
+@with_task_context("set_black_price_spp_on_db")
 def set_black_price_spp_on_db():
     logger.info("🟢 Обновляем spp и blackprice в БД")
     asyncio.run(get_black_price_spp())

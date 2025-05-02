@@ -2,10 +2,11 @@ import requests
 from typing import List
 import time
 from loader import X_Mpstats_TOKEN
-from celery.utils.log import get_task_logger
-from datetime import datetime, timedelta
 
-logger = get_task_logger("mpstat")
+import logging
+from context_logger import ContextLogger
+
+logger = ContextLogger(logging.getLogger("mpstat"))
 
 headers = {
     'X-Mpstats-TOKEN': X_Mpstats_TOKEN,

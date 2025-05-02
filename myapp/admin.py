@@ -14,8 +14,8 @@ class PriceAdmin(admin.ModelAdmin):
     get_lk_name.short_description = 'Личный кабинет'
 
 class CeleryLogAdmin(admin.ModelAdmin):
-    list_display = ('timestamp', 'level', 'message')
-    list_filter = ('level', 'timestamp')
+    list_display = ('timestamp', 'source', 'level', 'message')
+    list_filter = ('level', 'source', 'timestamp')
     search_fields = ('message',)
 
 class NmidsAdmin(admin.ModelAdmin):

@@ -5,9 +5,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 import os
-from celery.utils.log import get_task_logger
 
-logger = get_task_logger("google")
+import logging
+from context_logger import ContextLogger
+
+logger = ContextLogger(logging.getLogger("google"))
 
 
 current_directory = os.path.dirname(os.path.abspath(__file__))

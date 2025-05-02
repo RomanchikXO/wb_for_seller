@@ -149,6 +149,7 @@ class Orders(models.Model):
 class CeleryLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     level = models.CharField(max_length=50)
+    source = models.CharField(max_length=255, null=True)
     message = models.TextField()
 
     def __str__(self):

@@ -1,12 +1,13 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from celery.utils.log import get_task_logger
-
 from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data, update_google_sheet_data
 
-logger = get_task_logger("core")
+import logging
+from context_logger import ContextLogger
+
+logger = ContextLogger(logging.getLogger("core"))
 
 
 async def get_orders_in_db() -> dict:

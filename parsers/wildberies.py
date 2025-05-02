@@ -3,7 +3,6 @@ import random
 import httpx
 from typing import Union
 import time
-from celery.utils.log import get_task_logger
 import aiohttp
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
@@ -11,9 +10,10 @@ from datetime import datetime, timedelta
 from django.utils.dateparse import parse_datetime
 import json
 
+import logging
+from context_logger import ContextLogger
 
-logger = get_task_logger("parsers")
-
+logger = ContextLogger(logging.getLogger("parsers"))
 
 
 headers = {

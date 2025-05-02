@@ -1,9 +1,12 @@
 import psycopg2
 import asyncpg
 from loader import POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
-from celery.utils.log import get_task_logger
 
-logger = get_task_logger("database")
+import logging
+from context_logger import ContextLogger
+
+logger = ContextLogger(logging.getLogger("database"))
+
 
 DATABASE_CONFIG = {
     'dbname': POSTGRES_DB,

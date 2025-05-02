@@ -1,6 +1,7 @@
 import logging
 from database.DataBase import connect_to_database
 from google.functions import get_time_msk
+from log_context import task_context
 
 
 class DBLogHandler(logging.Handler):
@@ -12,17 +13,19 @@ class DBLogHandler(logging.Handler):
 
         try:
             # Формируем сообщение для вставки
-            formatted_message = self.format(record)
+            context = task_context.get({})
+            prefix = f"{context.get('task_name', 'unknown')}"
+            formatted_message = f"{self.format(record)}"
             current_time = get_time_msk()
 
             # Используем SQL для вставки данных в таблицу
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO myapp_celerylog (timestamp, level, message)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO myapp_celerylog (timestamp, source, level, message)
+                    VALUES (%s, %s, %s, %s)
                     """,
-                    (current_time, record.levelname, formatted_message)
+                    (current_time, prefix, record.levelname, formatted_message)
                 )
             conn.commit()  # Сохраняем изменения
         except Exception as e:

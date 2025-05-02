@@ -1,6 +1,5 @@
 import json
 
-from celery.utils.log import get_task_logger
 
 from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
@@ -8,8 +7,10 @@ from mpstat import get_full_mpstat
 from parsers.wildberies import get_products_and_prices, parse
 from database.funcs_db import get_data_from_db
 
+import logging
+from context_logger import ContextLogger
 
-logger = get_task_logger("core")
+logger = ContextLogger(logging.getLogger("core"))
 
 async def set_prices_on_google():
     """

@@ -1,10 +1,12 @@
 from datetime import datetime
 
 from database.DataBase import async_connect_to_database
-from celery.utils.log import get_task_logger
 from typing import List, Optional, Dict, Any
 
-logger = get_task_logger("database")
+import logging
+from context_logger import ContextLogger
+
+logger = ContextLogger(logging.getLogger("database"))
 
 
 async def get_data_from_db(
