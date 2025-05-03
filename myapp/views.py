@@ -1,8 +1,7 @@
-from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from .forms import RegistrationForm
 from django.contrib.auth.hashers import check_password
-from .models import User
+from .models import CustomUser
 
 
 def register_view(request):
@@ -28,7 +27,7 @@ def login_view(request):
         password = request.POST.get('password')
 
         try:
-            user = User.objects.get(name=name)
+            user = CustomUser.objects.get(name=name)
             if user and check_password(password, user.password):
                 if not user.groups:
                     message = 'Ожидайте...'
@@ -39,7 +38,7 @@ def login_view(request):
                     return redirect(next_url or '/main/')
             else:
                 message = 'Неверный пароль'
-        except User.DoesNotExist:
+        except CustomUser.DoesNotExist:
             message = 'Пользователь не найден'
 
     return render(request, 'login.html', {'message': message})

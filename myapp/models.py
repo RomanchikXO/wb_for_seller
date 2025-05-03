@@ -24,7 +24,7 @@ class WbLk(models.Model):
         return self.name
 
 # Модель для таблицы users
-class User(models.Model):
+class CustomUser(models.Model):
     name = models.CharField(max_length=255, unique=True)
     password = models.CharField(max_length=255)
     groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True, default=None)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, Groups, User, Price, CeleryLog, nmids, Stocks, Orders
+from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders
 
 
 class PriceAdmin(admin.ModelAdmin):
@@ -56,5 +56,5 @@ admin.site.register(nmids, NmidsAdmin)
 admin.site.register(CeleryLog, CeleryLogAdmin)
 admin.site.register(WbLk)
 admin.site.register(Groups)
-admin.site.register(User)
+admin.site.register(CustomUser)
 admin.site.register(Price, PriceAdmin)
