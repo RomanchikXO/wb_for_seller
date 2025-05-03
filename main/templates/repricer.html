@@ -34,7 +34,7 @@
                 <tr>
                     <td>{{ item.nmid }}</td>
                     <td>{{ item.vendorcode }}</td>
-                    <td>{{ item.redprice }} * 0.97</td>
+                    <td>{{ item.redprice }}</td>
                     <td>
                         <button class="btn btn-warning btn-sm">Изменить цену</button>
                         <button class="btn btn-danger btn-sm">Удалить</button>
@@ -56,9 +56,17 @@
                 {% endif %}
 
                 {% for num in paginator.page_range %}
-                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
-                    </li>
+                    {% if num == 1 or num == paginator.num_pages or (num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2") %}
+                        {% if num > 1 and num == page_obj.number|add:"-2" %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                        </li>
+                        {% if num < paginator.num_pages and num == page_obj.number|add:"2" %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
@@ -67,6 +75,7 @@
                     </li>
                 {% endif %}
             </ul>
+
         </nav>
     </div>
 {% endblock %}
