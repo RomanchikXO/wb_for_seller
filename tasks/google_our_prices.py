@@ -89,7 +89,8 @@ async def get_black_price_spp():
         updates = {
             nmid: {
                 "blackprice": data["price"]["final_price"],
-                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0
+                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0,
+                "redprice": round(data["price"]["final_price"] * 0.97)
             }
             for nmid, data in response.items()
         }
@@ -97,7 +98,7 @@ async def get_black_price_spp():
         logger.error(f"Ошибка: {e}. Response: {response}")
         return
 
-    values = [(nmid, data["blackprice"], data["spp"]) for nmid, data in updates.items()]
+    values = [(nmid, data["blackprice"], data["spp"], data["redprice"]) for nmid, data in updates.items()]
 
     conn = await async_connect_to_database()
     if not conn:
@@ -108,13 +109,14 @@ async def get_black_price_spp():
             UPDATE myapp_price AS p 
             SET
                 blackprice = v.blackprice,
-                spp = v.spp
+                spp = v.spp,
+                redprice = v.redprice
             FROM (VALUES
                 {}
-            ) AS v(nmid, blackprice, spp)
+            ) AS v(nmid, blackprice, spp, redprice)
             WHERE v.nmid = p.nmid
         """.format(", ".join(
-            f"({nmid}, {blackprice}, {spp})" for nmid, blackprice, spp in values
+            f"({nmid}, {blackprice}, {spp}, {redprice})" for nmid, blackprice, spp, redprice in values
         ))
         await conn.execute(query)
     except Exception as e:

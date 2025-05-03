@@ -49,6 +49,7 @@ class Price(models.Model):
     editablesizeprice = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True, null=True)
     blackprice = models.IntegerField(default=0, null=True)
+    redprice = models.IntegerField(default=0, null=True)
     spp = models.IntegerField(default=0, null=True)
 
     class Meta:
