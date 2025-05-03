@@ -23,16 +23,18 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>Название товара</th>
-                    <th>Цена</th>
+                    <th>Артикул</th>
+                    <th>Артикул продавца</th>
+                    <th>Красная цена</th>
                     <th>Действие</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in page_obj %}
                 <tr>
+                    <td>{{ item.nmid }}</td>
                     <td>{{ item.vendorcode }}</td>
-                    <td>{{ item.editablesizeprice }}</td>
+                    <td>{{ item.redprice }} * 0.97</td>
                     <td>
                         <button class="btn btn-warning btn-sm">Изменить цену</button>
                         <button class="btn btn-danger btn-sm">Удалить</button>

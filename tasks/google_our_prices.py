@@ -1,5 +1,5 @@
 import json
-
+import math
 
 from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
@@ -90,7 +90,7 @@ async def get_black_price_spp():
             nmid: {
                 "blackprice": data["price"]["final_price"],
                 "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0,
-                "redprice": round(data["price"]["final_price"] * 0.97)
+                "redprice": math.floor(data["price"]["final_price"] * 0.97)
             }
             for nmid, data in response.items()
         }
