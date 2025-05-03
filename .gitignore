@@ -9,3 +9,5 @@ __pycache__/
 /credentials.json
 /static/
 /tests_some.py
+/myapp/migrations/
+/main/migrations/

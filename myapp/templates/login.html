@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Авторизация{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-md-6 col-lg-4">
+        <div class="card p-4">
+            <h2 class="text-center">Авторизация</h2>
+
+            {% if message %}
+                <div class="alert alert-warning" role="alert">
+                    {{ message }}
+                </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">Логин</label>
+                    <input type="text" name="name" class="form-control" id="name">
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input type="password" name="password" class="form-control" id="password">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Войти</button>
+            </form>
+
+            <hr>
+            <div class="text-center">
+                <a href="{% url 'register' %}" class="btn btn-link">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

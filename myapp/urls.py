@@ -1,10 +1,11 @@
 from django.urls import path
 
-from myapp.views import myapp_index
+from myapp.views import register_view, login_view
 
 pp_name = 'myapp'  #чтобы файл был действительно отдельным пространством имен
 
 
 urlpatterns = [
-    path('', myapp_index, name='index'),
+    path('', register_view, name='register'),
+    path('login/', login_view, name='login'),
 ]

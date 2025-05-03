@@ -1,0 +1,57 @@
+{% extends "base_with_sidebar.html" %}
+
+{% block title %}Репрайсер{% endblock %}
+
+{% block main_content %}
+    <h3>Репрайсер</h3>
+    <p>Это страница репрайсера. Здесь будет отображаться информация для репрайсинга товаров и цен.</p>
+
+    <!-- Пример формы или таблицы для репрайсинга -->
+    <div class="card p-4">
+        <h5>Добавить новые товары</h5>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="product_name" class="form-label">Название товара</label>
+                <input type="text" class="form-control" id="product_name" name="product_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="product_price" class="form-label">Цена</label>
+                <input type="number" class="form-control" id="product_price" name="product_price" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Добавить товар</button>
+        </form>
+    </div>
+
+    <!-- Пример таблицы с уже существующими товарами -->
+    <div class="card mt-4 p-4">
+        <h5>Список товаров</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Название товара</th>
+                    <th>Цена</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Пример товара 1</td>
+                    <td>100</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm">Изменить цену</button>
+                        <button class="btn btn-danger btn-sm">Удалить</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Пример товара 2</td>
+                    <td>200</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm">Изменить цену</button>
+                        <button class="btn btn-danger btn-sm">Удалить</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

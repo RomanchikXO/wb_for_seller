@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Левая боковая панель -->
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main' %}">
+                            Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'repricer' %}">
+                            Репрайсер
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            Страница 2
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            Страница 3
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Основной контент справа -->
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Основной контент</h2>
+                <a href="{% url 'login' %}" class="btn btn-danger">Выход</a>
+            </div>
+
+            <div>
+                {% block main_content %}
+                <!-- Здесь будет отображаться основной контент -->
+                {% endblock %}
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

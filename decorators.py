@@ -1,5 +1,7 @@
 from log_context import task_context
 from functools import wraps
+from django.shortcuts import redirect
+
 
 def with_task_context(task_name):
     def decorator(func):
@@ -12,3 +14,13 @@ def with_task_context(task_name):
                 task_context.reset(token)
         return wrapper
     return decorator
+
+
+def login_required_cust(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.session.get('user_id'):
+            return view_func(request, *args, **kwargs)
+        else:
+            return redirect(f"/login/?next={request.path}")
+    return wrapper
