@@ -10,6 +10,7 @@ def main_view(request):
 
 @login_required_cust
 def repricer_view(request):
+    page_sizes = [5, 10, 20, 50, 100]
     user = request.user_obj  # получаем объект юзера из нашего кастомного декоратора
     per_page = int(request.GET.get('per_page', 10))
     page_number = request.GET.get('page', 1)
@@ -23,4 +24,5 @@ def repricer_view(request):
         'page_obj': page_obj,
         'per_page': per_page,
         'paginator': paginator,
+        'page_sizes': page_sizes,
     })

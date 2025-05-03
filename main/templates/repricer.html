@@ -13,7 +13,7 @@
             <form method="get" class="form-inline">
                 <label for="per_page">Показывать по:</label>
                 <select name="per_page" id="per_page" class="form-select mx-2" onchange="this.form.submit()">
-                    {% for num in [5, 10, 20, 50, 100]  %}
+                    {% for num in page_sizes %}
                         <option value="{{ num }}" {% if per_page == num %}selected{% endif %}>{{ num }}</option>
                     {% endfor %}
                 </select>
