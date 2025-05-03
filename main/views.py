@@ -16,7 +16,7 @@ def repricer_view(request):
     per_page = int(request.GET.get('per_page', 10))
     page_number = request.GET.get('page', 1)
 
-    prices = Price.objects.filter(lk__groups__in=group_ids).order_by('id')
+    prices = Price.objects.filter(lk__groups__in=group_ids)
 
     paginator = Paginator(prices, per_page)
     page_obj = paginator.get_page(page_number)
