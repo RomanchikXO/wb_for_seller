@@ -6,26 +6,20 @@
     <h3>Репрайсер</h3>
     <p>Это страница репрайсера. Здесь будет отображаться информация для репрайсинга товаров и цен.</p>
 
-    <!-- Пример формы или таблицы для репрайсинга -->
-    <div class="card p-4">
-        <h5>Добавить новые товары</h5>
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="product_name" class="form-label">Название товара</label>
-                <input type="text" class="form-control" id="product_name" name="product_name" required>
-            </div>
-            <div class="mb-3">
-                <label for="product_price" class="form-label">Цена</label>
-                <input type="number" class="form-control" id="product_price" name="product_price" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Добавить товар</button>
-        </form>
-    </div>
 
-    <!-- Пример таблицы с уже существующими товарами -->
     <div class="card mt-4 p-4">
-        <h5>Список товаров</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>Список товаров</h5>
+            <form method="get" class="form-inline">
+                <label for="per_page">Показывать по:</label>
+                <select name="per_page" id="per_page" class="form-select mx-2" onchange="this.form.submit()">
+                    {% for num in [5, 10, 20, 50, 100] %}
+                        <option value="{{ num }}" {% if per_page == num %}selected{% endif %}>{{ num }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
         <table class="table table-bordered">
             <thead>
                 <tr>
@@ -35,23 +29,42 @@
                 </tr>
             </thead>
             <tbody>
+                {% for item in page_obj %}
                 <tr>
-                    <td>Пример товара 1</td>
-                    <td>100</td>
+                    <td>{{ item.vendorcode }}</td>
+                    <td>{{ item.editablesizeprice }}</td>
                     <td>
                         <button class="btn btn-warning btn-sm">Изменить цену</button>
                         <button class="btn btn-danger btn-sm">Удалить</button>
                     </td>
                 </tr>
-                <tr>
-                    <td>Пример товара 2</td>
-                    <td>200</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm">Изменить цену</button>
-                        <button class="btn btn-danger btn-sm">Удалить</button>
-                    </td>
-                </tr>
+                {% empty %}
+                <tr><td colspan="3">Нет данных</td></tr>
+                {% endfor %}
             </tbody>
         </table>
+
+        <!-- Пагинация -->
+        <nav>
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}">«</a>
+                    </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                    </li>
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">»</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
     </div>
 {% endblock %}
