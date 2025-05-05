@@ -59,6 +59,20 @@ class Price(models.Model):
         return f"{self.vendorcode} - {self.nmid}"
 
 
+class Repricer(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+    nmid = models.IntegerField()
+    keep_price = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ['nmid', 'lk']
+
+    def __str__(self):
+        return f"{self.lk} - {self.nmid}"
+
+
+
 class nmids(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
     nmid = models.IntegerField() # Артикул WB

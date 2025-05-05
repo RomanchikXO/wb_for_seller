@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders
+from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer
 
 
 class PriceAdmin(admin.ModelAdmin):
@@ -49,7 +49,16 @@ class OrdersAdmin(admin.ModelAdmin):
     search_fields = ('supplierarticle', 'nmid', 'barcode', 'gnumber', 'srid')
     ordering = ('-date',)
 
+class RepricerAdmin(admin.ModelAdmin):
+    list_display = (
+        'nmid', 'keep_price', 'is_active'
+    )
 
+    list_filter = ('lk', 'is_active')
+    search_fields = ('nmid')
+    ordering = ('is_active',)
+
+admin.site.register(Repricer, RepricerAdmin)
 admin.site.register(Orders, OrdersAdmin)
 admin.site.register(Stocks, StocksAdmin)
 admin.site.register(nmids, NmidsAdmin)
