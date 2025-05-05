@@ -26,6 +26,7 @@
                     <th>Артикул</th>
                     <th>Артикул продавца</th>
                     <th>Красная цена</th>
+                    <th>Остатки</th>
                     <th>Поддерживать цену</th>
                     <th>Статус</th>
                 </tr>
@@ -36,6 +37,7 @@
                     <td>{{ item.nmid }}</td>
                     <td>{{ item.vendorcode }}</td>
                     <td>{{ item.redprice }}</td>
+                    <td>{{ item.quantity }}</td>
                     <td>
                         <input type="number" name="keep_price" value="{{ item.lk__repricer__keep_price }}" class="form-control form-control-sm" style="width: 100px;">
                     </td>

@@ -1,9 +1,9 @@
 from django.core.paginator import Paginator
-from myapp.models import Price
+from myapp.models import Price, Stocks
 from django.shortcuts import render
 from decorators import login_required_cust
+from django.db.models import OuterRef, Subquery, Sum, IntegerField
 
-from database.DataBase import connect_to_database
 
 import logging
 from context_logger import ContextLogger
@@ -26,11 +26,28 @@ def repricer_view(request):
     group_id = custom_data.groups.id
 
     try:
+        stocks_subquery = (
+            Stocks.objects
+            .filter(lk=OuterRef('lk'), nmid=OuterRef('nmid'))
+            .values('lk', 'nmid')
+            .annotate(total_quantity=Sum('quantity'))
+            .values('total_quantity')[:1]
+        )
+
+        # Основной запрос
         queryset = (
             Price.objects
             .filter(lk__groups_id=group_id)
             .prefetch_related('lk__repricer')
-            .values('nmid', 'vendorcode', 'redprice', 'lk__repricer__keep_price', 'lk__repricer__is_active')
+            .annotate(quantity=Subquery(stocks_subquery, output_field=IntegerField()))
+            .values(
+                'nmid',
+                'vendorcode',
+                'redprice',
+                'lk__repricer__keep_price',
+                'lk__repricer__is_active',
+                'quantity',  # добавленное поле
+            )
         )
 
         # Implement pagination
