@@ -55,7 +55,7 @@ class RepricerAdmin(admin.ModelAdmin):
     )
 
     list_filter = ('lk', 'is_active')
-    search_fields = ('nmid')
+    search_fields = ('nmid',)
     ordering = ('is_active',)
 
 admin.site.register(Repricer, RepricerAdmin)
