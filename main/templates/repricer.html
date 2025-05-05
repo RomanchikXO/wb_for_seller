@@ -26,7 +26,8 @@
                     <th>Артикул</th>
                     <th>Артикул продавца</th>
                     <th>Красная цена</th>
-                    <th>Действие</th>
+                    <th>Поддерживать цену</th>
+                    <th>Статус</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,10 +36,8 @@
                     <td>{{ item.nmid }}</td>
                     <td>{{ item.vendorcode }}</td>
                     <td>{{ item.redprice }}</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm">Изменить цену</button>
-                        <button class="btn btn-danger btn-sm">Удалить</button>
-                    </td>
+                    <td>{{ item.lk__repricer__keep_price }}</td>
+                    <td>{{ item.lk__repricer__is_active }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="3">Нет данных</td></tr>
