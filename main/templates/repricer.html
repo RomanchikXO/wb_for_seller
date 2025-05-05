@@ -37,7 +37,7 @@
                     <td>{{ item.nmid }}</td>
                     <td>{{ item.vendorcode }}</td>
                     <td>{{ item.redprice }}</td>
-                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.quantity|default:0 }}</td>
                     <td>
                         <input type="number" name="keep_price" value="{{ item.lk__repricer__keep_price }}" class="form-control form-control-sm" style="width: 100px;">
                     </td>
