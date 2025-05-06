@@ -1,8 +1,12 @@
 from django.core.paginator import Paginator
+from django.http import JsonResponse
+import json
+
 from myapp.models import Price, Stocks
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When
+from django.views.decorators.http import require_POST
 
 
 import logging
@@ -105,3 +109,13 @@ def repricer_view(request):
         'sort_by': sort_by,
         'order': order,
     })
+
+
+@login_required_cust
+@require_POST
+def repricer_save(request):
+    payload = json.loads(request.body)
+    items = payload.get('items', [])
+    logger.info(f"Вот что пришло (items): {items}")
+    # здесь можете применить изменения к БД…
+    return JsonResponse({'status': 'ok', 'received': len(items)})
