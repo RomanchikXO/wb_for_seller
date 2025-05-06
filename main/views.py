@@ -21,6 +21,10 @@ def repricer_view(request):
     page_sizes = [5, 10, 20, 50, 100]
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
+    nmid_filter = request.GET.getlist('nmid')  # фильтр по артикулвм
+    sort_by = request.GET.get('sort_by', 'quantity')  # значение по умолчанию
+    order = request.GET.get('order', 'asc')  # asc / desc
+
     # Валидные поля сортировки (ключ = название в шаблоне, значение = поле в ORM)
     valid_sort_fields = {
         'redprice': 'redprice',
@@ -28,13 +32,7 @@ def repricer_view(request):
         'status': 'lk__repricer__is_active',
     }
 
-    nmid_filter = request.GET.getlist('nmid') #фильтр по артикулвм
-    sort_by = request.GET.get('sort_by', 'quantity')  # значение по умолчанию
-    order = request.GET.get('order', 'asc')  # asc / desc
     sort_field = valid_sort_fields.get(sort_by)
-
-    logger.info(f"{order}  {sort_field}")
-
 
     custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
     group_id = custom_data.groups.id
