@@ -21,6 +21,7 @@ def repricer_view(request):
     page_sizes = [5, 10, 20, 50, 100]
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
+    nmid_filter = request.GET.getlist('nmid') #фильтр по артикулвм
 
     custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
     group_id = custom_data.groups.id
@@ -53,12 +54,16 @@ def repricer_view(request):
         # Получаем уникальные nmid из базы
         nmids = queryset.values_list('nmid', flat=True).distinct()
 
+        if nmid_filter:
+            queryset = queryset.filter(nmid__in=nmid_filter)
+
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
 
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
         page_obj = []
+        nmids = []
         paginator = None
 
     return render(request, 'repricer.html', {
@@ -66,5 +71,6 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': nmids
+        'nmids': nmids,
+        'nmid_filter': nmid_filter,
     })
