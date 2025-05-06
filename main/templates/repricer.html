@@ -164,6 +164,17 @@
             </form>
         </div>
     </div>
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="save-toast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Данные успешно сохранены.
+                </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -198,6 +209,9 @@
           return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, is_active };
         });
 
+        const saveToastEl = document.getElementById('save-toast');
+        const saveToast   = new bootstrap.Toast(saveToastEl);
+
         fetch("{% url 'repricer_save' %}", {
           method: 'POST',
           headers: {
@@ -211,7 +225,10 @@
           throw new Error('Network response was not OK');
         })
         .then(data => {
-          console.log('Сервер вернул:', data);
+            if (data.status === 'ok'){
+                saveToast.show();
+            }
+          {#console.log('Сервер вернул:', data);#}
         })
         .catch(err => console.error('Ошибка при сохранении:', err));
       });
