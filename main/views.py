@@ -50,6 +50,8 @@ def repricer_view(request):
                 'quantity',
             )
         )
+        # Получаем уникальные nmid из базы
+        nmids = queryset.values_list('nmid', flat=True).distinct()
 
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
@@ -64,5 +66,5 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': ['тут', 'пока', 'ничего', 'не', 'работает', 'это', 'тест']
+        'nmids': nmids
     })
