@@ -22,7 +22,7 @@ def repricer_view(request):
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
 
-    custom_data = CustomUser.objects.get(id=request.user.id)
+    custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
     group_id = custom_data.groups.id
 
     try:
@@ -41,6 +41,7 @@ def repricer_view(request):
             .prefetch_related('lk__repricer')
             .annotate(quantity=Subquery(stocks_subquery, output_field=IntegerField()))
             .values(
+                'lk_id',
                 'nmid',
                 'vendorcode',
                 'redprice',
@@ -50,7 +51,6 @@ def repricer_view(request):
             )
         )
 
-        # Implement pagination
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
 
