@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from myapp.models import Price, Stocks
 from django.shortcuts import render
 from decorators import login_required_cust
-from django.db.models import OuterRef, Subquery, Sum, IntegerField
+from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When
 
 
 import logging
@@ -66,9 +66,25 @@ def repricer_view(request):
 
         if nmid_filter:
             queryset = queryset.filter(nmid__in=nmid_filter)
+
         if sort_field:
-            prefix = '-' if order == 'desc' else ''
-            queryset = queryset.order_by(f'{prefix}{sort_field}')
+            if sort_by == 'quantity':
+                # помечаем нули, чтобы увести их в конец
+                queryset = queryset.annotate(
+                    is_zero=Case(When(quantity=0, then=1), default=0, output_field=IntegerField())
+                )
+                ordering = ['is_zero', ('-quantity' if order == 'desc' else 'quantity')]
+            elif sort_by == 'redprice':
+                # помечаем NULL, чтобы увести их в конец
+                queryset = queryset.annotate(
+                    is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
+                )
+                ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
+            else:
+                prefix = '-' if order == 'desc' else ''
+                ordering = [f'{prefix}{sort_field}']
+
+            queryset = queryset.order_by(*ordering)
 
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
