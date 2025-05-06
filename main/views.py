@@ -47,7 +47,7 @@ def repricer_view(request):
                 'redprice',
                 'lk__repricer__keep_price',
                 'lk__repricer__is_active',
-                'quantity',  # добавленное поле
+                'quantity',
             )
         )
 
@@ -64,4 +64,5 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
+        'nmids': ['тут', 'пока', 'ничего', 'не', 'работает', 'это', 'тест']
     })

@@ -1,6 +1,9 @@
 {% extends "base_with_sidebar.html" %}
 
 {% block title %}Репрайсер{% endblock %}
+{% block extra_head %}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
 
 {% block main_content %}
     <h3>Репрайсер</h3>
@@ -19,6 +22,17 @@
                 </select>
             </form>
         </div>
+        <form method="get" class="mb-3">
+            <label for="nmid-select" class="form-label">Фильтр по NMID:</label>
+            <select id="nmid-select" name="nmid" class="form-select" multiple>
+                {% for nmid in nmids %}
+                    <option value="{{ nmid }}" {% if nmid|stringformat:"s" in nmid_filter %}selected{% endif %}>
+                        {{ nmid }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary mt-2">Фильтровать</button>
+        </form>
 
         <table class="table table-bordered">
             <thead>
@@ -107,4 +121,17 @@
 
 
     </div>
+{% endblock %}
+{% block extra_js %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#nmid-select').select2({
+                placeholder: 'Введите NMID для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
 {% endblock %}
