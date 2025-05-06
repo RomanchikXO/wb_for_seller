@@ -23,7 +23,7 @@
             </form>
         </div>
         <form method="get" class="mb-3">
-            <label for="nmid-select" class="form-label">Фильтр по NMID:</label>
+            <label for="nmid-select" class="form-label">Фильтр по артикулам:</label>
             <select id="nmid-select" name="nmid" class="form-select" multiple>
                 {% for nmid in nmids %}
                     <option value="{{ nmid }}" {% if nmid|stringformat:"s" in nmid_filter %}selected{% endif %}>
@@ -39,10 +39,31 @@
                 <tr>
                     <th>Артикул</th>
                     <th>Артикул продавца</th>
-                    <th>Красная цена</th>
-                    <th>Остатки</th>
+                    <th>
+                        <a style="color: black" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=redprice&order={% if sort_by == "redprice" and order == "asc" %}desc{% else %}asc{% endif %}">
+                            Красная цена
+                            {% if sort_by == "redprice" %}
+                                {% if order == "asc" %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a style="color: black" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=quantity&order={% if sort_by == "quantity" and order == "asc" %}desc{% else %}asc{% endif %}">
+                            Остатки
+                            {% if sort_by == "quantity" %}
+                                {% if order == "asc" %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
                     <th>Поддерживать цену</th>
-                    <th>Статус</th>
+                    <th>
+                        <a style="color: black" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">
+                            Статус
+                            {% if sort_by == "status" %}
+                                {% if order == "asc" %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
                 </tr>
             </thead>
             <tbody>

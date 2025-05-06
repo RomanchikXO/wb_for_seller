@@ -21,11 +21,23 @@ def repricer_view(request):
     page_sizes = [5, 10, 20, 50, 100]
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
+    # Валидные поля сортировки (ключ = название в шаблоне, значение = поле в ORM)
+    valid_sort_fields = {
+        'redprice': 'redprice',
+        'quantity': 'quantity',
+        'status': 'lk__repricer__is_active',
+    }
+
     nmid_filter = request.GET.getlist('nmid') #фильтр по артикулвм
+    sort_by = request.GET.get('sort_by', 'quantity')  # значение по умолчанию
+    order = request.GET.get('order', 'asc')  # asc / desc
+    sort_field = valid_sort_fields.get(sort_by)
+
+    logger.info(f"{order}  {sort_field}")
+
 
     custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
     group_id = custom_data.groups.id
-
     try:
         stocks_subquery = (
             Stocks.objects
@@ -56,6 +68,9 @@ def repricer_view(request):
 
         if nmid_filter:
             queryset = queryset.filter(nmid__in=nmid_filter)
+        if sort_field:
+            prefix = '-' if order == 'desc' else ''
+            queryset = queryset.order_by(f'{prefix}{sort_field}')
 
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
@@ -73,4 +88,6 @@ def repricer_view(request):
         'page_sizes': page_sizes,
         'nmids': nmids,
         'nmid_filter': nmid_filter,
+        'sort_by': sort_by,
+        'order': order,
     })
