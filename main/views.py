@@ -90,10 +90,11 @@ def repricer_view(request):
 
             queryset = queryset.order_by(*ordering)
 
-        queryset = queryset.distinct() #уникальные записи
 
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
+
+        logger.info(f"Page object data: {page_obj}")
 
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
