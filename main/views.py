@@ -116,10 +116,10 @@ def repricer_view(request):
 
     return render(request, 'repricer.html', {
         'page_obj': page_obj,
-        'per_page': per_page,
+        'per_page': str(per_page),
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': [i["nmid"] for i in dict_rows],
+        'nmids': [str(i["nmid"]) for i in dict_rows],
         'nmid_filter': nmid_filter,
         'sort_by': sort_by,
         'order': order,
