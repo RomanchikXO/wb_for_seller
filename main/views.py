@@ -5,7 +5,7 @@ import json
 from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
-from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When
+from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When, BooleanField
 from django.views.decorators.http import require_POST
 
 
@@ -38,8 +38,6 @@ def repricer_view(request):
 
     sort_field = valid_sort_fields.get(sort_by)
 
-    custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
-    group_id = custom_data.groups.id
     try:
         # Подзапрос для получения total_quantity из Stocks
         stocks_subquery = (
@@ -51,22 +49,19 @@ def repricer_view(request):
         )
 
         # Подзапрос для получения keep_price и is_active из Repricer
-        repricer_subquery = (
-            Repricer.objects
-            .filter(lk=OuterRef('lk'), nmid=OuterRef('nmid'))
-            .values('keep_price', 'is_active')[:1]  # Извлекаем оба поля
+        repricer_subquery = Repricer.objects.filter(
+            lk=OuterRef('lk'),
+            nmid=OuterRef('nmid')
         )
 
         # Основной запрос
         queryset = (
             Price.objects
-            .filter(lk__groups_id=group_id)
             .annotate(
                 quantity=Subquery(stocks_subquery, output_field=IntegerField()),
-                keep_price=Subquery(repricer_subquery.values('keep_price'), output_field = IntegerField()),  # Извлекаем keep_price
-                is_active = Subquery(repricer_subquery.values('is_active'), output_field=IntegerField())  # Извлекаем is_active
-
-        )
+                keep_price=Subquery(repricer_subquery.values('keep_price')[:1], output_field=IntegerField()),
+                is_active=Subquery(repricer_subquery.values('is_active')[:1], output_field=BooleanField())
+            )
             .values(
                 'lk_id',
                 'nmid',
