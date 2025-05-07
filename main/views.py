@@ -90,6 +90,8 @@ def repricer_view(request):
 
             queryset = queryset.order_by(*ordering)
 
+        queryset = queryset.distinct('nmid', 'lk_id') #уникальные записи
+
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
 
