@@ -111,7 +111,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <nav>
                 <ul class="pagination mb-0">
-                    {% with base_params="&per_page="|add:per_page|stringformat:"d"|add:"&sort_by="|add:sort_by|stringformat:"s"|add:"&order="|add:order|stringformat:"s" %}
+                    {% with base_params="&per_page="|add:per_page|stringformat:"s"|add:"&sort_by="|add:sort_by|stringformat:"s"|add:"&order="|add:order|stringformat:"s" %}
                         {% for nmid in nmid_filter %}
                             {% with base_params=base_params|add:"&nmid="|add:nmid|stringformat:"s" %}
                             {% endwith %}
