@@ -96,11 +96,6 @@ def repricer_view(request):
                     is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
                 )
                 ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
-            elif sort_by == 'is_active':
-                queryset = queryset.annotate(
-                    is_active_annotated = Case(When(lk__repricer__is_active=False, then=1), default=0, output_field=IntegerField())
-                )
-                ordering = ['is_active_annotated', ('-lk__repricer__is_active' if order == 'desc' else 'lk__repricer__is_active')]
             else:
                 prefix = '-' if order == 'desc' else ''
                 ordering = [f'{prefix}{sort_field}']
