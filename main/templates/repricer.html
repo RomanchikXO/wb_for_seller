@@ -154,6 +154,9 @@
 
             <!-- Выбор страницы и per_page -->
             <form method="get" class="d-flex align-items-center ms-3">
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="order" value="{{ order }}">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
                 <label for="pageSelect" class="form-label me-2 mb-0">Страница:</label>
                 <select name="page" id="pageSelect" class="form-select form-select-sm me-3" style="width: auto;"
                         onchange="this.form.submit()">
