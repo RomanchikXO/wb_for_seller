@@ -90,12 +90,12 @@
                         <td>{{ item.redprice }}</td>
                         <td>{{ item.quantity|default:0 }}</td>
                         <td>
-                            <input type="number" name="keep_price" value="{{ item.lk__repricer__keep_price }}"
+                            <input type="number" name="keep_price" value="{{ item.keep_price }}"
                                    class="form-control form-control-sm" style="width: 100px;">
                         </td>
                         <td>
                             <input type="checkbox" class="form-check-input"
-                                   {% if item.lk__repricer__is_active %}checked{% endif %}>
+                                   {% if item.is_active %}checked{% endif %}>
                         </td>
 
                     </tr>

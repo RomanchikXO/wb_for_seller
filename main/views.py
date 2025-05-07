@@ -72,8 +72,8 @@ def repricer_view(request):
                 'nmid',
                 'vendorcode',
                 'redprice',
-                'lk__repricer__keep_price',
-                'lk__repricer__is_active',
+                'keep_price',
+                'is_active',
                 'quantity',
             )
         )
