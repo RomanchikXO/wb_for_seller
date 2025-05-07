@@ -91,6 +91,12 @@ def repricer_view(request):
                     is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
                 )
                 ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
+            elif sort_by == 'is_active':
+                # помечаем неактивные записи (False), чтобы увести их в конец
+                queryset = queryset.annotate(
+                    is_inactive=Case(When(is_active=False, then=1), default=0, output_field=IntegerField())
+                )
+                ordering = ['is_inactive', ('-is_active' if order == 'asc' else 'is_active')]
             else:
                 prefix = '-' if order == 'desc' else ''
                 ordering = [f'{prefix}{sort_field}']
