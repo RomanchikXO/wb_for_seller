@@ -53,7 +53,7 @@ def repricer_view(request):
         queryset = (
             Price.objects
             .filter(lk__groups_id=group_id)
-            .select_related('lk__repricer')
+            .prefetch_related('lk__repricer')
             .annotate(quantity=Subquery(stocks_subquery, output_field=IntegerField()))
             .values(
                 'lk_id',
@@ -67,6 +67,10 @@ def repricer_view(request):
         )
         # Получаем уникальные nmid из базы
         nmids = queryset.values_list('nmid', flat=True).distinct()
+        paginator = Paginator(queryset, per_page)
+        page_obj = paginator.get_page(page_number)
+        logger.info(f"Page object data: {page_obj.object_list}")
+        return
 
         if nmid_filter:
             queryset = queryset.filter(nmid__in=nmid_filter)
