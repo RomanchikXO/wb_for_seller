@@ -94,7 +94,7 @@ def repricer_view(request):
             elif sort_by == 'is_active':
                 # помечаем неактивные записи (False), чтобы увести их в конец
                 queryset = queryset.annotate(
-                    is_inactive=Case(When(is_active=False, then=1), default=0, output_field=BooleanField())
+                    is_inactive=Case(When(is_active=False, then=1), default=False, output_field=BooleanField())
                 )
                 ordering = ['is_inactive', ('-is_active' if order == 'asc' else 'is_active')]
             else:
