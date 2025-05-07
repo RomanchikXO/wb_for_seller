@@ -7,6 +7,7 @@ from django.shortcuts import render
 from decorators import login_required_cust
 from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When, BooleanField
 from django.views.decorators.http import require_POST
+from database.DataBase import connect_to_database
 
 
 import logging
@@ -33,80 +34,84 @@ def repricer_view(request):
     valid_sort_fields = {
         'redprice': 'redprice',
         'quantity': 'quantity',
-        'status': 'lk__repricer__is_active',
+        'status': 'is_active',
     }
 
     sort_field = valid_sort_fields.get(sort_by)
 
     try:
-        # Подзапрос для получения total_quantity из Stocks
-        stocks_subquery = (
-            Stocks.objects
-            .filter(lk=OuterRef('lk'), nmid=OuterRef('nmid'))
-            .values('lk', 'nmid')
-            .annotate(total_quantity=Sum('quantity'))
-            .values('total_quantity')[:1]
-        )
+        sql_query = """
+            SELECT
+                p.lk_id as lk_id,
+                p.nmid as nmid,
+                p.vendorcode as vendorcode,
+                p.redprice as redprice,
+                r.keep_price as keep_price,
+                r.is_active as is_active,
+                COALESCE(s.total_quantity, 0) AS quantity
+            FROM
+                myapp_price p
+            LEFT JOIN (
+                SELECT
+                    lk_id,
+                    nmid,
+                    SUM(quantity) AS total_quantity
+                FROM
+                    myapp_stocks
+                GROUP BY
+                    lk_id, nmid
+            ) s ON p.lk_id = s.lk_id AND p.nmid = s.nmid
+            LEFT JOIN myapp_repricer r ON p.lk_id = r.lk_id AND p.nmid = r.nmid
+        """
 
-        # Подзапрос для получения keep_price и is_active из Repricer
-        repricer_subquery = Repricer.objects.filter(
-            lk=OuterRef('lk'),
-            nmid=OuterRef('nmid')
-        )
-
-        # Основной запрос
-        queryset = (
-            Price.objects
-            .annotate(
-                quantity=Subquery(stocks_subquery, output_field=IntegerField()),
-                keep_price=Subquery(repricer_subquery.values('keep_price')[:1], output_field=IntegerField()),
-                is_active=Subquery(repricer_subquery.values('is_active')[:1], output_field=BooleanField())
-            )
-            .values(
-                'lk_id',
-                'nmid',
-                'vendorcode',
-                'redprice',
-                'keep_price',
-                'is_active',
-                'quantity',
-            )
-        )
-        # Получаем уникальные nmid из базы
-        nmids = queryset.values_list('nmid', flat=True).distinct()
-
+        # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
-            queryset = queryset.filter(nmid__in=nmid_filter)
+            sql_query += " WHERE p.nmid IN (%s)" % ','.join(['%s'] * len(nmid_filter))
 
+        # Определяем порядок сортировки
         if sort_field:
             if sort_by == 'quantity':
-                # помечаем нули, чтобы увести их в конец
-                queryset = queryset.annotate(
-                    is_zero=Case(When(quantity=0, then=1), default=0, output_field=IntegerField())
-                )
-                ordering = ['is_zero', ('-quantity' if order == 'asc' else 'quantity')]
+                sql_query += """
+                        ORDER BY
+                            (CASE WHEN s.total_quantity = 0 THEN 1 ELSE 0 END),
+                            %s %s
+                    """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
             elif sort_by == 'redprice':
-                # помечаем NULL, чтобы увести их в конец
-                queryset = queryset.annotate(
-                    is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
-                )
-                ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
+                sql_query += """
+                        ORDER BY
+                            (CASE WHEN p.redprice IS NULL THEN 1 ELSE 0 END),
+                            %s %s
+                    """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
             elif sort_by == 'is_active':
-                ordering = [('-is_active' if order == 'asc' else 'is_active')]
+                sql_query += """
+                        ORDER BY
+                            r.is_active %s
+                    """ % ('ASC' if order == 'asc' else 'DESC')
             else:
-                prefix = '-' if order == 'desc' else ''
-                ordering = [f'{prefix}{sort_field}']
+                sql_query += """
+                        ORDER BY
+                            %s %s
+                    """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
 
-            queryset = queryset.order_by(*ordering)
+        # Выполнение SQL запроса и получение данных
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, nmid_filter)
+            rows = cursor.fetchall()
 
-        paginator = Paginator(queryset, per_page)
+        columns = [desc[0] for desc in cursor.description]
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+
+        paginator = Paginator(dict_rows, per_page)
         page_obj = paginator.get_page(page_number)
+
+        logger.info(f"123123 {page_obj.object_list}")
 
 
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
         page_obj = []
-        nmids = []
+        dict_rows = []
         paginator = None
 
     return render(request, 'repricer.html', {
@@ -114,7 +119,7 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': nmids,
+        'nmids': [i["nmid"] for i in dict_rows],
         'nmid_filter': nmid_filter,
         'sort_by': sort_by,
         'order': order,
