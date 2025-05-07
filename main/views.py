@@ -88,9 +88,9 @@ def repricer_view(request):
             elif sort_by == 'redprice':
                 # помечаем NULL, чтобы увести их в конец
                 queryset = queryset.annotate(
-                    is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
+                    is_null=Case(When(redprice__isnull=0, then=1), default=0, output_field=IntegerField())
                 )
-                ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
+                ordering = ['is_null', (f'-redprice' if order == 'asc' else 'redprice')]
             else:
                 prefix = '-' if order == 'desc' else ''
                 ordering = [f'{prefix}{sort_field}']
