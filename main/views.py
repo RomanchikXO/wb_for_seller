@@ -105,7 +105,7 @@ def repricer_view(request):
         paginator = Paginator(dict_rows, per_page)
         page_obj = paginator.get_page(page_number)
 
-        logger.info(f"123123 {page_obj.object_list}")
+        # logger.info(f"123123 {page_obj.object_list}")
 
 
     except Exception as e:

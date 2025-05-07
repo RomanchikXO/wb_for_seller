@@ -109,49 +109,55 @@
         </form>
         <!-- Пагинация -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-            {% with "&sort_by="|add:sort_by|add:"&order="|add:order|add:"&per_page="|add:per_page as common_query %}
-            {% endwith %}
             <nav>
                 <ul class="pagination mb-0">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link"
-                               href="?page={{ page_obj.previous_page_number }}{{ common_query }}">«</a>
-                        </li>
-                    {% endif %}
+                    {% with base_params="&per_page="|add:per_page|stringformat:"s"|add:"&sort_by="|add:sort_by|stringformat:"s"|add:"&order="|add:order|stringformat:"s" %}
+                        {% for nmid in nmid_filter %}
+                            {% with base_params=base_params|add:"&nmid="|add:nmid|stringformat:"s" %}
+                            {% endwith %}
+                        {% endfor %}
 
-                    {% if page_obj.number > 3 %}
-                        <li class="page-item"><a class="page-link" href="?page=1{{ common_query }}">1</a></li>
-                        {% if page_obj.number > 4 %}
-                            <li class="page-item disabled"><span class="page-link">…</span></li>
-                        {% endif %}
-                    {% endif %}
-
-                    {% for num in paginator.page_range %}
-                        {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}{{ common_query }}">{{ num }}</a>
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ base_params }}">«</a>
                             </li>
                         {% endif %}
-                    {% endfor %}
 
-                    {% if page_obj.number < paginator.num_pages|add:"-2" %}
-                        {% if page_obj.number < paginator.num_pages|add:"-3" %}
-                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% if page_obj.number > 3 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{{ base_params }}">1</a>
+                            </li>
+                            {% if page_obj.number > 4 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
                         {% endif %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ paginator.num_pages }}{{ common_query }}">{{ paginator.num_pages }}</a>
-                        </li>
-                    {% endif %}
 
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link"
-                               href="?page={{ page_obj.next_page_number }}{{ common_query }}">»</a>
-                        </li>
-                    {% endif %}
+                        {% for num in paginator.page_range %}
+                            {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}{{ base_params }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.number < paginator.num_pages|add:"-2" %}
+                            {% if page_obj.number < paginator.num_pages|add:"-3" %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}{{ base_params }}">{{ paginator.num_pages }}</a>
+                            </li>
+                        {% endif %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ base_params }}">»</a>
+                            </li>
+                        {% endif %}
+                    {% endwith %}
                 </ul>
             </nav>
+
 
             <!-- Выбор страницы и per_page -->
             <form method="get" class="d-flex align-items-center ms-3">
