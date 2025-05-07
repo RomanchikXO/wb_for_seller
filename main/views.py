@@ -64,6 +64,18 @@ def repricer_view(request):
             LEFT JOIN myapp_repricer r ON p.lk_id = r.lk_id AND p.nmid = r.nmid
         """
 
+        sql_nmid = """
+            SELECT p.nmid as nmid FROM myapp_price p
+            join myapp_wblk wblk ON p.lk_id = wblk.id
+        """
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_nmid,)
+            res_nmids = cursor.fetchall()
+
+        columns_nmids = [desc[0] for desc in cursor.description]
+        nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
+
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
             sql_query += " WHERE p.nmid IN (%s)" % ','.join(['%s'] * len(nmid_filter))
@@ -111,7 +123,7 @@ def repricer_view(request):
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
         page_obj = []
-        dict_rows = []
+        nmids = []
         paginator = None
 
     return render(request, 'repricer.html', {
@@ -119,7 +131,7 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': [i["nmid"] for i in dict_rows],
+        'nmids': [i["nmid"] for i in nmids],
         'nmid_filter': nmid_filter,
         'sort_by': sort_by,
         'order': order,
