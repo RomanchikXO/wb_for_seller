@@ -89,13 +89,18 @@ def repricer_view(request):
                 queryset = queryset.annotate(
                     is_zero=Case(When(quantity=0, then=1), default=0, output_field=IntegerField())
                 )
-                ordering = ['is_zero', ('-quantity' if order == 'desc' else 'quantity')]
+                ordering = ['is_zero', ('-quantity' if order == 'asc' else 'quantity')]
             elif sort_by == 'redprice':
                 # помечаем NULL, чтобы увести их в конец
                 queryset = queryset.annotate(
                     is_null=Case(When(redprice__isnull=True, then=1), default=0, output_field=IntegerField())
                 )
                 ordering = ['is_null', (f'-redprice' if order == 'desc' else 'redprice')]
+            elif sort_by == 'is_active':
+                queryset = queryset.annotate(
+                    is_active_annotated = Case(When(lk__repricer__is_active=False, then=1), default=0, output_field=IntegerField())
+                )
+                ordering = ['is_active_annotated', ('-lk__repricer__is_active' if order == 'desc' else 'lk__repricer__is_active')]
             else:
                 prefix = '-' if order == 'desc' else ''
                 ordering = [f'{prefix}{sort_field}']
