@@ -53,7 +53,7 @@ def repricer_view(request):
         queryset = (
             Price.objects
             .filter(lk__groups_id=group_id)
-            .prefetch_related('lk__repricer')
+            .select_related('lk__repricer')
             .annotate(quantity=Subquery(stocks_subquery, output_field=IntegerField()))
             .values(
                 'lk_id',
