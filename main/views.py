@@ -45,7 +45,7 @@ def repricer_view(request):
                 p.lk_id as lk_id,
                 p.nmid as nmid,
                 p.vendorcode as vendorcode,
-                COALESCE(p.redpriceб 0) as redprice,
+                COALESCE(p.redprice, 0) as redprice,
                 r.keep_price as keep_price,
                 COALESCE(r.is_active, FALSE) AS is_active,
                 COALESCE(s.total_quantity, 0) AS quantity
