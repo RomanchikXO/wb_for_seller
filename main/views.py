@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 import json
 
-from myapp.models import Price, Stocks, Repricer
+from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When
@@ -119,12 +119,14 @@ def repricer_save(request):
     try:
         for item in items:
             if not item["keep_price"].isdigit(): item["keep_price"]=0
-            Repricer.objects.filter(
-                nmid=item["nmid"],
-                lk__id=item["lk_id"]
-            ).update(
-                keep_price=item["keep_price"],
-                is_active=item["is_active"]
+            lk_instance = WbLk.objects.get(id=item['lk_id'])
+            Repricer.objects.update_or_create(
+                lk=lk_instance,
+                nmid=item['nmid'],
+                defaults={
+                    'keep_price': item['keep_price'],
+                    'is_active': item['is_active']
+                }
             )
     except Exception as e:
         logger.error(f"Error in repricer_save: {e}")
