@@ -109,17 +109,19 @@
         </form>
         <!-- Пагинация -->
         <div class="d-flex justify-content-between align-items-center mb-3">
+            {% with "&sort_by="|add:sort_by|add:"&order="|add:order|add:"&per_page="|add:per_page as common_query %}
+            {% endwith %}
             <nav>
                 <ul class="pagination mb-0">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}">«</a>
+                               href="?page={{ page_obj.previous_page_number }}{{ common_query }}">«</a>
                         </li>
                     {% endif %}
 
                     {% if page_obj.number > 3 %}
-                        <li class="page-item"><a class="page-link" href="?page=1&per_page={{ per_page }}">1</a></li>
+                        <li class="page-item"><a class="page-link" href="?page=1{{ common_query }}">1</a></li>
                         {% if page_obj.number > 4 %}
                             <li class="page-item disabled"><span class="page-link">…</span></li>
                         {% endif %}
@@ -128,7 +130,7 @@
                     {% for num in paginator.page_range %}
                         {% if num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
                             <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                                <a class="page-link" href="?page={{ num }}{{ common_query }}">{{ num }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
@@ -138,15 +140,14 @@
                             <li class="page-item disabled"><span class="page-link">…</span></li>
                         {% endif %}
                         <li class="page-item">
-                            <a class="page-link"
-                               href="?page={{ paginator.num_pages }}&per_page={{ per_page }}">{{ paginator.num_pages }}</a>
+                            <a class="page-link" href="?page={{ paginator.num_pages }}{{ common_query }}">{{ paginator.num_pages }}</a>
                         </li>
                     {% endif %}
 
                     {% if page_obj.has_next %}
                         <li class="page-item">
                             <a class="page-link"
-                               href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">»</a>
+                               href="?page={{ page_obj.next_page_number }}{{ common_query }}">»</a>
                         </li>
                     {% endif %}
                 </ul>
