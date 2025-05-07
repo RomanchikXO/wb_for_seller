@@ -122,8 +122,11 @@ def update_google_sheet_data_with_format(
 
     rows = []
     #ниже создаем массив с индексами всех строк с размерами
-    indexes_row_sizes = [ind for ind, _data in enumerate(values) if re.match(r'^\d+х\d+$', _data[0])]
+    indexes_row_sizes = [ind for ind, _data in enumerate(values) if re.match(r'^\d+х\d+(?:\s\d+)?$', _data[0])]
     indexes_row_sizes.append(len(values))
+
+    # Ниже массив со столбцами с формулами
+    index_formula = [1] + [i for i in range(3, len(values[0]), 4)]
     # Преобразуем values → rows with userEnteredValue
     try:
         for ind_1, row in enumerate(values): # тут итерация по строкам
@@ -147,9 +150,9 @@ def update_google_sheet_data_with_format(
                             )
                         else:
                             row_data["values"].append({"userEnteredValue": {"stringValue": str(cell)}})
-            elif re.match(r'^\d+х\d+$', row[0]): # серые строки с размерами
+            elif re.match(r'^\d+х\d+(?:\s\d+)?$', row[0]): # серые строки с размерами
                 for ind_2, cell in enumerate(row):
-                    if cell and not re.match(r'^\d+х\d+$', cell):
+                    if (ind_2 in index_formula) and not re.match(r'^\d+х\d+(?:\s\d+)?$', cell):
                         row_data["values"].append(
                             {
                                 "userEnteredValue": {"formulaValue": f"=SUM({get_column_letter(ind_2+1)}{ind_1+2}:{get_column_letter(ind_2+1)}{indexes_row_sizes[indexes_row_sizes.index(ind_1)+1]})"},
