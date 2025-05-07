@@ -67,10 +67,10 @@ def repricer_view(request):
         )
         # Получаем уникальные nmid из базы
         nmids = queryset.values_list('nmid', flat=True).distinct()
-        paginator = Paginator(queryset, per_page)
-        page_obj = paginator.get_page(page_number)
-        logger.info(f"Page object data: {page_obj.object_list}")
-        return
+
+        pag = Paginator(queryset, per_page)
+        page_o = pag.get_page(page_number)
+        logger.info(f"Page object data: {page_o.object_list}")
 
         if nmid_filter:
             queryset = queryset.filter(nmid__in=nmid_filter)
