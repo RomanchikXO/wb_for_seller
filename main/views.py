@@ -89,12 +89,10 @@ def repricer_view(request):
                 ordering = [f'{prefix}{sort_field}']
 
             queryset = queryset.order_by(*ordering)
-        queryset = queryset.distinct()
 
         paginator = Paginator(queryset, per_page)
         page_obj = paginator.get_page(page_number)
 
-        # logger.info(f"Page object data: {page_obj.object_list}")
 
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
