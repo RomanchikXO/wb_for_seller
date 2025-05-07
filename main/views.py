@@ -41,6 +41,7 @@ def repricer_view(request):
     custom_data = CustomUser.objects.get(id=request.session.get('user_id'))
     group_id = custom_data.groups.id
     try:
+        # Подзапрос для получения total_quantity из Stocks
         stocks_subquery = (
             Stocks.objects
             .filter(lk=OuterRef('lk'), nmid=OuterRef('nmid'))
@@ -49,12 +50,23 @@ def repricer_view(request):
             .values('total_quantity')[:1]
         )
 
+        # Подзапрос для получения keep_price и is_active из Repricer
+        repricer_subquery = (
+            Repricer.objects
+            .filter(lk=OuterRef('lk'), nmid=OuterRef('nmid'))
+            .values('keep_price', 'is_active')[:1]  # Извлекаем оба поля
+        )
+
         # Основной запрос
         queryset = (
             Price.objects
             .filter(lk__groups_id=group_id)
-            .prefetch_related('nmid')
-            .annotate(quantity=Subquery(stocks_subquery, output_field=IntegerField()))
+            .annotate(
+                quantity=Subquery(stocks_subquery, output_field=IntegerField()),
+                keep_price=Subquery(repricer_subquery.values('keep_price'), output_field = IntegerField()),  # Извлекаем keep_price
+                is_active = Subquery(repricer_subquery.values('is_active'), output_field=IntegerField())  # Извлекаем is_active
+
+        )
             .values(
                 'lk_id',
                 'nmid',
@@ -67,10 +79,6 @@ def repricer_view(request):
         )
         # Получаем уникальные nmid из базы
         nmids = queryset.values_list('nmid', flat=True).distinct()
-
-        pag = Paginator(queryset, per_page)
-        page_o = pag.get_page(page_number)
-        logger.info(f"Page object data: {page_o.object_list}")
 
         if nmid_filter:
             queryset = queryset.filter(nmid__in=nmid_filter)
