@@ -87,6 +87,9 @@ async def set_price_on_wb_from_repricer():
         }
         for key, value in articles.items()
     ]
+    if not param:
+        logger.info("Нет товаров для обновления цены")
+        return
 
     request = {}
 
