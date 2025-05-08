@@ -122,7 +122,7 @@ async def set_price_on_wb_from_repricer():
         row_placeholders = ", ".join(groups)
         flat_params = [x for triple in values for x in triple]
         query = f"""
-            UPDATE myapp_prices AS mp
+            UPDATE myapp_price AS mp
             SET 
               redprice = d.keep_price,
               sizes = (
