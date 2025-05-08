@@ -114,7 +114,12 @@ async def set_price_on_wb_from_repricer():
         return
     try:
         values = [(item["nmID"], item["keep_price"], item["price"]) for item in combined]
-        row_placeholders = ", ".join(["(%s, %s, %s)"] * len(values))
+        groups = []
+        for idx in range(len(values)):
+            # base — сдвиг для этой тройки
+            base = idx * 3
+            groups.append(f"(${base + 1}, ${base + 2}, ${base + 3})")
+        row_placeholders = ", ".join(groups)
         flat_params = [x for triple in values for x in triple]
         query = f"""
             UPDATE myapp_prices AS mp
@@ -131,7 +136,7 @@ async def set_price_on_wb_from_repricer():
                 {row_placeholders}
             ) AS d(nmid, keep_price, price)
             WHERE mp.nmid = d.nmid;
-            """
+        """
 
         await conn.execute(query, *flat_params)
 
