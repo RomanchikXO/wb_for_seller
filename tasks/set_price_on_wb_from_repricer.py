@@ -70,10 +70,6 @@ def set_current_list(data: List[dict])-> dict:
 async def set_price_on_wb_from_repricer():
     result = await get_price_from_db_dor_wb()
 
-    if not result:
-        logger.info("Отсутствуют товары для установки цен")
-        return
-
     try:
         articles = set_current_list(result)
         combined = sum(articles.values(), [])  # получаем массив со словарями [{}, {}]
