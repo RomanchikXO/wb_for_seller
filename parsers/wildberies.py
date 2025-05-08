@@ -284,7 +284,7 @@ async def wb_api(session, param):
             "skipDeletedNm": True if not param.get("skipDeletedNm") else param["skipDeletedNm"], #Скрыть удалённые товары
         }
 
-        view = 'post'
+        view = "post"
 
     if param["type"] == "get_stocks_data":
         # Метод предоставляет количество остатков товаров на складах WB.
@@ -295,6 +295,18 @@ async def wb_api(session, param):
         API_URL = "https://statistics-api.wildberries.ru/api/v1/supplier/stocks"
 
         view = "get"
+
+    if param["type"] == "set_price_and_discount":
+        # Метод устанавливает цены и скидки для товаров.
+        # Максимум 10 запросов за 6 секунд
+        # Максимум 1 000 товаров
+        # Цена и скидка не могут быть пустыми одновременно
+        # Если новая цена со скидкой будет хотя бы в 3 раза меньше старой, она попадёт в карантин, и товар будет продаваться по старой цене
+        API_URL = "https://discounts-prices-api.wildberries.ru/api/v2/upload/task"
+
+        data = param["data"] # List[dict]  где dict {"nmID": int, "price": int, "discount": int}
+        view = "post"
+
 
 
     headers = {

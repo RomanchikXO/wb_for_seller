@@ -3,6 +3,7 @@ import asyncio
 
 from parsers.wildberies import get_nmids, get_stocks_data_2_weeks, get_orders
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices, get_black_price_spp
+from tasks.set_price_on_wb_from_repricer import set_price_on_wb_from_repricer
 from tasks.google_podsort import set_orders_quantity_in_google
 from tasks.google_wb_prices import process_data
 
@@ -82,4 +83,8 @@ def get_set_ord_quant_to_google():
 def set_black_price_spp_on_db():
     logger.info("🟢 Обновляем spp и blackprice в БД")
     asyncio.run(get_black_price_spp())
-    logger.info("spp и blackprice в БД обновлены")
+    logger.info("✅ spp и blackprice в БД обновлены")
+
+    logger.info("🟢 Обновляем цену в репрайсере")
+    asyncio.run(set_price_on_wb_from_repricer())
+    logger.info("✅ Цены обновлены")
