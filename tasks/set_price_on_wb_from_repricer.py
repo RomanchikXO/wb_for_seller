@@ -59,6 +59,7 @@ def set_current_list(data: List[dict])-> dict:
                     "nmID":int(i["nmid"]),
                     "price": math.ceil(math.ceil(math.ceil(i["keep_price"] / 97 * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100),
                     "discount": int(i["discount"]),
+                    "keep_price": i["keep_price"],
                 }
             )
     except Exception as e:
@@ -75,6 +76,11 @@ async def set_price_on_wb_from_repricer():
 
     try:
         articles = set_current_list(result)
+        combined = sum(articles.values(), [])  # получаем массив со словарями [{}, {}]
+        articles = {
+            k: [{k2: v2 for k2, v2 in d.items() if k2 != "keep_price"} for d in v]
+            for k, v in articles.items()
+        }
     except Exception as e:
         logger.error(f"Новые цены не установлены. Ошибка: {e}")
         return
@@ -97,6 +103,40 @@ async def set_price_on_wb_from_repricer():
         async with aiohttp.ClientSession() as session:
             for seller in param:
                 request[seller["API_KEY"]] = wb_api(session, seller)
-            results = await asyncio.gather(*request.values())
+            await asyncio.gather(*request.values())
     except Exception as e:
         logger.error(f"Цены не установлены. Ошибка: {e}")
+        return
+
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning("Ошибка подключения к БД в set_price_on_wb_from_repricer")
+        return
+    try:
+        values = [(item["nmID"], item["keep_price"], item["price"]) for item in combined]
+        row_placeholders = ", ".join(["(%s, %s, %s)"] * len(values))
+        flat_params = [x for triple in values for x in triple]
+        query = f"""
+            UPDATE myapp_prices AS mp
+            SET 
+              redprice = d.keep_price,
+              sizes = (
+                SELECT jsonb_agg(
+                  jsonb_set(elem, '{{price}}', to_jsonb(d.price), false)
+                )
+                FROM jsonb_array_elements(mp.sizes) AS elem
+              )
+            FROM (
+              VALUES
+                {row_placeholders}
+            ) AS d(nmid, keep_price, price)
+            WHERE mp.nmid = d.nmid;
+            """
+
+        await conn.execute(query, *flat_params)
+
+    except Exception as e:
+        logger.error(f"Ошибка обновления цен в БД myapp_price после репрайсинга. Error: {e}")
+    finally:
+        await conn.close()
+
