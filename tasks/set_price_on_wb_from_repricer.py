@@ -56,7 +56,7 @@ def set_current_list(data: List[dict])-> dict:
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
-                    "price": int(i["keep_price"] * 1.03 * (i["spp"] / 100 + 1) * (i["discount"] / 100 + 1)),
+                    "price": int((((i["keep_price"] / 97 * 100) / i["spp"] * 100) / i["discount"] * 100)),
                     "discount": int(i["discount"]),
                 }
             )
