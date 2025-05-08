@@ -6,6 +6,7 @@ from context_logger import ContextLogger
 from typing import List
 from parsers.wildberies import wb_api
 import aiohttp
+import math
 
 logger = ContextLogger(logging.getLogger("core"))
 
@@ -56,7 +57,7 @@ def set_current_list(data: List[dict])-> dict:
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
-                    "price": int((((i["keep_price"] / 97 * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100)),
+                    "price": math.ceil((((i["keep_price"] / 97 * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100)),
                     "discount": int(i["discount"]),
                 }
             )
