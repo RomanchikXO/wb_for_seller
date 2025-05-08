@@ -70,6 +70,10 @@ def set_current_list(data: List[dict])-> dict:
 async def set_price_on_wb_from_repricer():
     result = await get_price_from_db_dor_wb()
 
+    if not result:
+        logger.info("Отсутствуют товары для установки цен")
+        return
+
     try:
         articles = set_current_list(result)
         combined = sum(articles.values(), [])  # получаем массив со словарями [{}, {}]
@@ -114,7 +118,7 @@ async def set_price_on_wb_from_repricer():
         for idx in range(len(values)):
             # base — сдвиг для этой тройки
             base = idx * 3
-            groups.append(f"(${base + 1}, ${base + 2}, ${base + 3})")
+            groups.append(f"(${base+1}::integer, ${base+2}::numeric, ${base+3}::numeric)")
         row_placeholders = ", ".join(groups)
         flat_params = [x for triple in values for x in triple]
         query = f"""
