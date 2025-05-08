@@ -304,7 +304,9 @@ async def wb_api(session, param):
         # Если новая цена со скидкой будет хотя бы в 3 раза меньше старой, она попадёт в карантин, и товар будет продаваться по старой цене
         API_URL = "https://discounts-prices-api.wildberries.ru/api/v2/upload/task"
 
-        data = param["data"] # List[dict]  где dict {"nmID": int, "price": int, "discount": int}
+        data = {
+            "data": param["data"]
+        } # List[dict]  где dict {"nmID": int, "price": int, "discount": int}
         view = "post"
 
 
