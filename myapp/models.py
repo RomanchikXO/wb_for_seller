@@ -16,6 +16,8 @@ class WbLk(models.Model):
     groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True) #groups_id в бд
     name = models.CharField(max_length=255)
     token = models.CharField(max_length=400)
+    number = models.BigIntegerField(default=0, null=True)
+    cookie = models.TextField(default='', null=True)
 
     class Meta:
         verbose_name = "Личный кабинет"
