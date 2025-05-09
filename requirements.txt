@@ -74,3 +74,4 @@ virtualenv==20.30.0
 wcwidth==0.2.13
 yarl==1.20.0
 django-celery-beat==2.8.0
+playwright==1.52.0
