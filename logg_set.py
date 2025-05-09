@@ -40,6 +40,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'cookie_updater': {
+            'handlers': ['db'],
+            'level': 'INFO',
+            'propagate': True,
+        },
         'google': {
             'handlers': ['db'],
             'level': 'INFO',
