@@ -18,6 +18,7 @@ class WbLk(models.Model):
     token = models.CharField(max_length=400)
     number = models.BigIntegerField(default=0, null=True)
     cookie = models.TextField(default='', null=True)
+    authorizev3 = models.TextField(default='', null=True)
 
     class Meta:
         verbose_name = "Личный кабинет"
