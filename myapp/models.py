@@ -33,6 +33,8 @@ class CustomUser(models.Model):
     name = models.CharField(max_length=255, unique=True)
     password = models.CharField(max_length=255)
     groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True, default=None)
+    tg_id = models.BigIntegerField(default=0, null=True)
+    tg_status = models.IntegerField(default=0, null=True)
 
     last_login = models.DateTimeField(null=True, blank=True)
 
