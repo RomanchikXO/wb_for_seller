@@ -20,6 +20,7 @@ class WbLk(models.Model):
     cookie = models.TextField(default='', null=True)
     authorizev3 = models.TextField(default='', null=True)
     inn = models.BigIntegerField(default=0, null=True)
+    tg_id = models.BigIntegerField(default=0, null=True)
 
     class Meta:
         verbose_name = "Личный кабинет"
