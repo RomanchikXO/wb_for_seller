@@ -1,4 +1,4 @@
-from loader_bot import bot
+from BOT.loader_bot import bot
 import handlers  # noqa
 from utils.set_bot_commands import set_default_commands
 import logging

@@ -36,6 +36,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+      PYTHONPATH: /app
 
   playwright_cookie_updater:
     build: .
@@ -51,6 +52,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+      PYTHONPATH: /app
 
   django:
     build: .
