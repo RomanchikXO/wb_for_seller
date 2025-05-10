@@ -45,6 +45,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'bot': {
+            'handlers': ['db'],
+            'level': 'INFO',
+            'propagate': True,
+        },
         'google': {
             'handlers': ['db'],
             'level': 'INFO',
