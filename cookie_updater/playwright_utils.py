@@ -59,10 +59,14 @@ async def login_and_get_context():
     while not sms_code:
         status = get_status(result["tg_id"])
         if status and status.startswith("code_"):
-            sms_code = int(status.replace("code_", ""))
+            sms_code = str(status.replace("code_", ""))
             break
         time.sleep(10)
-    await page.fill('input[data-testid="sms-code-input"]', str(sms_code))
+    try:
+        await page.fill('input[data-testid="sms-code-input"]', sms_code)
+    except Exception as e:
+        logger.error(f"Ошибка при вставке смс. Код из смс: {sms_code}. Ошибка: {e}")
+        raise
 
 
     # Убеждаемся, что авторизация прошла и редирект на seller.wildberries.ru
