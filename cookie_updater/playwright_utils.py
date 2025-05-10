@@ -62,7 +62,7 @@ async def login_and_get_context():
             sms_code = int(status.replace("code_", ""))
             break
         time.sleep(10)
-    await page.fill('input[data-testid="sms-code-input"]', sms_code)
+    await page.fill('input[data-testid="sms-code-input"]', str(sms_code))
 
 
     # Убеждаемся, что авторизация прошла и редирект на seller.wildberries.ru
