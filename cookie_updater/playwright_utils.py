@@ -63,8 +63,9 @@ async def login_and_get_context():
             break
         time.sleep(10)
     try:
-        await page.fill('input[data-testid="sms-code-input"]', sms_code)
+        await page.fill('input[data-testid="sms-code-input"]', str(sms_code))
     except Exception as e:
+        print(f"Ошибка при вставке смс. Код из смс: {sms_code}. Ошибка: {e}")
         logger.error(f"Ошибка при вставке смс. Код из смс: {sms_code}. Ошибка: {e}")
         raise
 
