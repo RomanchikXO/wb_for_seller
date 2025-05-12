@@ -64,10 +64,10 @@ def repricer_view(request):
             LEFT JOIN myapp_repricer r ON p.lk_id = r.lk_id AND p.nmid = r.nmid
         """
 
-        sql_nmid = """
-            SELECT p.nmid as nmid FROM myapp_price p
-            join myapp_wblk wblk ON p.lk_id = wblk.id
-        """
+        sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
+                    "FROM myapp_price p "
+                    "JOIN myapp_wblk wblk "
+                    "ON p.lk_id = wblk.id")
         conn = connect_to_database()
         with conn.cursor() as cursor:
             cursor.execute(sql_nmid,)
@@ -75,6 +75,13 @@ def repricer_view(request):
 
         columns_nmids = [desc[0] for desc in cursor.description]
         nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
+        combined_list = [
+            {
+                "nmid": item['nmid'],
+                "vendorcode": item['vendorcode'],
+            }
+            for item in nmids
+        ]
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -131,7 +138,7 @@ def repricer_view(request):
         'per_page': per_page,
         'paginator': paginator,
         'page_sizes': page_sizes,
-        'nmids': [i["nmid"] for i in nmids],
+        'nmids': combined_list,
         'nmid_filter': nmid_filter,
         'sort_by': sort_by,
         'order': order,
