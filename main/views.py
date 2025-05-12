@@ -264,14 +264,11 @@ def podsort_view(request):
         with conn.cursor() as cursor:
             cursor.execute(sql_query, [two_weeks_ago])
             rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+            dict_rows = [dict(zip(columns, row)) for row in rows]
     except Exception as e:
         logger.error(f"Чтото с запросом в podsort_view: {e}")
 
-    try:
-        columns = [desc[0] for desc in cursor.description]
-        dict_rows = [dict(zip(columns, row)) for row in rows]
-    except Exception as e:
-        logger.error(f"Ошибка при первичной обработке данных в podsort_view: {e}")
 
     try:
         items = {}
