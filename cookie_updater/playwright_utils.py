@@ -100,17 +100,32 @@ async def get_and_store_cookies(page):
         await conn.close()
 
     for inn in inns: # тут inns это массив с инн с БД
-        await page.get_by_role("button", name="Pear Home").click()
+        try:
+            await page.wait_for_load_state("networkidle")
+        except:
+            time.sleep(10)
+        try:
+            close_button = page.locator('button.button__P33MNSQQle.onlyIcon__Dnfr9cMrTK')
+            await close_button.wait_for(state="visible", timeout=10000)
+            await close_button.click(timeout=5000)
+        except:
+            pass
+
+        try:
+            await page.hover("button:has-text('ИП Элларян А. А.')")
+        except Exception as e:
+            await page.hover("button:has-text('Pear Home')")
         await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
 
         target_text = f"ИНН {inn['inn']}"
-        supplier_radio = await page.locator(
-            f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') input[type='radio']"
+        supplier_radio_label = page.locator(
+            f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
         )
-        await supplier_radio.click()
+        await supplier_radio_label.wait_for(state="visible", timeout=5000)
+        await supplier_radio_label.click()
 
-        # Ожидаем завершения навигации (или загрузки страницы) после клика
-        await page.wait_for_navigation(timeout=30000) # Таймаут 30 секунд, можно увеличить, если нужно
+        async with page.expect_navigation(timeout=30000):
+            await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
 
         cookies = await page.context.cookies()
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
