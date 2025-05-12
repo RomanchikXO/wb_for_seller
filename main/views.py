@@ -5,9 +5,9 @@ import json
 from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
-from django.db.models import OuterRef, Subquery, Sum, IntegerField, Case, When, BooleanField
 from django.views.decorators.http import require_POST
 from database.DataBase import connect_to_database
+from datetime import datetime, timedelta
 
 
 import logging
@@ -15,6 +15,7 @@ from context_logger import ContextLogger
 from myapp.models import CustomUser
 
 logger = ContextLogger(logging.getLogger("parsers"))
+
 
 @login_required_cust
 def main_view(request):
@@ -170,8 +171,18 @@ def repricer_save(request):
 
 @login_required_cust
 def podsort_view(request):
+    now_msk = datetime.now() + timedelta(hours=3)
+    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+    tree_days_ago = yesterday_end - timedelta(days=3)
+    seven_days_ago = yesterday_end - timedelta(days=7)
+    two_weeks_ago = yesterday_end - timedelta(weeks=2)
+    thirty_days_ago = yesterday_end - timedelta(days=30)
+
+
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
+
+
     warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула", "Санкт-Петербург"]
     try:
         sql_query = """
@@ -204,7 +215,7 @@ def podsort_view(request):
                         COUNT(o.id) AS total_orders
                     FROM myapp_orders o
                     WHERE
-                        o.date >= NOW() - INTERVAL '2 weeks'
+                        o.date >= %s
                         AND (
                             o.warehousename LIKE 'Казань%'   OR
                             o.warehousename LIKE 'Подольск%' OR
@@ -251,12 +262,18 @@ def podsort_view(request):
         """
         conn = connect_to_database()
         with conn.cursor() as cursor:
-            cursor.execute(sql_query,)
+            cursor.execute(sql_query, [two_weeks_ago])
             rows = cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Чтото с запросом в podsort_view: {e}")
 
+    try:
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
+    except Exception as e:
+        logger.error(f"Ошибка при первичной обработке данных в podsort_view: {e}")
 
+    try:
         items = {}
         for row in dict_rows:
             if items.get(row["nmid"]):
@@ -298,38 +315,8 @@ def podsort_view(request):
         # paginator = Paginator(dict_rows, 10)
         # page_obj = paginator.get_page(1)
     except Exception as e:
-        logger.error(f"Error in podsort_view: {e}")
+        logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
 
-
-
-
-    # items = [
-    #     {
-    #         "id": 1,
-    #         "article": "12345",
-    #         "vendorcode": "A123",
-    #         "orders": 10,
-    #         "stock": 50,
-    #         "ABC": "формула",
-    #         "turnover_total": "остатки / кол-во заказов",
-    #         "subitems": [
-    #             {"warehouse": "КазанПлова", "order": 7, "stock": 20, "turnover": "20/7"},
-    #             {"warehouse": "ЕкатеринБургер", "order": 3, "stock": 30, "turnover": "30/3"},
-    #         ],
-    #     },
-    #     {
-    #         "id": 2,
-    #         "article": "67890",
-    #         "internal_article": "B456",
-    #         "orders": 20,
-    #         "warehouse": "Склад 2",
-    #         "stock": 30,
-    #         "subitems": [
-    #             {"sub_article": "67890-1", "order": 8, "stock": 12},
-    #             {"sub_article": "67890-2", "order": 5, "stock": 8},
-    #         ],
-    #     },
-    # ]
 
     return render(
         request,
