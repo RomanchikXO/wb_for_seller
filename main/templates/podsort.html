@@ -1,0 +1,114 @@
+{% extends "base_with_sidebar.html" %}
+
+{% block title %}Подсортировщик{% endblock %}
+{% block extra_head %}
+    <style>
+        .transition-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+{% endblock %}
+
+{% block main_content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Подсортировщик</h1>
+        <div class="d-flex gap-3">
+            <div>
+                <label for="order-period" class="form-label mb-0">Заказы период:</label>
+                <select id="order-period" class="form-select form-select-sm">
+                    {% for days in order_periods %}
+                        <option value="{{ days }}">{{ days }} дней</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
+                <select id="turnover-period" class="form-select form-select-sm">
+                    {% for days in turnover_periods %}
+                        <option value="{{ days }}">{{ days }} дней</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Артикул</th>
+                <th>Внутренний артикул</th>
+                <th>Заказы</th>
+                <th>Остатки</th>
+                <th>ABC</th>
+                <th>Оборачиваемость общая</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td>
+                        <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#subitems-{{ item.id }}"
+                            aria-expanded="false"
+                            aria-controls="subitems-{{ item.id }}">
+                            <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i> {{ item.article }}
+                        </button>
+                    </td>
+                    <td>{{ item.vendorcode }}</td>
+                    <td>{{ item.orders }}</td>
+                    <td>{{ item.stock }}</td>
+                    <td>{{ item.ABC }}</td>
+                    <td>{{ item.turnover_total }}</td>
+                </tr>
+                <tr class="collapse" id="subitems-{{ item.id }}">
+                    <td colspan="6">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Склад</th>
+                                    <th>Заказы</th>
+                                    <th>Остатки</th>
+                                    <th>Оборачиваемость</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subitem in item.subitems %}
+                                    <tr>
+                                        <td>{{ subitem.warehouse }}</td>
+                                        <td>{{ subitem.order }}</td>
+                                        <td>{{ subitem.stock }}</td>
+                                        <td>{{ subitem.turnover }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
+                const targetId = btn.getAttribute("data-bs-target");
+                const icon = btn.querySelector("i");
+
+                const collapseElement = document.querySelector(targetId);
+                collapseElement.addEventListener("show.bs.collapse", function () {
+                    icon.classList.remove("bi-chevron-right");
+                    icon.classList.add("bi-chevron-down");
+                });
+                collapseElement.addEventListener("hide.bs.collapse", function () {
+                    icon.classList.remove("bi-chevron-down");
+                    icon.classList.add("bi-chevron-right");
+                });
+            });
+        });
+    </script>
+{% endblock %}
