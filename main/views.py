@@ -195,14 +195,14 @@ def podsort_view(request):
                         SUM(s.quantity) AS total_quantity
                     FROM myapp_stocks s
                     WHERE
-                        s.warehousename LIKE 'Казань%'   OR
-                        s.warehousename LIKE 'Подольск%' OR
-                        s.warehousename LIKE 'Екатеринбург%' OR
-                        s.warehousename LIKE 'Новосибирск%' OR
-                        s.warehousename LIKE 'Краснодар%' OR
-                        s.warehousename LIKE 'Коледино%' OR
-                        s.warehousename LIKE 'Тула%' OR
-                        s.warehousename LIKE 'Санкт-Петербург%'
+                        s.warehousename LIKE 'Казань%%'   OR
+                        s.warehousename LIKE 'Подольск%%' OR
+                        s.warehousename LIKE 'Екатеринбург%%' OR
+                        s.warehousename LIKE 'Новосибирск%%' OR
+                        s.warehousename LIKE 'Краснодар%%' OR
+                        s.warehousename LIKE 'Коледино%%' OR
+                        s.warehousename LIKE 'Тула%%' OR
+                        s.warehousename LIKE 'Санкт-Петербург%%'
                     GROUP BY
                         s.nmid, s.warehousename
                 ),
@@ -217,14 +217,14 @@ def podsort_view(request):
                     WHERE
                         o.date >= %s
                         AND (
-                            o.warehousename LIKE 'Казань%'   OR
-                            o.warehousename LIKE 'Подольск%' OR
-                            o.warehousename LIKE 'Екатеринбург%' OR
-                            o.warehousename LIKE 'Новосибирск%' OR
-                            o.warehousename LIKE 'Краснодар%' OR
-                            o.warehousename LIKE 'Коледино%' OR
-                            o.warehousename LIKE 'Тула%' OR
-                            o.warehousename LIKE 'Санкт-Петербург%'
+                            o.warehousename LIKE 'Казань%%'   OR
+                            o.warehousename LIKE 'Подольск%%' OR
+                            o.warehousename LIKE 'Екатеринбург%%' OR
+                            o.warehousename LIKE 'Новосибирск%%' OR
+                            o.warehousename LIKE 'Краснодар%%' OR
+                            o.warehousename LIKE 'Коледино%%' OR
+                            o.warehousename LIKE 'Тула%%' OR
+                            o.warehousename LIKE 'Санкт-Петербург%%'
                         )
                     GROUP BY
                         o.nmid, o.warehousename
@@ -262,8 +262,12 @@ def podsort_view(request):
         """
         conn = connect_to_database()
         with conn.cursor() as cursor:
-            cursor.execute(sql_query, [two_weeks_ago])
-            rows = cursor.fetchall()
+            try:
+                cursor.execute(sql_query, [two_weeks_ago])
+                rows = cursor.fetchall()
+                logger.info(rows)
+            except Exception:
+                logger.exception("Сбой при выполнении podsort_view")
             columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
     except Exception as e:
