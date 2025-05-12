@@ -265,7 +265,6 @@ def podsort_view(request):
             try:
                 cursor.execute(sql_query, [two_weeks_ago])
                 rows = cursor.fetchall()
-                logger.info(rows)
             except Exception:
                 logger.exception("Сбой при выполнении podsort_view")
             columns = [desc[0] for desc in cursor.description]
