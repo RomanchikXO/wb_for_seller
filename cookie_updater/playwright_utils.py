@@ -141,7 +141,7 @@ async def get_and_store_cookies(page):
                 conn=conn,
                 table_name="myapp_wblk",
                 data=dict(
-                    lk_id=inn["id"],
+                    id=inn["id"],
                     cookie=cookies_str,
                     authorizev3=authorizev3
                 ),
