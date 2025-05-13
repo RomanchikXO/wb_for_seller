@@ -4,7 +4,6 @@ import time
 from BOT.loader_bot import bot
 from playwright.async_api import async_playwright
 from database.DataBase import async_connect_to_database
-from database.funcs_db import add_set_data_from_db
 import logging
 from context_logger import ContextLogger
 from BOT.states import set_status, get_status
@@ -134,22 +133,21 @@ async def get_and_store_cookies(page):
         authorizev3 = {cookie['name']:cookie['value'] for cookie in cookies if cookie.get("name", "") == "WBTokenV3"}
         authorizev3 = authorizev3["WBTokenV3"]
 
-        conn = None
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.warning("Ошибка подключения к БД в get_and_store_cookies")
+            return
         try:
-            conn = await async_connect_to_database()
-            await add_set_data_from_db(
-                conn=conn,
-                table_name="myapp_wblk",
-                data=dict(
-                    id=inn["id"],
-                    cookie=cookies_str,
-                    authorizev3=authorizev3
-                ),
-                conflict_fields=["id"]
-            )
+            query = """
+                    UPDATE myapp_wblk 
+                    SET
+                        cookie = $1,
+                        authorizev3 = $2
+                    WHERE id = $3
+                """
+            await conn.execute(query, cookies_str, authorizev3, inn["id"])
         except Exception as e:
-            logger.error(f"Ошибка при обновлении кукков: {e}")
+            logger.error(f"Ошибка обновления кукков в лк. Error: {e}")
         finally:
-            if conn:
-                await conn.close()
+            await conn.close()
 
