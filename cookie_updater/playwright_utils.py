@@ -64,7 +64,6 @@ async def login_and_get_context():
     try:
         await page.fill('input[data-testid="sms-code-input"]', str(sms_code))
     except Exception as e:
-        print(f"Ошибка при вставке смс. Код из смс: {sms_code}. Ошибка: {e}")
         logger.error(f"Ошибка при вставке смс. Код из смс: {sms_code}. Ошибка: {e}")
         raise
 
@@ -93,7 +92,6 @@ async def login_and_get_context():
 
 
 async def get_and_store_cookies(page):
-    print('мы в get_and_store_cookies')
 
     cookies_need = [
         "wbx-validation-key",
@@ -112,11 +110,9 @@ async def get_and_store_cookies(page):
         all_fields = await conn.fetch(request)
         inns = [{ "id": row["id"], "inn": row["inn"] } for row in all_fields]
     except Exception as e:
-        print(f"Ошибка получения данных из myapp_wblk. Error: {e}")
         logger.error(f"Ошибка получения данных из myapp_wblk. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
-    print(inns)
     for inn in inns: # тут inns это массив с инн с БД
 
         target_text = f"ИНН {inn['inn']}"
@@ -126,16 +122,17 @@ async def get_and_store_cookies(page):
         await supplier_radio_label.wait_for(state="visible", timeout=5000)
         await supplier_radio_label.click()
 
-        async with page.expect_navigation(timeout=30000):
-            await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
+        try:
+            async with page.expect_navigation(timeout=30000):
+                await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
+        except Exception as e:
+            logger.error(f"Это логгер. Не дождлались определённого изменения на странице. {e}")
+            print(f"Это принт. Не дождлались определённого изменения на странице. {e}")
 
         cookies = await page.context.cookies()
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
         authorizev3 = {cookie['name']:cookie['value'] for cookie in cookies if cookie.get("name", "") == "WBTokenV3"}
         authorizev3 = authorizev3["WBTokenV3"]
-
-        print(authorizev3)
-        print(cookies_str)
 
         conn = await async_connect_to_database()
         if not conn:
