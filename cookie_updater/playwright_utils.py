@@ -93,6 +93,7 @@ async def login_and_get_context():
 
 
 async def get_and_store_cookies(page):
+    print('мы в get_and_store_cookies')
 
     cookies_need = [
         "wbx-validation-key",
@@ -111,12 +112,12 @@ async def get_and_store_cookies(page):
         all_fields = await conn.fetch(request)
         inns = [{ "id": row["id"], "inn": row["inn"] } for row in all_fields]
     except Exception as e:
+        print(f"Ошибка получения данных из myapp_wblk. Error: {e}")
         logger.error(f"Ошибка получения данных из myapp_wblk. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
-
+    print(inns)
     for inn in inns: # тут inns это массив с инн с БД
-
 
         target_text = f"ИНН {inn['inn']}"
         supplier_radio_label = page.locator(
@@ -132,6 +133,9 @@ async def get_and_store_cookies(page):
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
         authorizev3 = {cookie['name']:cookie['value'] for cookie in cookies if cookie.get("name", "") == "WBTokenV3"}
         authorizev3 = authorizev3["WBTokenV3"]
+
+        print(authorizev3)
+        print(cookies_str)
 
         conn = await async_connect_to_database()
         if not conn:
@@ -150,4 +154,6 @@ async def get_and_store_cookies(page):
             logger.error(f"Ошибка обновления кукков в лк. Error: {e}")
         finally:
             await conn.close()
+    await asyncio.sleep(300)
+    await get_and_store_cookies(page)
 
