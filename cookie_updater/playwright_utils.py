@@ -70,6 +70,10 @@ async def login_and_get_context():
 
     # Убеждаемся, что авторизация прошла и редирект на seller.wildberries.ru
     await page.wait_for_url("https://seller.wildberries.ru/**", timeout=60000)
+    return page
+
+
+async def get_and_store_cookies(page):
 
     try:
         await page.wait_for_load_state("networkidle")
@@ -87,11 +91,6 @@ async def login_and_get_context():
     except Exception as e:
         await page.hover("button:has-text('Pear Home')")
     await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
-
-    return page
-
-
-async def get_and_store_cookies(page):
 
     cookies_need = [
         "wbx-validation-key",
@@ -122,17 +121,17 @@ async def get_and_store_cookies(page):
         await supplier_radio_label.wait_for(state="visible", timeout=5000)
         await supplier_radio_label.click()
 
-        try:
-            async with page.expect_navigation(timeout=30000):
-                await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
-        except Exception as e:
-            logger.error(f"Это логгер. Не дождлались определённого изменения на странице. {e}")
-            print(f"Это принт. Не дождлались определённого изменения на странице. {e}")
-
+        # try:
+        #     async with page.expect_navigation(timeout=30000):
+        #         await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
+        # except Exception as e:
+        #     logger.error(f"Это логгер. Не дождлались определённого изменения на странице. {e}")
+        time.sleep(5)
         cookies = await page.context.cookies()
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
         authorizev3 = {cookie['name']:cookie['value'] for cookie in cookies if cookie.get("name", "") == "WBTokenV3"}
         authorizev3 = authorizev3["WBTokenV3"]
+        logger.info(f"Получили новые кукки для {inn['id']}")
 
         conn = await async_connect_to_database()
         if not conn:
@@ -152,5 +151,6 @@ async def get_and_store_cookies(page):
         finally:
             await conn.close()
     await asyncio.sleep(300)
+    await page.reload()
     await get_and_store_cookies(page)
 
