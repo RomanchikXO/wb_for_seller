@@ -137,7 +137,7 @@ async def get_and_store_cookies(page):
         conn = None
         try:
             conn = await async_connect_to_database()
-            add_set_data_from_db(
+            await add_set_data_from_db(
                 conn=conn,
                 table_name="myapp_wblk",
                 data=dict(
