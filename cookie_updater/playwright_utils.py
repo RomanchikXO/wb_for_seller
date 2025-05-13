@@ -73,6 +73,23 @@ async def login_and_get_context():
     # Убеждаемся, что авторизация прошла и редирект на seller.wildberries.ru
     await page.wait_for_url("https://seller.wildberries.ru/**", timeout=60000)
 
+    try:
+        await page.wait_for_load_state("networkidle")
+    except:
+        time.sleep(10)
+    try:
+        close_button = page.locator('button.button__P33MNSQQle.onlyIcon__Dnfr9cMrTK')
+        await close_button.wait_for(state="visible", timeout=10000)
+        await close_button.click(timeout=5000)
+    except:
+        pass
+
+    try:
+        await page.hover("button:has-text('ИП Элларян А. А.')")
+    except Exception as e:
+        await page.hover("button:has-text('Pear Home')")
+    await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
+
     return page
 
 
@@ -100,22 +117,7 @@ async def get_and_store_cookies(page):
         await conn.close()
 
     for inn in inns: # тут inns это массив с инн с БД
-        try:
-            await page.wait_for_load_state("networkidle")
-        except:
-            time.sleep(10)
-        try:
-            close_button = page.locator('button.button__P33MNSQQle.onlyIcon__Dnfr9cMrTK')
-            await close_button.wait_for(state="visible", timeout=10000)
-            await close_button.click(timeout=5000)
-        except:
-            pass
 
-        try:
-            await page.hover("button:has-text('ИП Элларян А. А.')")
-        except Exception as e:
-            await page.hover("button:has-text('Pear Home')")
-        await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
 
         target_text = f"ИНН {inn['inn']}"
         supplier_radio_label = page.locator(
