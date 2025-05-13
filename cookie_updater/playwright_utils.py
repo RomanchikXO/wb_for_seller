@@ -78,11 +78,11 @@ async def login_and_get_context():
     except:
         time.sleep(10)
     try:
-        close_button = page.locator('button.button__P33MNSQQle.onlyIcon__Dnfr9cMrTK')
+        close_button = page.locator('button[class*="s__2G0W7HmatG"]')
         await close_button.wait_for(state="visible", timeout=10000)
         await close_button.click(timeout=5000)
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"❌ Кнопка не нажалась: {e}")
 
     try:
         await page.hover("button:has-text('ИП Элларян А. А.')")
