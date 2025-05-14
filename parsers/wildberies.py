@@ -323,7 +323,7 @@ async def wb_api(session, param):
                 return json.loads(response_text)
             except Exception as e:
                 logger.error(
-                    f"Ошибка в wb_api (get запрос): {e}. Ответ: {response_text}. Параметры: {params}"
+                    f"Ошибка в wb_api (get запрос): {e}. Ответ: {response_text}. Параметры: {param}"
                 )
                 return None
 
@@ -336,7 +336,7 @@ async def wb_api(session, param):
                 return json.loads(response_text)
             except Exception as e:
                 logger.error(
-                    f"Ошибка в wb_api (post запрос): {e}.  Ответ: {response_text}. Параметры: {params}"
+                    f"Ошибка в wb_api (post запрос): {e}.  Ответ: {response_text}. Параметры: {param}"
                 )
                 return None
 
