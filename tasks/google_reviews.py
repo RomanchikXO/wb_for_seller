@@ -110,35 +110,34 @@ async def fetch_data__get_feedback():
         if lks:
             for index, lk in enumerate(lks):
                 task_get_feedback.append(get_feedback_from_wb(lk))
-                results_task_get_feedback = await asyncio.gather(*task_get_feedback)
-                data = results_task_get_feedback
+            results_task_get_feedback = await asyncio.gather(*task_get_feedback)
 
-                data_for_table = [
-                    [
-                        "Продавец", "Артикул", "Отзыв", "Оценка товара",
-                        "Дата", "Статус", "Артикул продавца"
-                    ]
+            data_for_table = [
+                [
+                    "Продавец", "Артикул", "Отзыв", "Оценка товара",
+                    "Дата", "Статус", "Артикул продавца"
                 ]
-                for sub_data in data:
-                    for name, value in sub_data.items():
-                        for value_cur in value:
-                            try:
-                                prod_details = value_cur["productDetails"]
-                                utc_time = datetime.strptime(value_cur["createdDate"], "%Y-%m-%dT%H:%M:%SZ")
-                                moscow_time = utc_time + timedelta(hours=3)
-                                moscow_time_str = moscow_time.strftime("%Y-%m-%dT%H:%M:%S")
-                                data_for_table.append(
-                                    [
-                                        name, prod_details["nmId"], value_cur["text"], value_cur["productValuation"],
-                                        moscow_time_str, "Новый" if value_cur["state"]=="none" else "Обработан",
-                                        prod_details.get("supplierArticle", "")
-                                     ]
-                                )
-                            except Exception as e:
-                                print(e, prod_details["productName"])
-                                raise
-                range = f"A1:G{len(data_for_table)+1}"
-                add_feedback_to_google_table(data_for_table, range, index)
+            ]
+            for sub_data in results_task_get_feedback:
+                for name, value in sub_data.items():
+                    for value_cur in value:
+                        try:
+                            prod_details = value_cur["productDetails"]
+                            utc_time = datetime.strptime(value_cur["createdDate"], "%Y-%m-%dT%H:%M:%SZ")
+                            moscow_time = utc_time + timedelta(hours=3)
+                            moscow_time_str = moscow_time.strftime("%Y-%m-%dT%H:%M:%S")
+                            data_for_table.append(
+                                [
+                                    name, prod_details["nmId"], value_cur["text"], value_cur["productValuation"],
+                                    moscow_time_str, "Новый" if value_cur["state"]=="none" else "Обработан",
+                                    prod_details.get("supplierArticle", "")
+                                 ]
+                            )
+                        except Exception as e:
+                            print(e, prod_details["productName"])
+                            raise
+            range = f"A1:G{len(data_for_table)+1}"
+            add_feedback_to_google_table(data_for_table, range, index)
 
 
     except Exception as e:
