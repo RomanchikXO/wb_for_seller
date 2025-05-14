@@ -6,6 +6,7 @@ from tasks.google_our_prices import set_prices_on_google, get_products_and_price
 from tasks.set_price_on_wb_from_repricer import set_price_on_wb_from_repricer
 from tasks.google_podsort import set_orders_quantity_in_google
 from tasks.google_wb_prices import process_data
+from tasks.google_reviews import fetch_data__get_feedback
 
 import logging
 from decorators import with_task_context
@@ -88,3 +89,11 @@ def set_black_price_spp_on_db():
     logger.info("🟢 Обновляем цену в репрайсере")
     asyncio.run(set_price_on_wb_from_repricer())
     logger.info("✅ Цены обновлены")
+
+
+@shared_task
+@with_task_context("otzivi")
+def some_task():
+    logger.info("🟢 Получаем отзывы")
+    asyncio.run(fetch_data__get_feedback())
+    logger.info("✅ Отзывы получены")
