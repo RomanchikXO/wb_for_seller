@@ -329,17 +329,17 @@ def podsort_view(request):
                         "warehouse": row["warehousename"],
                         "order": row["total_orders"],
                         "stock": row["total_quantity"],
-                        "turnover": round(row["total_quantity"] / row["total_orders"], 1) if row["total_orders"] else row["total_quantity"],
+                        "turnover": int(row["total_quantity"] / row["total_orders"]) if row["total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
                     }
                 )
 
         for key, value in items.items():
-            items[key]["turnover_total"] = round(items[key]["stock"] / items[key]["orders"], 1) \
+            items[key]["turnover_total"] = int(items[key]["stock"] / items[key]["orders"]) \
                 if items[key]["orders"] else items[key]["stock"]
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
-                    items[key]["subitems"][index]["rec_delivery"] = round((turnover_change - items[key]["subitems"][index]["turnover"]) * (items[key]["subitems"][index]["order"] / period_ord), 1)
+                    items[key]["subitems"][index]["rec_delivery"] = int((turnover_change - items[key]["subitems"][index]["turnover"]) * (items[key]["subitems"][index]["order"] / period_ord))
                     # items[key]["subitems"][index]["turnover"] = round(
                     #     items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
                     # ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
