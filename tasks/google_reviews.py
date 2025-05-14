@@ -132,7 +132,7 @@ async def fetch_data__get_feedback():
                             print(e, prod_details["productName"])
                             raise
             range = f"A1:G{len(data_for_table)+1}"
-            add_feedback_to_google_table(data_for_table, range, index)
+            add_feedback_to_google_table(data_for_table, range, 1)
 
 
     except Exception as e:
