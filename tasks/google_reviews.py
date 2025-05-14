@@ -97,18 +97,13 @@ def add_feedback_to_google_table(data: list, range: str, index=0) -> None:
 
 async def fetch_data__get_feedback():
 
-    conn = await async_connect_to_database()
-    if not conn:
-        logger.warning('Ошибка подключения к БД в fetch_data__get_feedback')
-        return
-
     try:
         lks = await get_tokens()
 
         task_get_feedback = []
         results_task_get_feedback = []
         if lks:
-            for index, lk in enumerate(lks):
+            for lk in lks:
                 task_get_feedback.append(get_feedback_from_wb(lk))
             results_task_get_feedback = await asyncio.gather(*task_get_feedback)
 
@@ -118,7 +113,7 @@ async def fetch_data__get_feedback():
                     "Дата", "Статус", "Артикул продавца"
                 ]
             ]
-            for sub_data in results_task_get_feedback:
+            for index, sub_data in enumerate(results_task_get_feedback):
                 for name, value in sub_data.items():
                     for value_cur in value:
                         try:
@@ -142,5 +137,3 @@ async def fetch_data__get_feedback():
 
     except Exception as e:
         logger.warning(f"Произошла ошибка в fetch_data__get_feedback: {e}")
-    finally:
-        await conn.close()
