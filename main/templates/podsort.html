@@ -6,6 +6,17 @@
         .transition-icon {
             transition: transform 0.2s ease;
         }
+        .table-container {
+            max-height: 500px; /* или любое нужное значение */
+            overflow-y: auto;
+        }
+
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa; /* или #f8f9fa для Bootstrap */
+            z-index: 10;
+        }
     </style>
 {% endblock %}
 
