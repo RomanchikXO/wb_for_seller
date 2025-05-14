@@ -169,10 +169,31 @@ def repricer_save(request):
     return JsonResponse({'status': 'ok', 'received': len(items)})
 
 
+def abc_classification(data: dict):
+    # Шаг 1: Сортируем по количеству заказов (убывание)
+    sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
+
+    total_count = len(sorted_items)
+    a_cutoff = int(total_count * 0.2)
+    b_cutoff = int(total_count * 0.5)  # 20% + 30%
+
+    # Шаг 2: Присваиваем категорию
+    for i, (art, info) in enumerate(sorted_items):
+        if i < a_cutoff:
+            info["ABC"] = "A"
+        elif i < b_cutoff:
+            info["ABC"] = "B"
+        else:
+            info["ABC"] = "C"
+
+    return dict(sorted_items)
+
+
 @login_required_cust
 def podsort_view(request):
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+
     tree_days_ago = yesterday_end - timedelta(days=3)
     seven_days_ago = yesterday_end - timedelta(days=7)
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
@@ -181,6 +202,16 @@ def podsort_view(request):
 
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
+
+    period_ord = int(request.GET.get('period_ord', 14))
+    if period_ord == 3:
+        period = tree_days_ago
+    elif period_ord == 7:
+        period = seven_days_ago
+    elif period_ord == 14:
+        period = two_weeks_ago
+    elif period_ord == 30:
+        period = thirty_days_ago
 
 
     warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула", "Санкт-Петербург"]
@@ -263,7 +294,7 @@ def podsort_view(request):
         conn = connect_to_database()
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, [two_weeks_ago])
+                cursor.execute(sql_query, [period])
                 rows = cursor.fetchall()
             except Exception:
                 logger.exception("Сбой при выполнении podsort_view")
@@ -296,7 +327,8 @@ def podsort_view(request):
                         "warehouse": row["warehousename"],
                         "order": row["total_orders"],
                         "stock": row["total_quantity"],
-                        "turnover": 0
+                        "turnover": row["total_quantity"] / row["total_orders"] if row["total_orders"] else row["total_quantity"],
+                        "rec_delivery": 0,
                     }
                 )
 
@@ -309,6 +341,7 @@ def podsort_view(request):
                         items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
                     ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
 
+        items = abc_classification(items)
         items = items.values()
 
 

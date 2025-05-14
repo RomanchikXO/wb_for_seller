@@ -72,6 +72,7 @@
                                     <th>Заказы</th>
                                     <th>Остатки</th>
                                     <th>Оборачиваемость</th>
+                                    <th>Рек. поставка</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -81,6 +82,7 @@
                                         <td>{{ subitem.order }}</td>
                                         <td>{{ subitem.stock }}</td>
                                         <td>{{ subitem.turnover }}</td>
+                                        <td>{{ subitem.rec_delivery }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
