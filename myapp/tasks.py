@@ -93,7 +93,7 @@ def set_black_price_spp_on_db():
 
 @shared_task
 @with_task_context("otzivi")
-def some_task():
+def get_otzivi():
     logger.info("🟢 Получаем отзывы")
     asyncio.run(fetch_data__get_feedback())
     logger.info("✅ Отзывы получены")
