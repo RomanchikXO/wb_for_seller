@@ -31,7 +31,7 @@ async def login_and_get_context():
             "username": proxy_user,
             "password": proxy_pass,
         },
-        headless=False,
+        headless=True,
         args=[
             "--no-sandbox",
             "--disable-software-rasterizer",
