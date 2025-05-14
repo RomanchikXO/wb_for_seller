@@ -316,23 +316,29 @@ async def wb_api(session, param):
     }
 
     if view == 'get':
-        try:
-            async with session.get(API_URL, headers=headers, params=params, timeout=60, ssl=False) as response:
+        async with session.get(API_URL, headers=headers, params=params, timeout=60, ssl=False) as response:
+            response_text = await response.text()
+            try:
                 response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError as e:
-            logger.error(f"Ошибка в wb_api (get запрос): {e}. Параметры: {param}")
-            return response
+                return json.loads(response_text)
+            except Exception as e:
+                logger.error(
+                    f"Ошибка в wb_api (get запрос): {e}. Ответ: {response_text}. Параметры: {params}"
+                )
+                return None
 
     if view == 'post':
-        try:
-            async with session.post(API_URL, headers=headers, params=params, json=data, timeout=60,
-                                    ssl=False) as response:
+        async with session.post(API_URL, headers=headers, params=params, json=data, timeout=60,
+                                ssl=False) as response:
+            response_text = await response.text()
+            try:
                 response.raise_for_status()
-                return await response.json()
-        except aiohttp.ClientError as e:
-            logger.error(f"Ошибка в wb_api (post запрос): {e}. Параметры: {param}")
-            return response
+                return json.loads(response_text)
+            except Exception as e:
+                logger.error(
+                    f"Ошибка в wb_api (post запрос): {e}.  Ответ: {response_text}. Параметры: {params}"
+                )
+                return None
 
 
 async def get_products_and_prices():
