@@ -12,24 +12,31 @@
 {% block main_content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">Подсортировщик</h1>
-        <div class="d-flex gap-3">
-            <div>
-                <label for="order-period" class="form-label mb-0">Заказы период:</label>
-                <select id="order-period" class="form-select form-select-sm">
-                    {% for days in order_periods %}
-                        <option value="{{ days }}">{{ days }} дней</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
-                <select id="turnover-period" class="form-select form-select-sm">
-                    {% for days in turnover_periods %}
-                        <option value="{{ days }}">{{ days }} дней</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
+            <form method="get" id="filters-form">
+                <div class="d-flex gap-3">
+                    <div>
+                        <label for="order-period" class="form-label mb-0">Заказы период:</label>
+                        <select id="order-period" name="period_ord" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                            {% for days in order_periods %}
+                                <option value="{{ days }}" {% if days == period_ord %}selected{% endif %}>
+                                    {{ days }} дней
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
+                        <select id="turnover-period" name="turnover_change" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                            {% for days in turnover_periods %}
+                                <option value="{{ days }}" {% if days == turnover_change %}selected{% endif %}>
+                                    {{ days }} дней
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
     </div>
 
 

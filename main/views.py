@@ -361,6 +361,8 @@ def podsort_view(request):
             "items": items,
             "turnover_periods": turnover_periods,
             "order_periods": order_periods,
+            "period_ord": period_ord,
+            "turnover_change": turnover_change,
         }
     )
 
