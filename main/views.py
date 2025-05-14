@@ -213,6 +213,8 @@ def podsort_view(request):
     elif period_ord == 30:
         period = thirty_days_ago
 
+    turnover_change = int(request.GET.get('turnover_change', 40))
+
 
     warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула", "Санкт-Петербург"]
     try:
@@ -337,9 +339,10 @@ def podsort_view(request):
                 if items[key]["orders"] else items[key]["stock"]
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
-                    items[key]["subitems"][index]["turnover"] = round(
-                        items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
-                    ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
+                    items[key]["subitems"][index]["rec_delivery"] = (turnover_change - items[key]["subitems"][index]["turnover"]) * (items[key]["subitems"][index]["rec_delivery"] / period_ord)
+                    # items[key]["subitems"][index]["turnover"] = round(
+                    #     items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
+                    # ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
 
         items = abc_classification(items)
         items = items.values()
