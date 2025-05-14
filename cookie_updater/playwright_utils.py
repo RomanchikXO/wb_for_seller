@@ -10,6 +10,13 @@ from BOT.states import set_status, get_status
 logger = ContextLogger(logging.getLogger("cookie_updater"))
 
 
+proxy_host='45.13.192.129'
+proxy_user='31806a1a'
+proxy_pass='6846a6171a'
+proxy_port='30018'
+proxy_url = f"http://{proxy_host}:{proxy_port}"
+
+
 def ask_user_for_input(user_id):
     msg = bot.send_message(user_id, "Введите код из SMS:")
     set_status("get_sms_code", user_id)
@@ -18,8 +25,29 @@ def ask_user_for_input(user_id):
 
 async def login_and_get_context():
     playwright = await async_playwright().start()
-    browser = await playwright.chromium.launch(headless=True)
-    context = await browser.new_context()
+    browser = await playwright.chromium.launch(
+        proxy={
+            "server": proxy_url,
+            "username": proxy_user,
+            "password": proxy_pass,
+        },
+        headless=False,
+        args=[
+            "--no-sandbox",
+            "--disable-software-rasterizer",
+            "--start-maximized",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-extensions",
+            "--disable-gpu",
+        ]
+    )
+    context = await browser.new_context(
+            timezone_id="Europe/Moscow",  # Устанавливаем часовой пояс на Москву
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",  # Стандартный пользовательский агент
+            locale="ru-RU",  # Устанавливаем локаль
+            geolocation={"latitude": 55.7558, "longitude": 37.6173},  # Геолокация Москвы
+            permissions=["geolocation"],  # Разрешаем использование геолокации
+        )
     page = await context.new_page()
 
     await page.goto("https://seller-auth.wildberries.ru/ru/?redirect_url=https%3A%2F%2Fseller.wildberries.ru%2F&fromSellerLanding")
