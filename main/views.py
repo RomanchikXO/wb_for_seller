@@ -9,12 +9,35 @@ from django.views.decorators.http import require_POST
 from database.DataBase import connect_to_database
 from datetime import datetime, timedelta
 
-
 import logging
 from context_logger import ContextLogger
 from myapp.models import CustomUser
 
 logger = ContextLogger(logging.getLogger("parsers"))
+
+current_ids = [62999164, 90443540, 90439842, 70497720, 70498242, 90443538, 90439841, 70497721,
+               62999167, 90443539, 90439861, 70497722, 207602382, 207603641, 207604857, 207607422,
+               62999160, 90443522, 90439860, 70497717, 62999162, 90486202, 90440346, 70497718,
+               79716931, 90486206, 90440345, 90489493, 207602381, 207603640, 207604856, 207607421,
+               62999159, 90486211, 90440350, 70497716, 62999161, 90486205, 90440347, 90489483,
+               188993754, 188994064, 188995051, 296739845, 62999166, 90443534, 90439862, 74512723,
+               62999168, 90443541, 90439858, 74512724, 247412508, 247412666, 247412895, 247412942,
+               90438131, 90436159, 90344079, 90434843, 90438132, 90436160, 90344704, 90434771,
+               207608592, 207609386, 207610332, 207611693, 90438126, 90298281, 90298367, 90298454,
+               90438561, 90437129, 90433765, 90435660, 90438564, 90437121, 90422544, 90435376,
+               207608591, 207609385, 207610331, 207611692, 90438558, 90437126, 90433760, 90435657,
+               90438563, 90437130, 90422563, 90435374, 188995596, 188995742, 188998536, 188998696,
+               90438110, 90435997, 90329768, 90343739, 90438133, 90436754, 90381888, 90435156,
+               242695353, 242697061, 242698298, 242700111, 242670122, 242697064, 242698301, 242700112,
+               242695586, 242697065, 242698299, 242700115, 341622185, 356128163, 356178983, 356178982,
+               356102564, 356178980, 356178981, 356121026, 242670531, 237614750, 237616146, 237617260,
+               242277870, 242264268, 242262448, 237617261, 242670532, 242264269, 237616147, 242261051,
+               242171299, 242171932, 237616148, 242173734, 237606882, 242264270, 242262449, 242261050,
+               386568075, 386568076, 386568077, 386568078, 386568079, 386568080, 386568081, 386568082,
+               386568084, 386568085, 386568086, 386568087, 386568088, 386568089, 386568090, 386568091,
+               236127733, 236127734, 236127735, 385578749, 219934666, 219936475, 219936476, 385585415,
+               219936477, 219936478, 219936479, 385588115, 236127736, 236127737, 236127738, 236127739,
+               236127740, 236127741, 411689443, 411695592, 411698852, 411707482, 411710924, 411715897]
 
 
 @login_required_cust
@@ -71,7 +94,7 @@ def repricer_view(request):
                     "ON p.lk_id = wblk.id")
         conn = connect_to_database()
         with conn.cursor() as cursor:
-            cursor.execute(sql_nmid,)
+            cursor.execute(sql_nmid, )
             res_nmids = cursor.fetchall()
 
         columns_nmids = [desc[0] for desc in cursor.description]
@@ -153,7 +176,7 @@ def repricer_save(request):
     items = payload.get('items', [])
     try:
         for item in items:
-            if not item["keep_price"].isdigit(): item["keep_price"]=0
+            if not item["keep_price"].isdigit(): item["keep_price"] = 0
             lk_instance = WbLk.objects.get(id=item['lk_id'])
             Repricer.objects.update_or_create(
                 lk=lk_instance,
@@ -167,6 +190,20 @@ def repricer_save(request):
         logger.error(f"Error in repricer_save: {e}")
 
     return JsonResponse({'status': 'ok', 'received': len(items)})
+
+
+def sorted_by_current_nmids(items):
+    sorted_items = {}
+    for item_id in current_ids:
+        if item_id in items:
+            sorted_items[item_id] = items[item_id]
+
+    # Затем добавляем оставшиеся
+    for item_id, value in items.items():
+        if item_id not in sorted_items:
+            sorted_items[item_id] = value
+
+    return sorted_items
 
 
 def abc_classification(data: dict):
@@ -199,7 +236,6 @@ def podsort_view(request):
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
     thirty_days_ago = yesterday_end - timedelta(days=30)
 
-
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
@@ -215,8 +251,8 @@ def podsort_view(request):
 
     turnover_change = int(request.GET.get('turnover_change', 40))
 
-
-    warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула", "Санкт-Петербург"]
+    warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула",
+                  "Санкт-Петербург"]
     try:
         sql_query = """
             WITH
@@ -305,7 +341,6 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Чтото с запросом в podsort_view: {e}")
 
-
     try:
         items = {}
         for row in dict_rows:
@@ -329,7 +364,8 @@ def podsort_view(request):
                         "warehouse": row["warehousename"],
                         "order": row["total_orders"],
                         "stock": row["total_quantity"],
-                        "turnover": int(row["total_quantity"] / (row["total_orders"] / period_ord)) if row["total_orders"] else row["total_quantity"],
+                        "turnover": int(row["total_quantity"] / (row["total_orders"] / period_ord)) if row[
+                            "total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
                     }
                 )
@@ -339,20 +375,21 @@ def podsort_view(request):
                 if items[key]["orders"] else items[key]["stock"]
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
-                    items[key]["subitems"][index]["rec_delivery"] = int((turnover_change - items[key]["subitems"][index]["turnover"]) * (items[key]["subitems"][index]["order"] / period_ord))
+                    items[key]["subitems"][index]["rec_delivery"] = int(
+                        (turnover_change - items[key]["subitems"][index]["turnover"]) * (
+                                    items[key]["subitems"][index]["order"] / period_ord))
                     # items[key]["subitems"][index]["turnover"] = round(
                     #     items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
                     # ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
 
         items = abc_classification(items)
+        items = sorted_by_current_nmids(items)
         items = items.values()
-
 
         # paginator = Paginator(dict_rows, 10)
         # page_obj = paginator.get_page(1)
     except Exception as e:
         logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
-
 
     return render(
         request,
@@ -365,4 +402,3 @@ def podsort_view(request):
             "turnover_change": turnover_change,
         }
     )
-
