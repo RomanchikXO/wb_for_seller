@@ -52,77 +52,77 @@
         <form id="save-form" method="post" action="{% url 'repricer_save' %}">
             {% csrf_token %}
             <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th hidden="">Лк</th>
-                    <th>Артикул</th>
-                    <th>Артикул продавца</th>
-                    <th>
-                        <a style="color: black"
-                           href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=redprice&order={% if sort_by == "redprice" and order == "asc" %}desc{% else %}asc{% endif %}">
-                            Красная цена
-                            {% if sort_by == "redprice" %}
-                                {% if order == "asc" %}▲{% else %}▼{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a style="color: black"
-                           href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=quantity&order={% if sort_by == "quantity" and order == "asc" %}desc{% else %}asc{% endif %}">
-                            Остатки
-                            {% if sort_by == "quantity" %}
-                                {% if order == "asc" %}▲{% else %}▼{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>Поддерживать цену</th>
-                    <th>
-                        <a style="color: black"
-                           href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">
-                            Статус
-                            {% if sort_by == "status" %}
-                                {% if order == "asc" %}▲{% else %}▼{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in page_obj %}
+                <thead>
                     <tr>
-                        <td hidden="">{{ item.lk_id }}</td>
-                        <td>
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                                {{ item.nmid }}
-                                <!-- Правая кнопка — ссылка на WB с иконкой -->
-                                <a href="https://www.wildberries.ru/catalog/{{ item.nmid }}/detail.aspx?targetUrl=SP"
-                                   target="_blank"
-                                   class="btn p-0 border-0 bg-transparent text-primary"
-                                   title="Открыть на Wildberries">
-                                    <i class="bi bi-tencent-qq"></i>
-                                </a>
-                            </div>
-                        </td>
-                        <td>{{ item.vendorcode }}</td>
-                        <td>{{ item.redprice }}</td>
-                        <td>{{ item.quantity|default:0 }}</td>
-                        <td>
-                            <input type="number" name="keep_price" value="{{ item.keep_price }}"
-                                   class="form-control form-control-sm" style="width: 100px;">
-                        </td>
-                        <td>
-                            <input type="checkbox" class="form-check-input"
-                                   {% if item.is_active %}checked{% endif %}>
-                        </td>
+                        <th hidden="">Лк</th>
+                        <th>Артикул</th>
+                        <th>Артикул продавца</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=redprice&order={% if sort_by == "redprice" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Красная цена
+                                {% if sort_by == "redprice" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=quantity&order={% if sort_by == "quantity" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Остатки
+                                {% if sort_by == "quantity" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>Поддерживать цену</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Статус
+                                {% if sort_by == "status" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in page_obj %}
+                        <tr>
+                            <td hidden="">{{ item.lk_id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-between w-100">
+                                    {{ item.nmid }}
+                                    <!-- Правая кнопка — ссылка на WB с иконкой -->
+                                    <a href="https://www.wildberries.ru/catalog/{{ item.nmid }}/detail.aspx?targetUrl=SP"
+                                       target="_blank"
+                                       class="btn p-0 border-0 bg-transparent text-primary"
+                                       title="Открыть на Wildberries">
+                                        <i class="bi bi-tencent-qq"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td>{{ item.vendorcode }}</td>
+                            <td>{{ item.redprice }}</td>
+                            <td>{{ item.quantity|default:0 }}</td>
+                            <td>
+                                <input type="number" name="keep_price" value="{{ item.keep_price }}"
+                                       class="form-control form-control-sm" style="width: 100px;">
+                            </td>
+                            <td>
+                                <input type="checkbox" class="form-check-input"
+                                       {% if item.is_active %}checked{% endif %}>
+                            </td>
 
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="3">Нет данных</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">Нет данных</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </form>
         <!-- Пагинация -->
         <div class="d-flex justify-content-between align-items-center mb-3">
