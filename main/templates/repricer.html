@@ -3,6 +3,11 @@
 {% block title %}Репрайсер{% endblock %}
 {% block extra_head %}
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    <style>
+        .bi-tencent-qq {
+            color: pink;
+        }
+    </style>
 {% endblock %}
 
 {% block main_content %}
@@ -86,7 +91,18 @@
                 {% for item in page_obj %}
                     <tr>
                         <td hidden="">{{ item.lk_id }}</td>
-                        <td>{{ item.nmid }}</td>
+                        <td>
+                            <div class="d-flex align-items-center justify-content-between w-100">
+                                {{ item.nmid }}
+                                <!-- Правая кнопка — ссылка на WB с иконкой -->
+                                <a href="https://www.wildberries.ru/catalog/{{ item.nmid }}/detail.aspx?targetUrl=SP"
+                                   target="_blank"
+                                   class="btn p-0 border-0 bg-transparent text-primary"
+                                   title="Открыть на Wildberries">
+                                    <i class="bi bi-tencent-qq"></i>
+                                </a>
+                            </div>
+                        </td>
                         <td>{{ item.vendorcode }}</td>
                         <td>{{ item.redprice }}</td>
                         <td>{{ item.quantity|default:0 }}</td>
