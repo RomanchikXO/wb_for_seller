@@ -21,7 +21,7 @@ current_ids = [62999164, 90443540, 90439842, 70497720, 70498242, 90443538, 90439
                79716931, 90486206, 90440345, 90489493, 207602381, 207603640, 207604856, 207607421,
                62999159, 90486211, 90440350, 70497716, 62999161, 90486205, 90440347, 90489483,
                188993754, 188994064, 188995051, 296739845, 62999166, 90443534, 90439862, 74512723,
-               62999168, 90443541, 90439858, 74512724, 247412508, 247412666, 247412895, 247412942,
+               62999168, 90443541, 90439858, 74512724, 90438134, 90435998, 90343924, 90434376,
                90438131, 90436159, 90344079, 90434843, 90438132, 90436160, 90344704, 90434771,
                207608592, 207609386, 207610332, 207611693, 90438126, 90298281, 90298367, 90298454,
                90438561, 90437129, 90433765, 90435660, 90438564, 90437121, 90422544, 90435376,
@@ -40,6 +40,40 @@ current_ids = [62999164, 90443540, 90439842, 70497720, 70498242, 90443538, 90439
                236127740, 236127741, 411689443, 411695592, 411698852, 411707482, 411710924, 411715897]
 
 
+def sorted_by_current_nmids(items):
+    sorted_items = {}
+    for item_id in current_ids:
+        if item_id in items:
+            sorted_items[item_id] = items[item_id]
+
+    # Затем добавляем оставшиеся
+    for item_id, value in items.items():
+        if item_id not in sorted_items:
+            sorted_items[item_id] = value
+
+    return sorted_items
+
+
+def abc_classification(data: dict):
+    # Шаг 1: Сортируем по количеству заказов (убывание)
+    sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
+
+    total_count = len(sorted_items)
+    a_cutoff = int(total_count * 0.2)
+    b_cutoff = int(total_count * 0.5)  # 20% + 30%
+
+    # Шаг 2: Присваиваем категорию
+    for i, (art, info) in enumerate(sorted_items):
+        if i < a_cutoff:
+            info["ABC"] = "A"
+        elif i < b_cutoff:
+            info["ABC"] = "B"
+        else:
+            info["ABC"] = "C"
+
+    return dict(sorted_items)
+
+
 @login_required_cust
 def main_view(request):
     return render(request, 'main.html')
@@ -51,7 +85,7 @@ def repricer_view(request):
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
     nmid_filter = request.GET.getlist('nmid')  # фильтр по артикулвм
-    sort_by = request.GET.get('sort_by', 'quantity')  # значение по умолчанию
+    sort_by = request.GET.get('sort_by', '')  # значение по умолчанию
     order = request.GET.get('order', 'asc')  # asc / desc
 
     # Валидные поля сортировки (ключ = название в шаблоне, значение = поле в ORM)
@@ -130,11 +164,11 @@ def repricer_view(request):
                         ORDER BY
                             r.is_active %s
                     """ % ('ASC' if order == 'asc' else 'DESC')
-            else:
-                sql_query += """
-                        ORDER BY
-                            %s %s
-                    """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
+            # else:
+            #     sql_query += """
+            #             ORDER BY
+            #                 %s %s
+            #         """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
 
         # Выполнение SQL запроса и получение данных
         conn = connect_to_database()
@@ -144,6 +178,10 @@ def repricer_view(request):
 
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
+        if not sort_by:
+            dict_rows = {i["nmid"]:i for i in dict_rows}
+            dict_rows = sorted_by_current_nmids(dict_rows)
+            dict_rows = list(dict_rows.values())
 
         paginator = Paginator(dict_rows, per_page)
         page_obj = paginator.get_page(page_number)
@@ -190,40 +228,6 @@ def repricer_save(request):
         logger.error(f"Error in repricer_save: {e}")
 
     return JsonResponse({'status': 'ok', 'received': len(items)})
-
-
-def sorted_by_current_nmids(items):
-    sorted_items = {}
-    for item_id in current_ids:
-        if item_id in items:
-            sorted_items[item_id] = items[item_id]
-
-    # Затем добавляем оставшиеся
-    for item_id, value in items.items():
-        if item_id not in sorted_items:
-            sorted_items[item_id] = value
-
-    return sorted_items
-
-
-def abc_classification(data: dict):
-    # Шаг 1: Сортируем по количеству заказов (убывание)
-    sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
-
-    total_count = len(sorted_items)
-    a_cutoff = int(total_count * 0.2)
-    b_cutoff = int(total_count * 0.5)  # 20% + 30%
-
-    # Шаг 2: Присваиваем категорию
-    for i, (art, info) in enumerate(sorted_items):
-        if i < a_cutoff:
-            info["ABC"] = "A"
-        elif i < b_cutoff:
-            info["ABC"] = "B"
-        else:
-            info["ABC"] = "C"
-
-    return dict(sorted_items)
 
 
 @login_required_cust
