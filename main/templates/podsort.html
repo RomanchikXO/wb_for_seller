@@ -17,6 +17,9 @@
             background: #f8f9fa; /* или #f8f9fa для Bootstrap */
             z-index: 10;
         }
+        .bi-tencent-qq {
+            color: pink;
+        }
     </style>
 {% endblock %}
 
@@ -66,15 +69,27 @@
             {% for item in items %}
                 <tr>
                     <td>
-                        <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#subitems-{{ item.id }}"
-                            aria-expanded="false"
-                            aria-controls="subitems-{{ item.id }}">
-                            <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i> {{ item.article }}
-                        </button>
+                        <div class="d-flex align-items-center justify-content-between w-100">
+                            <!-- Левая кнопка раскрытия -->
+                            <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#subitems-{{ item.id }}"
+                                aria-expanded="false"
+                                aria-controls="subitems-{{ item.id }}">
+                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i> {{ item.article }}
+                            </button>
+
+                            <!-- Правая кнопка — ссылка на WB с иконкой -->
+                            <a href="https://www.wildberries.ru/catalog/{{ item.article }}/detail.aspx?targetUrl=SP"
+                               target="_blank"
+                               class="btn p-0 border-0 bg-transparent text-primary"
+                               title="Открыть на Wildberries">
+                                <i class="bi bi-tencent-qq"></i>
+                            </a>
+                        </div>
                     </td>
+
                     <td>{{ item.vendorcode }}</td>
                     <td>{{ item.orders }}</td>
                     <td>{{ item.stock }}</td>
