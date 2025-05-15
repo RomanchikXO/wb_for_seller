@@ -243,7 +243,7 @@ def podsort_view(request):
     order_periods = [3, 7, 14, 30]
 
     page_sizes = [5, 10, 20, 50, 100]
-    nmid_filter = request.GET.getlist('nmid')
+    nmid_filter = request.GET.getlist('nmid', "")
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
 
@@ -256,13 +256,22 @@ def podsort_view(request):
         period = two_weeks_ago
     elif period_ord == 30:
         period = thirty_days_ago
+    params = [period]
 
     turnover_change = int(request.GET.get('turnover_change', 40))
 
     warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула",
                   "Санкт-Петербург"]
+
+    if nmid_filter:
+        placeholders = ', '.join(['%s'] * len(nmid_filter))
+        nmid_query = f"WHERE p.nmid IN ({placeholders})"
+        params.extend(nmid_filter)
+    else:
+        nmid_query = ""
+
     try:
-        sql_query = """
+        sql_query = f"""
             WITH
                 -- 1) Сумма остатков по складам
                 stocks_agg AS (
@@ -331,7 +340,7 @@ def podsort_view(request):
                    AND w.warehousename = sa.warehousename
                 LEFT JOIN orders_agg oa
                     ON p.nmid = oa.nmid
-                   AND w.warehousename = oa.warehousename
+                   AND w.warehousename = oa.warehousename {nmid_query}
                 ORDER BY
                     p.nmid,
                     w.warehousename;
@@ -340,7 +349,7 @@ def podsort_view(request):
         conn = connect_to_database()
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, [period])
+                cursor.execute(sql_query, params)
                 rows = cursor.fetchall()
             except Exception:
                 logger.exception("Сбой при выполнении podsort_view")
