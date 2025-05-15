@@ -2,6 +2,7 @@
 
 {% block title %}Подсортировщик{% endblock %}
 {% block extra_head %}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
     <style>
         .transition-icon {
             transition: transform 0.2s ease;
@@ -30,110 +31,216 @@
 
 {% block main_content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">Подсортировщик</h1>
-            <form method="get" id="filters-form">
-                <div class="d-flex gap-3">
-                    <div>
-                        <label for="order-period" class="form-label mb-0">Заказы период:</label>
-                        <select id="order-period" name="period_ord" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                            {% for days in order_periods %}
-                                <option value="{{ days }}" {% if days == period_ord %}selected{% endif %}>
-                                    {{ days }} дней
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
-                        <select id="turnover-period" name="turnover_change" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                            {% for days in turnover_periods %}
-                                <option value="{{ days }}" {% if days == turnover_change %}selected{% endif %}>
-                                    {{ days }} дней
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+        <h2>Подсортировщик</h2>
+        <form method="get" id="filters-form">
+            <div class="d-flex gap-3">
+                <div>
+                    <label for="per_page">Показывать по:</label>
+                    <select id="per_page" name="per_page" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                        {% for num in page_sizes %}
+                            <option value="{{ num }}" {% if per_page == num %}selected{% endif %}>{{ num }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </form>
+                <div>
+                    <label for="order-period" class="form-label mb-0">Заказы период:</label>
+                    <select id="order-period" name="period_ord" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                        {% for days in order_periods %}
+                            <option value="{{ days }}" {% if days == period_ord %}selected{% endif %}>
+                                {{ days }} дней
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
+                    <select id="turnover-period" name="turnover_change" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                        {% for days in turnover_periods %}
+                            <option value="{{ days }}" {% if days == turnover_change %}selected{% endif %}>
+                                {{ days }} дней
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
     </div>
-
-
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Артикул</th>
-                <th>Внутренний артикул</th>
-                <th>Заказы</th>
-                <th>Остатки</th>
-                <th>ABC</th>
-                <th>Оборачиваемость общая</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
+    <div class="card mt-4 p-4">
+        <form method="get" class="mb-3">
+            <div class="d-flex align-items-end">
+                <!-- селектор занимает всю доступную ширину -->
+                <div class="flex-grow-1 me-2">
+                    <label for="nmid-select" class="form-label">Фильтр по артикулу:</label>
+                    <select id="nmid-select" name="nmid" class="form-select" multiple>
+                        {% for nmid in nmids %}
+                            <option value="{{ nmid.nmid }}" {% if nmid.nmid|stringformat:"s" in nmid_filter %}selected{% endif %}>
+                                {{ nmid.nmid }}-{{ nmid.vendorcode }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- кнопки справа от селектора -->
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Фильтровать</button>
+                </div>
+            </div>
+        </form>
+        <table class="table table-bordered">
+            <thead>
                 <tr>
-                    <td>
-                        <div class="d-flex align-items-center justify-content-between w-100">
-                            <!-- Левая кнопка раскрытия -->
-                            <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#subitems-{{ item.id }}"
-                                aria-expanded="false"
-                                aria-controls="subitems-{{ item.id }}">
-                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i>
-                                <span class="user-select-text">{{ item.article }}</span>
-                            </button>
-
-                            <!-- Правая кнопка — ссылка на WB с иконкой -->
-                            <a href="https://www.wildberries.ru/catalog/{{ item.article }}/detail.aspx?targetUrl=SP"
-                               target="_blank"
-                               class="btn p-0 border-0 bg-transparent text-primary"
-                               title="Открыть на Wildberries">
-                                <i class="bi bi-tencent-qq"></i>
-                            </a>
-                        </div>
-                    </td>
-
-                    <td>{{ item.vendorcode }}</td>
-                    <td>{{ item.orders }}</td>
-                    <td>{{ item.stock }}</td>
-                    <td>{{ item.ABC }}</td>
-                    <td>{{ item.turnover_total }}</td>
+                    <th>Артикул</th>
+                    <th>Внутренний артикул</th>
+                    <th>Заказы</th>
+                    <th>Остатки</th>
+                    <th>ABC</th>
+                    <th>Оборачиваемость общая</th>
                 </tr>
-                <tr class="collapse" id="subitems-{{ item.id }}">
-                    <td colspan="6">
-                        <table class="table table-sm table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Склад</th>
-                                    <th>Заказы</th>
-                                    <th>Остатки</th>
-                                    <th>Оборачиваемость</th>
-                                    <th>Рек. поставка</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for subitem in item.subitems %}
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center justify-content-between w-100">
+                                <!-- Левая кнопка раскрытия -->
+                                <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#subitems-{{ item.id }}"
+                                    aria-expanded="false"
+                                    aria-controls="subitems-{{ item.id }}">
+                                    <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i>
+                                    <span class="user-select-text">{{ item.article }}</span>
+                                </button>
+
+                                <!-- Правая кнопка — ссылка на WB с иконкой -->
+                                <a href="https://www.wildberries.ru/catalog/{{ item.article }}/detail.aspx?targetUrl=SP"
+                                   target="_blank"
+                                   class="btn p-0 border-0 bg-transparent text-primary"
+                                   title="Открыть на Wildberries">
+                                    <i class="bi bi-tencent-qq"></i>
+                                </a>
+                            </div>
+                        </td>
+
+                        <td>{{ item.vendorcode }}</td>
+                        <td>{{ item.orders }}</td>
+                        <td>{{ item.stock }}</td>
+                        <td>{{ item.ABC }}</td>
+                        <td>{{ item.turnover_total }}</td>
+                    </tr>
+                    <tr class="collapse" id="subitems-{{ item.id }}">
+                        <td colspan="6">
+                            <table class="table table-sm table-bordered">
+                                <thead>
                                     <tr>
-                                        <td>{{ subitem.warehouse }}</td>
-                                        <td>{{ subitem.order }}</td>
-                                        <td>{{ subitem.stock }}</td>
-                                        <td>{{ subitem.turnover }}</td>
-                                        <td>{{ subitem.rec_delivery }}</td>
+                                        <th>Склад</th>
+                                        <th>Заказы</th>
+                                        <th>Остатки</th>
+                                        <th>Оборачиваемость</th>
+                                        <th>Рек. поставка</th>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                                </thead>
+                                <tbody>
+                                    {% for subitem in item.subitems %}
+                                        <tr>
+                                            <td>{{ subitem.warehouse }}</td>
+                                            <td>{{ subitem.order }}</td>
+                                            <td>{{ subitem.stock }}</td>
+                                            <td>{{ subitem.turnover }}</td>
+                                            <td>{{ subitem.rec_delivery }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Пагинация -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <nav>
+                <ul class="pagination mb-0">
+                    {% with base_params="&per_page="|add:per_page %}
+                        {% for nmid in nmid_filter %}
+                            {% with base_params=base_params|add:"&nmid="|add:nmid|stringformat:"s" %}
+                            {% endwith %}
+                        {% endfor %}
+
+                        {% if items.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
+                            </li>
+                        {% endif %}
+
+                        {% if items.number > 3 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
+                            </li>
+                            {% if items.number > 4 %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                        {% endif %}
+
+                        {% for num in paginator.page_range %}
+                            {% if num >= items.number|add:"-2" and num <= items.number|add:"2" %}
+                                <li class="page-item {% if items.number == num %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if items.number < paginator.num_pages|add:"-2" %}
+                            {% if items.number < paginator.num_pages|add:"-3" %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
+                            </li>
+                        {% endif %}
+
+                        {% if items.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
+                            </li>
+                        {% endif %}
+                    {% endwith %}
+                </ul>
+
+            </nav>
+
+
+            <!-- Выбор страницы и per_page -->
+            <form method="get" class="d-flex align-items-center ms-3">
+                <input type="hidden" name="turnover_change" value="{{ turnover_change }}">
+                <input type="hidden" name="period_ord" value="{{ period_ord }}">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                <label for="pageSelect" class="form-label me-2 mb-0">Страница:</label>
+                <select name="page" id="pageSelect" class="form-select form-select-sm me-3" style="width: auto;"
+                        onchange="this.form.submit()">
+                    {% for num in paginator.page_range %}
+                        <option value="{{ num }}" {% if items.number == num %}selected{% endif %}>{{ num }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extra_js %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#nmid-select').select2({
+                placeholder: 'Введите артикул для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+        });
+    </script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {

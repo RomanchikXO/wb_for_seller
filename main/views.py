@@ -196,14 +196,14 @@ def repricer_view(request):
         paginator = None
 
     return render(request, 'repricer.html', {
-        'page_obj': page_obj,
-        'per_page': per_page,
-        'paginator': paginator,
-        'page_sizes': page_sizes,
-        'nmids': combined_list,
-        'nmid_filter': nmid_filter,
-        'sort_by': sort_by,
-        'order': order,
+        "page_obj": page_obj,
+        "per_page": per_page,
+        "paginator": paginator,
+        "page_sizes": page_sizes,
+        "nmids": combined_list,
+        "nmid_filter": nmid_filter,
+        "sort_by": sort_by,
+        "order": order,
     })
 
 
@@ -234,7 +234,6 @@ def repricer_save(request):
 def podsort_view(request):
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-
     tree_days_ago = yesterday_end - timedelta(days=3)
     seven_days_ago = yesterday_end - timedelta(days=7)
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
@@ -242,6 +241,11 @@ def podsort_view(request):
 
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
+
+    page_sizes = [5, 10, 20, 50, 100]
+    nmid_filter = request.GET.getlist('nmid')
+    per_page = int(request.GET.get('per_page', 10))
+    page_number = int(request.GET.get('page', 1))
 
     period_ord = int(request.GET.get('period_ord', 14))
     if period_ord == 3:
@@ -345,6 +349,25 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Чтото с запросом в podsort_view: {e}")
 
+    sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
+                "FROM myapp_price p "
+                "JOIN myapp_wblk wblk "
+                "ON p.lk_id = wblk.id")
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        cursor.execute(sql_nmid, )
+        res_nmids = cursor.fetchall()
+
+    columns_nmids = [desc[0] for desc in cursor.description]
+    nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
+    combined_list = [
+        {
+            "nmid": item['nmid'],
+            "vendorcode": item['vendorcode'],
+        }
+        for item in nmids
+    ]
+
     try:
         items = {}
         for row in dict_rows:
@@ -388,21 +411,28 @@ def podsort_view(request):
 
         items = abc_classification(items)
         items = sorted_by_current_nmids(items)
-        items = items.values()
+        items = list(items.values())
 
-        # paginator = Paginator(dict_rows, 10)
-        # page_obj = paginator.get_page(1)
+        paginator = Paginator(items, per_page)
+        page_obj = paginator.get_page(page_number)
     except Exception as e:
         logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
+        page_obj = []
+        paginator = None
 
     return render(
         request,
         "podsort.html",
         {
-            "items": items,
+            "nmids": combined_list,
+            "nmid_filter": nmid_filter,
+            "items": page_obj,
+            "paginator": paginator,
             "turnover_periods": turnover_periods,
             "order_periods": order_periods,
             "period_ord": period_ord,
             "turnover_change": turnover_change,
+            'page_sizes': page_sizes,
+            'per_page': per_page,
         }
     )
