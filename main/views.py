@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 import json
 
 from myapp.models import Price, Stocks, Repricer, WbLk
@@ -490,3 +490,31 @@ def export_excel(request):
         )
         response['Content-Disposition'] = 'attachment; filename=repricer_export.xlsx'
         return response
+
+
+@login_required_cust
+@require_POST
+def upload_excel(request):
+    file = request.FILES.get('file')
+    if not file:
+        return JsonResponse({'error': 'Файл не получен'}, status=400)
+    if not file.name.endswith('.xlsx'):
+        return JsonResponse({'error': 'Допустимы только файлы .xlsx'}, status=400)
+
+    # обработка файла: можно через openpyxl или др.
+    wb = load_workbook(filename=file)
+    sheet = wb.active
+
+    try:
+        data_map = {row[0]: row[1] for row in sheet.iter_rows(values_only=True)}
+        repricer_items = Repricer.objects.filter(nmid__in=data_map.keys())
+
+        for item in repricer_items:
+            item.keep_price = data_map[item.nmid]
+
+        Repricer.objects.bulk_update(repricer_items, ['keep_price'])
+
+    except Exception as e:
+        return JsonResponse({'error': f'Ошибка при сохранении: {e}'}, status=400)
+
+    return JsonResponse({'status': 'ok'})

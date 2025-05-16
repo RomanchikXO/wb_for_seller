@@ -23,6 +23,13 @@
                 <i class="bi bi-file-earmark-arrow-up me-1"></i>
                 Выгрузить в Excel
             </button>
+            <div id="upload-container" class="mt-2">
+                <label for="excel-upload" class="btn btn-outline-primary d-flex align-items-center" style="position: relative; overflow: hidden;">
+                    <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                    <span id="upload-text">Загрузить Excel</span>
+                    <input type="file" id="excel-upload" accept=".xlsx" hidden>
+                </label>
+            </div>
         </form>
 
     </div>
@@ -212,6 +219,16 @@
             </div>
         </div>
     </div>
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="error_upload" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Ошибка загрузки.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+        </div>
+    </div>
 
 {% endblock %}
 
@@ -293,5 +310,89 @@
         })
         .catch(err => console.error('Ошибка при экспорте в Excel:', err));
       });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const label = document.querySelector('label[for="excel-upload"]');
+            const input = document.getElementById('excel-upload');
+            const text = document.getElementById('upload-text');
+            const saveToastEl = document.getElementById('save-toast');
+            const saveToast = new bootstrap.Toast(saveToastEl);
+            const errorUploadEl = document.getElementById('error_upload');
+            const errorUpload = new bootstrap.Toast(errorUploadEl);
+
+            // Drag-over — визуальный эффект и смена текста
+            ['dragenter', 'dragover'].forEach(evt => {
+                label.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    label.classList.add('border', 'border-primary', 'bg-light');
+                    text.textContent = "Перенеси сюда";
+                });
+            });
+
+            // Drag-leave — восстановление
+            ['dragleave', 'drop'].forEach(evt => {
+                label.addEventListener(evt, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    label.classList.remove('border', 'border-primary', 'bg-light');
+                    text.textContent = "Загрузить Excel";
+                });
+            });
+
+            // Drop: обработка файла
+            label.addEventListener('drop', e => {
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    input.files = files;
+                    handleExcelUpload(files[0]);
+                }
+            });
+
+            // Обычная загрузка через выбор файла
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) {
+                    handleExcelUpload(input.files[0]);
+                }
+            });
+
+            // Обработчик файла
+            function handleExcelUpload(file) {
+                console.log("Загружен файл:", file.name);
+                // Здесь отправка файла через fetch или FormData
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch("{% url 'upload_excel' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        errorUpload.show();
+                        throw new Error('Ошибка сервера при загрузке файла');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'ok') {
+                        saveToast.show();
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } else {
+                        errorUpload.show();
+                    }
+                })
+                .catch(err => {
+                    console.error("Ошибка:", err);
+                    errorUpload.show();
+                });
+            }
+        });
     </script>
 {% endblock %}
