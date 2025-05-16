@@ -1,5 +1,6 @@
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from openpyxl import Workbook
 import json
 
 from myapp.models import Price, Stocks, Repricer, WbLk
@@ -445,3 +446,47 @@ def podsort_view(request):
             'per_page': per_page,
         }
     )
+
+
+@login_required_cust
+@require_POST
+def export_excel(request):
+    current_headers = {
+        "nmid": "Артикул",
+        "vendorcode": "Артикул продавца",
+        "redprice": "Красная цена",
+        "quantity": "Остаток",
+        "keep_price": "Поддерживать цену",
+        "is_active": "Статус",
+
+    }
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        items = data.get("items", [])
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Repricer"
+
+        # Заголовки (ключи словаря)
+        if items:
+            headers = list(items[0].keys())[1:]
+            current_headers = [current_headers[i] for i in headers]
+            ws.append(current_headers)
+
+            for item in items:
+                row = [item.get(col, "") for col in headers]
+                ws.append(row)
+
+        # Сохраняем файл в память
+        from io import BytesIO
+        stream = BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+
+        response = HttpResponse(
+            stream,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=repricer_export.xlsx'
+        return response

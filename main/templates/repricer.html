@@ -11,10 +11,21 @@
 {% endblock %}
 
 {% block main_content %}
-    <h3>Репрайсер</h3>
-    <p>Это страница репрайсера.</p>
-    <p>Обновление происходит каждый час в 7, 17, 27, 37, 47, 57 минут.</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3>Репрайсер</h3>
+            <p class="mb-1">Это страница репрайсера.</p>
+            <p class="mb-0">Обновление происходит каждый час в 7, 17, 27, 37, 47, 57 минут.</p>
+        </div>
+        <form id="download-form" method="post" action="{% url 'export_excel' %}">
+            {% csrf_token %}
+            <button type="button" id="export-btn" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                Выгрузить в Excel
+            </button>
+        </form>
 
+    </div>
 
     <div class="card mt-4 p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -218,32 +229,33 @@
     </script>
 
     <script>
-      document.getElementById('save-btn').addEventListener('click', () => {
-        // найдём все TR в tbody
+      function getItemsFromTable() {
         const rows = Array.from(document.querySelectorAll('table tbody tr'));
-        // сконструируем массив items
-        const items = rows.map(tr => {
+        return rows.map(tr => {
           const cells = tr.children;
           const lk_id       = cells[0].textContent.trim();
-          const nmid       = cells[1].textContent.trim();
-          const vendorcode = cells[2].textContent.trim();
-          const redprice   = cells[3].textContent.trim() || null;
-          const quantity   = parseInt(cells[4].textContent.trim()) || 0;
-          const keepInput  = tr.querySelector('input[type="number"]');
-          const keep_price = keepInput ? keepInput.value : null;
-          const chk        = tr.querySelector('input[type="checkbox"]');
-          const is_active  = chk ? chk.checked : false;
+          const nmid        = cells[1].textContent.trim();
+          const vendorcode  = cells[2].textContent.trim();
+          const redprice    = cells[3].textContent.trim() || null;
+          const quantity    = parseInt(cells[4].textContent.trim()) || 0;
+          const keepInput   = tr.querySelector('input[type="number"]');
+          const keep_price  = keepInput ? keepInput.value : null;
+          const chk         = tr.querySelector('input[type="checkbox"]');
+          const is_active   = chk ? chk.checked : false;
           return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, is_active };
         });
+      }
 
+      document.getElementById('save-btn').addEventListener('click', () => {
+        const items = getItemsFromTable();
         const saveToastEl = document.getElementById('save-toast');
-        const saveToast   = new bootstrap.Toast(saveToastEl);
+        const saveToast = new bootstrap.Toast(saveToastEl);
 
         fetch("{% url 'repricer_save' %}", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken':  '{{ csrf_token }}',
+            'X-CSRFToken': '{{ csrf_token }}',
           },
           body: JSON.stringify({ items })
         })
@@ -252,12 +264,34 @@
           throw new Error('Network response was not OK');
         })
         .then(data => {
-            if (data.status === 'ok'){
-                saveToast.show();
-            }
-          {#console.log('Сервер вернул:', data);#}
+          if (data.status === 'ok') {
+            saveToast.show();
+          }
         })
         .catch(err => console.error('Ошибка при сохранении:', err));
+      });
+
+      document.getElementById('export-btn').addEventListener('click', () => {
+        const items = getItemsFromTable();
+        fetch("{% url 'export_excel' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+          },
+          body: JSON.stringify({ items })
+        })
+        .then(resp => {
+          if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
+          return resp.blob(); // ждём файл
+        })
+        .then(blob => {
+          const link = document.createElement('a');
+          link.href = window.URL.createObjectURL(blob);
+          link.download = "repricer_export.xlsx";
+          link.click();
+        })
+        .catch(err => console.error('Ошибка при экспорте в Excel:', err));
       });
     </script>
 {% endblock %}
