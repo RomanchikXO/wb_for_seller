@@ -400,14 +400,14 @@ def podsort_view(request):
                         "warehouse": row["warehousename"],
                         "order": row["total_orders"],
                         "stock": row["total_quantity"],
-                        "turnover": int(row["total_quantity"] / (row["total_orders"] / period_ord)) if row[
+                        "turnover": int(row["total_quantity"] / row["total_orders"]) if row[
                             "total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
                     }
                 )
 
         for key, value in items.items():
-            items[key]["turnover_total"] = int(items[key]["stock"] / (items[key]["orders"] / period_ord)) \
+            items[key]["turnover_total"] = int(items[key]["stock"] / items[key]["orders"]) \
                 if items[key]["orders"] else items[key]["stock"]
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
