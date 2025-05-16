@@ -73,7 +73,7 @@ async def get_black_price_spp():
 
     request = ("SELECT cookie, authorizev3 "
                "FROM myapp_wblk "
-               "WHERE wblk.groups_id = 1")
+               "WHERE groups_id = 1")
     try:
         all_fields = await conn.fetch(request)
         lks = [
