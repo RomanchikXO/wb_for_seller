@@ -563,5 +563,69 @@ async def get_orders():
                 await conn.close()
 
 
+async def get_prices_from_lk(lk: dict):
+    """
+    Получаем данные о ценах прямо из личного кабинета
+    Returns:
+    """
+
+    cookie_str = lk["cookie"]
+    cookie_list = cookie_str.split(";")
+    cookie_dict = {i.split("=")[0]: i.split("=")[1] for i in cookie_list}
+
+    authorizev3 = lk["authorizev3"]
+
+    proxy = "31806a1a:6846a6171a@45.13.192.129:30018"
+
+    cookies = {
+        'external-locale': 'ru',
+        '_wbauid': cookie_dict["_wbauid"],
+        'wbx-validation-key': cookie_dict["wbx-validation-key"],
+        'WBTokenV3': authorizev3,
+        'x-supplier-id-external': cookie_dict["x-supplier-id-external"],
+    }
+
+    headers = {
+        'accept': '*/*',
+        'accept-language': 'ru-RU,ru;q=0.9',
+        'authorizev3': authorizev3,
+        'content-type': 'application/json',
+        'origin': 'https://seller.wildberries.ru',
+        'priority': 'u=1, i',
+        'referer': 'https://seller.wildberries.ru/',
+        'sec-ch-ua': '"Not.A/Brand";v="99", "Chromium";v="136"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    }
+
+    json_data = {
+        'limit': 200,
+        'offset': 0,
+        'facets': [],
+        'filterWithoutPrice': False,
+        'filterWithLeftovers': False,
+        'sort': 'price',
+        'sortOrder': 0,
+    }
+    url = "https://discounts-prices.wildberries.ru/ns/dp-api/discounts-prices/suppliers/api/v1/list/goods/filter"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, cookies=cookies, json=json_data, timeout=60, proxy=f"http://{proxy}",
+                            ssl=False) as response:
+            response_text = await response.text()
+            try:
+                response.raise_for_status()
+                return json.loads(response_text)
+            except Exception as e:
+                logger.error(
+                    f"Ошибка в get_prices_from_lk: {e}.  Ответ: {response_text}"
+                )
+                return None
+
+
+
 # loop = asyncio.get_event_loop()
 # res = loop.run_until_complete(get_stocks_data_2_weeks())

@@ -1,10 +1,10 @@
 import json
 import math
+import asyncio
 
 from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
-from mpstat import get_full_mpstat
-from parsers.wildberies import get_products_and_prices, parse
+from parsers.wildberies import get_products_and_prices, parse, get_prices_from_lk
 from database.funcs_db import get_data_from_db
 
 import logging
@@ -71,28 +71,36 @@ async def get_black_price_spp():
         logger.warning(f"Ошибка подключения к БД в fetch_data__get_adv_id")
         return
 
-    result = []
+    request = ("SELECT cookie, authorizev3 "
+               "FROM myapp_wblk "
+               "WHERE wblk.groups_id = 1")
     try:
-        request = ("SELECT nmids.nmid "
-                    "FROM myapp_nmids AS nmids "
-                    "join myapp_wblk AS wblk "
-                    "ON wblk.id = nmids.lk_id AND wblk.groups_id = 1")
         all_fields = await conn.fetch(request)
-        result = [row["nmid"] for row in all_fields]
+        lks = [
+            {
+                "cookie": row["cookie"],
+                "authorizev3": row["authorizev3"]
+            }
+            for row in all_fields
+        ]
     except Exception as e:
-        logger.error(f"Ошибка получения данных из myapp_nmids. Запрос {request}. Error: {e}")
+        logger.error(f"Ошибка получения данных из myapp_wblk в get_black_price_spp. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
 
-    response = get_full_mpstat(list(result))
+    data = (get_prices_from_lk(lk) for lk in lks)
+    response = await asyncio.gather(*data)
+
+
     try:
         updates = {
-            nmid: {
-                "blackprice": data["price"]["final_price"],
-                "spp": round((1 - (data["price"]["final_price"] / (data["price"]["price"] * 0.1))) * 100) if data["price"]["price"] else 0,
-                "redprice": math.floor(data["price"]["final_price"] * 0.97)
+            nmid["nmID"]: {
+                "blackprice": round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))),
+                "spp": nmid.get("discountOnSite") or 0,
+                "redprice": math.floor(round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))) * 0.97)
             }
-            for nmid, data in response.items()
+            for item in response
+            for nmid in item["data"]["listGoods"]
         }
     except Exception as e:
         logger.error(f"Ошибка: {e}. Response: {response}")
@@ -123,3 +131,6 @@ async def get_black_price_spp():
         logger.error(f"Ошибка обновления spp и blackprice в myapp_price. Error: {e}")
     finally:
         await conn.close()
+
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(get_black_price_spp())
