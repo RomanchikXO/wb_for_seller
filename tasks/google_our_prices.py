@@ -56,10 +56,11 @@ async def set_prices_on_google():
 
             if nm_info:=result_dict.get(nmID):
                 price = int(nm_info["sizes"][0]["price"])
-                discount_table = int(nm_info["discount"])
+                discount_table = str(nm_info["discount"]) + "%"
                 spp_table = str(nm_info["spp"]) + "%"
                 wallet_discount_table = str(nm_info["wallet_discount"]) + "%"
                 redprice = int(nm_info["redprice"])
+
                 google_data[index][8] = price
                 google_data[index][10] = discount_table
                 google_data[index][11] = spp_table
@@ -67,7 +68,7 @@ async def set_prices_on_google():
                 google_data[index][12] = redprice
             else:
                 google_data[index][8] = "0"
-                google_data[index][10] = "0"
+                google_data[index][10] = "0%"
                 google_data[index][11] = "0%"
                 google_data[index][12] = "0%"
                 google_data[index][13] = "0"
@@ -79,7 +80,6 @@ async def set_prices_on_google():
         update_google_prices_data_with_format(
             url, int(url.split("=")[-1]), 0, 0, google_data
         )
-        logger.info(f"Вот google_data {google_data[:3]}")
     except Exception as e:
         logger.error(f"Ошибка обновления листа 'Цены с WB': {e}")
         raise
