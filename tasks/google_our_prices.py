@@ -69,6 +69,7 @@ async def set_prices_on_google():
                 google_data[index][12] = "0%"
     except Exception as e:
         logger.error(f"Ошибка обработки данных в set_prices_on_google {e}")
+        raise
 
     logger.info(f"google_data {google_data}")
 
