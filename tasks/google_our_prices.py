@@ -126,7 +126,6 @@ async def set_prices_on_google():
 
     request = ("SELECT supplierarticle, SUM(quantity) AS total_quantity "
                "FROM myapp_stocks "
-               "WHERE date >= $1 "
                "GROUP BY supplierarticle")
     try:
         all_fields = await conn.fetch(request, two_weeks_ago)
@@ -135,7 +134,7 @@ async def set_prices_on_google():
             for row in all_fields
         }
     except Exception as e:
-        logger.error(f"Ошибка получения данных из myapp_orders в set_prices_on_google. Запрос {request}. Error: {e}")
+        logger.error(f"Ошибка получения данных из myapp_stocks в set_prices_on_google. Запрос {request}. Error: {e}")
         raise
     finally:
         await conn.close()
