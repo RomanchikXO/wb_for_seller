@@ -84,6 +84,7 @@ async def set_prices_on_google():
         logger.error(f"Ошибка обновления листа 'Цены с WB': {e}")
         raise
 
+    # СКОРОСТЬ ПРОДАЖ
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
@@ -116,6 +117,63 @@ async def set_prices_on_google():
         )
     except Exception as e:
         logger.error(f"Ошибка обновления листа 'Скорость продаж': {e}")
+
+    # ОСТАТКИ
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning(f"Ошибка подключения к БД в set_prices_on_google")
+        return
+
+    request = ("SELECT supplierarticle, SUM(quantity) AS total_quantity "
+               "FROM myapp_stocks "
+               "WHERE date >= $1 "
+               "GROUP BY supplierarticle")
+    try:
+        all_fields = await conn.fetch(request, two_weeks_ago)
+        result_dict = {
+            row["supplierarticle"]: row["total_quantity"]
+            for row in all_fields
+        }
+    except Exception as e:
+        logger.error(f"Ошибка получения данных из myapp_orders в set_prices_on_google. Запрос {request}. Error: {e}")
+        raise
+    finally:
+        await conn.close()
+
+    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=2136512051#gid=2136512051"
+    try:
+        google_data = fetch_google_sheet_data(
+            spreadsheet_url=url,
+            sheet_identifier="Остатки",
+        )
+    except Exception as e:
+        logger.error(f"Ошибка получения данных с листа 'Остатки': {e}")
+        raise
+
+    try:
+        for index, _string in enumerate(google_data):
+            if index == 0: continue
+            supplierarticle = int(_string[0])
+
+            if nm_info:=result_dict.get(supplierarticle):
+                total_quantity = int(nm_info["redprice"])
+
+                google_data[index][8] = total_quantity
+            else:
+                google_data[index][8] = "0"
+    except Exception as e:
+        logger.error(f"Ошибка обработки данных для листа 'Остатки' в set_prices_on_google {e}")
+        raise
+
+    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=573978297#gid=573978297"
+    try:
+        update_google_sheet_data(
+            url, "Остатки", f"A1:I{len(google_data)}", google_data
+        )
+    except Exception as e:
+        logger.error(f"Ошибка обновления листа 'Остатки': {e}")
+
+
 
 async def get_black_price_spp():
     conn = await async_connect_to_database()
