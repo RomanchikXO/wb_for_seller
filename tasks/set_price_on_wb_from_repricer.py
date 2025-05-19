@@ -119,7 +119,7 @@ async def set_price_on_wb_from_repricer():
         groups = []
         for idx in range(len(values)):
             # base — сдвиг для этой тройки
-            base = idx * 3
+            base = idx * 4
             groups.append(f"(${base+1}::integer, ${base+2}::numeric, ${base+3}::numeric, ${base+4}::numeric)")
         row_placeholders = ", ".join(groups)
         flat_params = [x for triple in values for x in triple]
