@@ -48,24 +48,27 @@ async def set_prices_on_google():
     except Exception as e:
         logger.error(f"Ошибка получения данных с листа 'Цены с WB': {e}")
 
-    for index, _string in enumerate(google_data):
-        if index == 0: continue
-        nmID = int(_string[2])
+    try:
+        for index, _string in enumerate(google_data):
+            if index == 0: continue
+            nmID = int(_string[2])
 
-        if nm_info:=result_dict.get(nmID):
-            price = int(nm_info["sizes"][0]["price"])
-            discount_table = int(nm_info["discount"])
-            spp_table = str(nm_info["spp"]) + "%"
-            wallet_discount_table = str(nm_info["wallet_discount"]) + "%"
-            google_data[index][8] = price
-            google_data[index][10] = discount_table
-            google_data[index][11] = spp_table
-            google_data[index][12] = wallet_discount_table
-        else:
-            google_data[index][8] = "0"
-            google_data[index][10] = "0"
-            google_data[index][11] = "0%"
-            google_data[index][12] = "0%"
+            if nm_info:=result_dict.get(nmID):
+                price = int(nm_info["sizes"][0]["price"])
+                discount_table = int(nm_info["discount"])
+                spp_table = str(nm_info["spp"]) + "%"
+                wallet_discount_table = str(nm_info["wallet_discount"]) + "%"
+                google_data[index][8] = price
+                google_data[index][10] = discount_table
+                google_data[index][11] = spp_table
+                google_data[index][12] = wallet_discount_table
+            else:
+                google_data[index][8] = "0"
+                google_data[index][10] = "0"
+                google_data[index][11] = "0%"
+                google_data[index][12] = "0%"
+    except Exception as e:
+        logger.error(f"Ошибка обработки данных в set_prices_on_google {e}")
 
     logger.info(f"google_data {google_data}")
 
