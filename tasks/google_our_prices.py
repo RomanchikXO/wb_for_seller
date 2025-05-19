@@ -39,8 +39,6 @@ async def set_prices_on_google():
         for item in data
     }
 
-    logger.info(result_dict)
-
     try:
         google_data = fetch_google_sheet_data(
             spreadsheet_url=url,
@@ -68,7 +66,9 @@ async def set_prices_on_google():
             google_data[index][10] = "0"
             google_data[index][11] = "0%"
             google_data[index][12] = "0%"
+
     logger.info(f"google_data {google_data}")
+
     try:
         update_google_prices_data_with_format(
             url, int(url.split("=")[-1]), 0, 0, google_data

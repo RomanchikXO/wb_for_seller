@@ -373,13 +373,16 @@ def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, N
     spreadsheet = client.open_by_url(spreadsheet_url)
 
     # Получаем лист (по индексу или имени)
-    if isinstance(sheet_identifier, int):
-        sheet = spreadsheet.get_worksheet(sheet_identifier)
-    elif isinstance(sheet_identifier, str):
-        sheet = spreadsheet.worksheet(sheet_identifier)
-    else:
-        sheets = spreadsheet.worksheets()
-        return sheets
+    try:
+        if isinstance(sheet_identifier, int):
+            sheet = spreadsheet.get_worksheet(sheet_identifier)
+        elif isinstance(sheet_identifier, str):
+            sheet = spreadsheet.worksheet(sheet_identifier)
+        else:
+            sheets = spreadsheet.worksheets()
+            return sheets
+    except Exception as e:
+        logger.error(f"Ошибка получения информации с гугл листа: {e}")
 
     # Извлекаем данные
     if data_range:
