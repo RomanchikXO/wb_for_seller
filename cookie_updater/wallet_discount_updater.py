@@ -136,5 +136,5 @@ async def login_and_get_context():
 
 
 
-loop = asyncio.get_event_loop()
-res = loop.run_until_complete(login_and_get_context())
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(login_and_get_context())
