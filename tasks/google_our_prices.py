@@ -128,7 +128,7 @@ async def set_prices_on_google():
                "FROM myapp_stocks "
                "GROUP BY supplierarticle")
     try:
-        all_fields = await conn.fetch(request, two_weeks_ago)
+        all_fields = await conn.fetch(request)
         result_dict = {
             row["supplierarticle"]: row["total_quantity"]
             for row in all_fields
