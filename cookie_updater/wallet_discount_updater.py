@@ -32,7 +32,7 @@ async def login_and_get_context():
 
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch(
-        headless=False,
+        headless=True,
     )
 
     context = await browser.new_context()
