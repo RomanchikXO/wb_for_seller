@@ -32,6 +32,13 @@
 {% block main_content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Подсортировщик</h2>
+        <form id="download-form" method="post" action="{% url 'export_excel_podsort' %}">
+            {% csrf_token %}
+            <button type="button" id="export-btn" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                Выгрузить в Excel
+            </button>
+        </form>
         <form method="get" id="filters-form">
             <div class="d-flex gap-3">
                 <div>
@@ -242,6 +249,50 @@
     </script>
 
     <script>
+        function getItemsFromTable() {
+          const rows = Array.from(document.querySelectorAll('table.table-bordered tbody > tr'));
+          const items = [];
+
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            // Если строка не "collapse" — это основная строка item
+            if (!row.classList.contains('collapse')) {
+              const cells = row.querySelectorAll('td');
+              const item = {
+                article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
+                vendorcode: cells[1]?.textContent.trim() || '',
+                orders: parseInt(cells[2]?.textContent.trim()) || 0,
+                stock: parseInt(cells[3]?.textContent.trim()) || 0,
+                ABC: cells[4]?.textContent.trim() || '',
+                turnover_total: parseFloat(cells[5]?.textContent.trim()) || 0,
+                subitems: []
+              };
+
+              // Следующая строка — вложенная таблица subitems
+              const nextRow = rows[i + 1];
+              if (nextRow && nextRow.classList.contains('collapse')) {
+                const subRows = nextRow.querySelectorAll('tbody tr');
+                subRows.forEach(subRow => {
+                  const subCells = subRow.querySelectorAll('td');
+                  const subitem = {
+                    warehouse: subCells[0]?.textContent.trim() || '',
+                    order: parseInt(subCells[1]?.textContent.trim()) || 0,
+                    stock: parseInt(subCells[2]?.textContent.trim()) || 0,
+                    turnover: parseFloat(subCells[3]?.textContent.trim()) || 0,
+                    rec_delivery: parseInt(subCells[4]?.textContent.trim()) || 0
+                  };
+                  item.subitems.push(subitem);
+                });
+                i++; // Пропускаем collapse-строку
+              }
+
+              items.push(item);
+            }
+          }
+
+          return items;
+        }
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
                 const targetId = btn.getAttribute("data-bs-target");
@@ -257,6 +308,28 @@
                     icon.classList.add("bi-chevron-right");
                 });
             });
+        });
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const items = getItemsFromTable();
+            fetch("{% url 'export_excel_podsort' %}", {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+              },
+              body: JSON.stringify({ items })
+            })
+            .then(resp => {
+              if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
+              return resp.blob(); // ждём файл
+            })
+            .then(blob => {
+              const link = document.createElement('a');
+              link.href = window.URL.createObjectURL(blob);
+              link.download = "podsort_export.xlsx";
+              link.click();
+            })
+            .catch(err => console.error('Ошибка при экспорте в Excel:', err));
         });
     </script>
 {% endblock %}

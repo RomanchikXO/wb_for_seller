@@ -1,7 +1,10 @@
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
 from openpyxl import Workbook, load_workbook
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font
 import json
+from io import BytesIO
 
 from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
@@ -479,7 +482,6 @@ def export_excel(request):
                 ws.append(row)
 
         # Сохраняем файл в память
-        from io import BytesIO
         stream = BytesIO()
         wb.save(stream)
         stream.seek(0)
@@ -518,3 +520,84 @@ def upload_excel(request):
         return JsonResponse({'error': f'Ошибка при сохранении: {e}'}, status=400)
 
     return JsonResponse({'status': 'ok'})
+
+
+@login_required_cust
+@require_POST
+def export_excel_podsort(request):
+    # Создаём книгу и активный лист
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Подсортировка"
+
+    # Заголовки родительской таблицы
+    headers = [
+        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая"
+    ]
+    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка"]
+
+    row_num = 1
+    header_font = Font(bold=True)
+
+    # Пишем заголовки
+    for col_num, column_title in enumerate(headers, 1):
+        cell = ws.cell(row=row_num, column=col_num)
+        cell.value = column_title
+        cell.font = header_font
+
+    # Загружаем данные
+    data = json.loads(request.body)
+    items = data.get("items", [])
+
+    logger.info(items)
+
+    for item in items:
+        row_num += 1
+
+        ws.cell(row=row_num, column=1, value=item["article"])
+        ws.cell(row=row_num, column=2, value=item["vendorcode"])
+        ws.cell(row=row_num, column=3, value=item["orders"])
+        ws.cell(row=row_num, column=4, value=item["stock"])
+        ws.cell(row=row_num, column=5, value=item["ABC"])
+        ws.cell(row=row_num, column=6, value=item["turnover_total"])
+
+        # Вложенные subitems
+        if item.get("subitems"):
+            row_num += 1
+            # Подзаголовки
+            for col_num, column_title in enumerate(subheaders, 2):  # начинаем с колонки 2
+                cell = ws.cell(row=row_num, column=col_num)
+                cell.value = column_title
+                cell.font = Font(italic=True, bold=True)
+
+            for subitem in item["subitems"]:
+                row_num += 1
+                ws.cell(row=row_num, column=2, value=subitem["warehouse"])
+                ws.cell(row=row_num, column=3, value=subitem["order"])
+                ws.cell(row=row_num, column=4, value=subitem["stock"])
+                ws.cell(row=row_num, column=5, value=subitem["turnover"])
+                ws.cell(row=row_num, column=6, value=subitem["rec_delivery"])
+
+    # Автоширина колонок
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column
+        for cell in col:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        adjusted_width = max_length + 2
+        ws.column_dimensions[get_column_letter(column)].width = adjusted_width
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    response = HttpResponse(
+        stream,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=podsort_export.xlsx'
+    return response

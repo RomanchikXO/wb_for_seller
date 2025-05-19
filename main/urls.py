@@ -8,4 +8,5 @@ urlpatterns = [
     path('podsort/', views.podsort_view, name='podsort'),
     path('repricer/export_excel/', views.export_excel, name='export_excel'),
     path('repricer/upload_excel/', views.upload_excel, name='upload_excel'),
+    path('podsort/export_excel_podsort/', views.export_excel_podsort, name='export_excel_podsort'),
 ]
