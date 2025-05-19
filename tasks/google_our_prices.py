@@ -1,9 +1,10 @@
 import json
 import math
 import asyncio
+from datetime import datetime, timedelta
 
 from database.DataBase import async_connect_to_database
-from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format
+from google.functions import fetch_google_sheet_data, update_google_prices_data_with_format, update_google_sheet_data
 from parsers.wildberies import get_products_and_prices, parse, get_prices_from_lk
 from database.funcs_db import get_data_from_db
 
@@ -21,11 +22,11 @@ async def set_prices_on_google():
     :return:
     """
 
-    url = "https://docs.google.com/spreadsheets/d/1PEhnRK9k8z8rMyeFCZT_WhO4DYkgjrqQgqLhE7XlTfA/edit?gid=1041007463#gid=1041007463"
+    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=1041007463#gid=1041007463"
 
     data = await get_data_from_db(
         table_name="myapp_price",
-        columns=["nmid", "sizes", "discount", "spp"],
+        columns=["nmid", "sizes", "discount", "spp", "wallet_discount"],
         additional_conditions="EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.id = myapp_price.lk_id AND myapp_wblk.groups_id = 1)"
     )
     result_dict = {
@@ -33,16 +34,16 @@ async def set_prices_on_google():
             "sizes": json.loads(item["sizes"]),
             "discount": item["discount"],
             "spp": item["spp"],
+            "wallet_discount": item["wallet_discount"]
         }
         for item in data
     }
 
     google_data = fetch_google_sheet_data(
         spreadsheet_url=url,
-        sheet_identifier=9,
+        sheet_identifier="Цены с WB",
 
     )
-
 
     for index, _string in enumerate(google_data):
         if index == 0: continue
@@ -51,10 +52,12 @@ async def set_prices_on_google():
         if nm_info:=result_dict.get(nmID):
             price = int(nm_info["sizes"][0]["price"])
             discount_table = int(nm_info["discount"])
-            spp_table = str(nm_info['spp']) + "%"
+            spp_table = str(nm_info["spp"]) + "%"
+            wallet_discount_table = str(nm_info["wallet_discount"]) + "%"
             google_data[index][8] = price
             google_data[index][10] = discount_table
             google_data[index][11] = spp_table
+            google_data[index][12] = wallet_discount_table
         else:
             google_data[index][8] = "0"
             google_data[index][10] = "0"
@@ -63,6 +66,37 @@ async def set_prices_on_google():
     update_google_prices_data_with_format(
         url, int(url.split("=")[-1]), 0, 0, google_data
     )
+
+    now_msk = datetime.now() + timedelta(hours=3)
+    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+    two_weeks_ago = yesterday_end - timedelta(weeks=2)
+
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning(f"Ошибка подключения к БД в set_prices_on_google")
+        return
+
+    request = ("SELECT supplierarticle, COUNT(id) AS total_orders "
+               "FROM myapp_orders "
+               "WHERE date >= %s")
+    try:
+        all_fields = await conn.fetch(request, [two_weeks_ago])
+        data = [
+            [row["supplierarticle"], round(row["total_orders"] / 7, 2)]
+            for row in all_fields
+        ]
+    except Exception as e:
+        logger.error(f"Ошибка получения данных из myapp_orders в set_prices_on_google. Запрос {request}. Error: {e}")
+    finally:
+        await conn.close()
+
+    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=573978297#gid=573978297"
+    try:
+        update_google_sheet_data(
+            url, "Скорость продаж", f"A1:B{len(data)}", data
+        )
+    except Exception as e:
+        logger.error(f"Ошибка обновления листа 'Скорость продаж': {e}")
 
 async def get_black_price_spp():
     conn = await async_connect_to_database()
@@ -150,4 +184,4 @@ async def get_black_price_spp():
         await conn.close()
 
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_black_price_spp())
+# res = loop.run_until_complete(set_prices_on_google())
