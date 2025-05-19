@@ -110,7 +110,7 @@ async def get_black_price_spp():
     try:
         updates = {
             nmid["nmID"]: {
-                "blackprice": round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))),
+                "blackprice": math.floor((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))),
                 "spp": nmid.get("discountOnSite") or 0,
                 "redprice": math.floor(
                     round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))) * ((100 - result[int(nmid["nmID"])])/100)
