@@ -508,7 +508,7 @@ def upload_excel(request):
     sheet = wb.active
 
     try:
-        data_map = {row[0]: row[1] for row in sheet.iter_rows(values_only=True)}
+        data_map = {int(row[0]): int(row[1]) for row in sheet.iter_rows(values_only=True) if row[1]}
         repricer_items = Repricer.objects.filter(nmid__in=data_map.keys())
 
         for item in repricer_items:
