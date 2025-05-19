@@ -1,4 +1,5 @@
 import math
+import time
 
 import lxml.html
 from playwright.async_api import async_playwright
@@ -33,15 +34,30 @@ async def login_and_get_context():
     playwright = await async_playwright().start()
     browser = await playwright.chromium.launch(
         headless=True,
+        args=[
+            "--no-sandbox",
+            "--disable-software-rasterizer",
+            "--start-maximized",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-extensions",
+            "--disable-gpu",
+        ]
+    )
+    context = await browser.new_context(
+        timezone_id="Europe/Moscow",  # Устанавливаем часовой пояс на Москву
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        # Стандартный пользовательский агент
+        locale="ru-RU",  # Устанавливаем локаль
+        geolocation={"latitude": 55.7558, "longitude": 37.6173},  # Геолокация Москвы
+        permissions=["geolocation"],  # Разрешаем использование геолокации
     )
 
-    context = await browser.new_context()
     page = await context.new_page()
 
     await page.goto("https://www.wildberries.ru/security/login?returnUrl=https%3A%2F%2Fwww.wildberries.ru%2F")
 
     # Ожидание появления инпута и ввод номера
-    await page.wait_for_selector("input.input-item[inputmode='tel']", timeout=10000)
+    await page.wait_for_selector("input.input-item[inputmode='tel']", timeout=30000)
     input_selector = "input.input-item[inputmode='tel']"
     await page.click(input_selector)  # сфокусировать
     await page.fill(input_selector, "")  # очистить на всякий случай
@@ -139,4 +155,5 @@ async def set_wallet_discount(data):
         await conn.close()
 
 
-
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(login_and_get_context())
