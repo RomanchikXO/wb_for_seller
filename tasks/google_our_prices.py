@@ -79,6 +79,7 @@ async def set_prices_on_google():
         update_google_prices_data_with_format(
             url, int(url.split("=")[-1]), 0, 0, google_data
         )
+        logger.info(f"Вот google_data {google_data[:3]}")
     except Exception as e:
         logger.error(f"Ошибка обновления листа 'Цены с WB': {e}")
         raise
@@ -94,7 +95,7 @@ async def set_prices_on_google():
 
     request = ("SELECT supplierarticle, COUNT(id) AS total_orders "
                "FROM myapp_orders "
-               "WHERE date >= %s")
+               "WHERE date >= $1")
     try:
         all_fields = await conn.fetch(request, [two_weeks_ago])
         data = [
