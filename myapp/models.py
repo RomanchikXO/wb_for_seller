@@ -35,7 +35,7 @@ class CustomUser(models.Model):
     groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True, default=None)
     tg_id = models.BigIntegerField(default=0, null=True)
     tg_status = models.CharField(default=0, null=True, max_length=255)
-
+    phone_number = models.BigIntegerField(default=0, null=True)
     last_login = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
