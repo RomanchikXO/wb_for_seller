@@ -109,8 +109,6 @@ async def set_prices_on_google():
     finally:
         await conn.close()
 
-    logger.info(data)
-
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=573978297#gid=573978297"
     try:
         update_google_sheet_data(
