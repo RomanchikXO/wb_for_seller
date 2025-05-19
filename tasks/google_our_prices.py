@@ -39,11 +39,14 @@ async def set_prices_on_google():
         for item in data
     }
 
-    google_data = fetch_google_sheet_data(
-        spreadsheet_url=url,
-        sheet_identifier="Цены с WB",
+    try:
+        google_data = fetch_google_sheet_data(
+            spreadsheet_url=url,
+            sheet_identifier="Цены с WB",
 
-    )
+        )
+    except Exception as e:
+        logger.error(f"Ошибка получения данных с листа 'Цены с WB': {e}")
 
     for index, _string in enumerate(google_data):
         if index == 0: continue
