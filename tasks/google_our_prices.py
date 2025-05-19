@@ -155,7 +155,7 @@ async def set_prices_on_google():
             supplierarticle = _string[0]
 
             if nm_info:=result_dict.get(supplierarticle):
-                total_quantity = int(nm_info["total_quantity"])
+                total_quantity = int(nm_info)
 
                 google_data[index][8] = total_quantity
             else:
