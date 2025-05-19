@@ -91,13 +91,30 @@ async def get_black_price_spp():
     data = (get_prices_from_lk(lk) for lk in lks)
     response = await asyncio.gather(*data)
 
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
+        return
+    try:
+        request = ("SELECT nmid, wallet_discount "
+                   "FROM myapp_price ")
+        all_fields = await conn.fetch(request)
+        result = {int(row["nmid"]): (row["wallet_discount"]) for row in all_fields}
+
+    except Exception as e:
+        logger.error(f"Ошибка получения данных из myapp_price. Запрос {request}. Error: {e}")
+    finally:
+        await conn.close()
+
 
     try:
         updates = {
             nmid["nmID"]: {
                 "blackprice": round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))),
                 "spp": nmid.get("discountOnSite") or 0,
-                "redprice": math.floor(round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))) * 0.97)
+                "redprice": math.floor(
+                    round((nmid["discountedPrices"][0] / 100) * (100 - (nmid.get("discountOnSite") or 0))) * ((100 - result[int(nmid["nmID"])])/100)
+                )
             }
             for item in response
             for nmid in item["data"]["listGoods"]

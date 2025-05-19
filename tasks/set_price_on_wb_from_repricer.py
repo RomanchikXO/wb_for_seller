@@ -30,7 +30,8 @@ async def get_price_from_db_dor_wb()->List[dict]:
                 rp.keep_price as keep_price,
                 price.redprice as redprice,
                 price.spp as spp,
-                price.discount as discount
+                price.discount as discount,
+                price.wallet_discount as wallet_discount
             FROM myapp_repricer rp
             INNER JOIN myapp_wblk wblk ON wblk.id = rp.lk_id 
             INNER JOIN myapp_price price ON price.nmid = rp.nmid
@@ -57,7 +58,7 @@ def set_current_list(data: List[dict])-> dict:
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
-                    "price": math.ceil(math.ceil(math.ceil(i["keep_price"] / 97 * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100),
+                    "price": math.ceil(math.ceil(math.ceil(i["keep_price"] / (100-int(i["wallet_discount"])) * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100),
                     "discount": int(i["discount"]),
                     "keep_price": i["keep_price"],
                 }

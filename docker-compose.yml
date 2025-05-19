@@ -54,6 +54,22 @@ services:
       POSTGRES_PORT: 5432
       PYTHONPATH: /app
 
+  playwright_discount_updater:
+    build: .
+    container_name: playwright_discount_updater
+    depends_on:
+      - db
+    command: [ "python", "cookie_updater/main_discount.py" ]
+    volumes:
+      - .:/app
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      PYTHONPATH: /app
+
   django:
     build: .
     container_name: django_app
