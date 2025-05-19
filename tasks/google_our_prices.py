@@ -63,9 +63,12 @@ async def set_prices_on_google():
             google_data[index][10] = "0"
             google_data[index][11] = "0%"
 
-    update_google_prices_data_with_format(
-        url, int(url.split("=")[-1]), 0, 0, google_data
-    )
+    try:
+        update_google_prices_data_with_format(
+            url, int(url.split("=")[-1]), 0, 0, google_data
+        )
+    except Exception as e:
+        logger.error(f"Ошибка обновления листа 'Цены с WB': {e}")
 
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
