@@ -98,7 +98,7 @@ async def set_prices_on_google():
                "WHERE date >= $1 "
                "GROUP BY supplierarticle")
     try:
-        all_fields = await conn.fetch(request, [two_weeks_ago])
+        all_fields = await conn.fetch(request, two_weeks_ago)
         data = [
             [row["supplierarticle"], round(row["total_orders"] / 7, 2)]
             for row in all_fields
