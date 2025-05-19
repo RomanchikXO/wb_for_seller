@@ -1,5 +1,4 @@
 import math
-import time
 
 import lxml.html
 from playwright.async_api import async_playwright
@@ -91,69 +90,51 @@ async def login_and_get_context():
     # (Опционально) можно дождаться редиректа или подтверждения входа
     await page.wait_for_timeout(5000)  # или ждём элемент, указывающий на успешный вход
 
-    # Шаг 3: Переход на страницу продавца
-    await page.goto("https://www.wildberries.ru/seller/1209217", wait_until="domcontentloaded")
-
     while True:
         # Зацикливаем с паузой в 5 минут
+
+        # Шаг 3: Переход на страницу продавца
+        await page.goto("https://www.wildberries.ru/seller/1209217", wait_until="domcontentloaded")
 
         # Шаг 4: Поиск первого блока карточки товара
         await page.wait_for_selector("div.product-card__wrapper", timeout=10000)
         first_card = await page.query_selector("div.product-card__wrapper")
 
-        if not first_card:
-            print("Карточка товара не найдена.")
-            await browser.close()
-            return
-
-        # Шаг 5: Извлечение HTML и вывод
         card_html = await first_card.inner_html()
 
-        await set_wallet_discount(card_html)
+        card_html = lxml.html.fromstring(card_html)
+        url = card_html.cssselect("a.product-card__link")[0].attrib["href"]
+
+        # переходим в карточку
+        await page.goto(url, wait_until="domcontentloaded")
+
+        await page.wait_for_selector("span.price-block__price", timeout=10000)
+        price_block = await page.query_selector("span.price-block__price")
+
+        card_html = await price_block.inner_html()
+        card_html = lxml.html.fromstring(card_html)
+        red_price = int(card_html.cssselect("span.price-block__wallet-price")[0].text_content().replace("\xa0", "").replace("₽", ""))
+        black_price = int(card_html.cssselect("ins")[0].text_content().replace("\xa0", "").replace("₽", ""))
+
+        discount = math.floor((black_price - red_price) / (black_price / 100))
+
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
+            return
+        try:
+            request = ("UPDATE myapp_price "
+                       "SET wallet_discount = $1")
+            await conn.execute(request, discount)
+        except Exception as e:
+            logger.error(f"Ошибка обновления wallet_discount в myapp_price. Запрос {request}. Error: {e}")
+        finally:
+            await conn.close()
 
         await asyncio.sleep(300)
         await page.reload()
 
 
-async def set_wallet_discount(data):
 
-    a = lxml.html.fromstring(data)
-
-    nmid_block = a.cssselect("a.product-card__link")[0].attrib["href"]
-    nmid = int(nmid_block.split("/")[-2])
-    red_price = int(a.cssselect("ins")[0].text_content().replace("\xa0", "").replace("₽", ""))
-
-    conn = await async_connect_to_database()
-    if not conn:
-        logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
-        return
-    try:
-        request = ("SELECT blackprice "
-                   "FROM myapp_price "
-                   "WHERE nmid = $1")
-        all_fields = await conn.fetch(request, nmid)
-        result = [{"blackprice": int(row["blackprice"])} for row in all_fields]
-        result = result[0]
-    except Exception as e:
-        logger.error(f"Ошибка получения данных из myapp_price. Запрос {request}. Error: {e}")
-    finally:
-        await conn.close()
-
-    discount = math.floor(100 - (red_price / (result["blackprice"] / 100)))
-
-    conn = await async_connect_to_database()
-    if not conn:
-        logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
-        return
-    try:
-        request = ("UPDATE myapp_price "
-                   "SET wallet_discount = $1")
-        await conn.execute(request, discount)
-    except Exception as e:
-        logger.error(f"Ошибка обновления wallet_discount в myapp_price. Запрос {request}. Error: {e}")
-    finally:
-        await conn.close()
-
-
-# loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(login_and_get_context())
+loop = asyncio.get_event_loop()
+res = loop.run_until_complete(login_and_get_context())
