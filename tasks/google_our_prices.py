@@ -65,6 +65,7 @@ async def set_prices_on_google():
             google_data[index][8] = "0"
             google_data[index][10] = "0"
             google_data[index][11] = "0%"
+            google_data[index][12] = "0%"
 
     try:
         update_google_prices_data_with_format(
