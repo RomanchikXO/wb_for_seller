@@ -59,6 +59,7 @@ def set_current_list(data: List[dict])-> dict:
                 {
                     "nmID":int(i["nmid"]),
                     "price": math.ceil(math.ceil(math.ceil(i["keep_price"] / (100-int(i["wallet_discount"])) * 100) / (100 - i["spp"]) * 100) / (100 - i["discount"]) * 100),
+                    "black_price": math.ceil(i["keep_price"] / (100-int(i["wallet_discount"])) * 100),
                     "discount": int(i["discount"]),
                     "keep_price": i["keep_price"],
                 }
@@ -79,7 +80,7 @@ async def set_price_on_wb_from_repricer():
         articles = set_current_list(result)
         combined = sum(articles.values(), [])  # получаем массив со словарями [{}, {}]
         articles = {
-            k: [{k2: v2 for k2, v2 in d.items() if k2 != "keep_price"} for d in v]
+            k: [{k2: v2 for k2, v2 in d.items() if k2 not in ["keep_price", "black_price"]} for d in v]
             for k, v in articles.items()
         }
     except Exception as e:
@@ -114,12 +115,12 @@ async def set_price_on_wb_from_repricer():
         logger.warning("Ошибка подключения к БД в set_price_on_wb_from_repricer")
         return
     try:
-        values = [(item["nmID"], item["keep_price"], item["price"]) for item in combined]
+        values = [(item["nmID"], item["keep_price"], item["price"], item["black_price"]) for item in combined]
         groups = []
         for idx in range(len(values)):
             # base — сдвиг для этой тройки
             base = idx * 3
-            groups.append(f"(${base+1}::integer, ${base+2}::numeric, ${base+3}::numeric)")
+            groups.append(f"(${base+1}::integer, ${base+2}::numeric, ${base+3}::numeric), ${base+4}::numeric)")
         row_placeholders = ", ".join(groups)
         flat_params = [x for triple in values for x in triple]
         query = f"""
@@ -131,11 +132,12 @@ async def set_price_on_wb_from_repricer():
                   jsonb_set(elem, '{{price}}', to_jsonb(d.price), false)
                 )
                 FROM jsonb_array_elements(mp.sizes) AS elem
-              )
+              ),
+              blackprice = d.black_price
             FROM (
               VALUES
                 {row_placeholders}
-            ) AS d(nmid, keep_price, price)
+            ) AS d(nmid, keep_price, price, black_price)
             WHERE mp.nmid = d.nmid;
         """
 
