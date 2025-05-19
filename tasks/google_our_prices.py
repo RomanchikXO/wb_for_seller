@@ -65,7 +65,7 @@ async def set_prices_on_google():
                 google_data[index][10] = discount_table
                 google_data[index][11] = spp_table
                 google_data[index][12] = wallet_discount_table
-                google_data[index][12] = redprice
+                google_data[index][13] = redprice
             else:
                 google_data[index][8] = "0"
                 google_data[index][10] = "0%"
