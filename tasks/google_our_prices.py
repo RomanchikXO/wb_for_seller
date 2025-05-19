@@ -26,7 +26,7 @@ async def set_prices_on_google():
 
     data = await get_data_from_db(
         table_name="myapp_price",
-        columns=["nmid", "sizes", "discount", "spp", "wallet_discount"],
+        columns=["nmid", "sizes", "discount", "spp", "wallet_discount", "redprice"],
         additional_conditions="EXISTS (SELECT 1 FROM myapp_wblk WHERE myapp_wblk.id = myapp_price.lk_id AND myapp_wblk.groups_id = 1)"
     )
     result_dict = {
@@ -34,7 +34,8 @@ async def set_prices_on_google():
             "sizes": json.loads(item["sizes"]),
             "discount": item["discount"],
             "spp": item["spp"],
-            "wallet_discount": item["wallet_discount"]
+            "wallet_discount": item["wallet_discount"],
+            "redprice": item["redprice"]
         }
         for item in data
     }
@@ -58,20 +59,21 @@ async def set_prices_on_google():
                 discount_table = int(nm_info["discount"])
                 spp_table = str(nm_info["spp"]) + "%"
                 wallet_discount_table = str(nm_info["wallet_discount"]) + "%"
+                redprice = int(nm_info["redprice"])
                 google_data[index][8] = price
                 google_data[index][10] = discount_table
                 google_data[index][11] = spp_table
                 google_data[index][12] = wallet_discount_table
+                google_data[index][12] = redprice
             else:
                 google_data[index][8] = "0"
                 google_data[index][10] = "0"
                 google_data[index][11] = "0%"
                 google_data[index][12] = "0%"
+                google_data[index][13] = "0"
     except Exception as e:
         logger.error(f"Ошибка обработки данных в set_prices_on_google {e}")
         raise
-
-    logger.info(f"google_data {google_data}")
 
     try:
         update_google_prices_data_with_format(
@@ -79,6 +81,7 @@ async def set_prices_on_google():
         )
     except Exception as e:
         logger.error(f"Ошибка обновления листа 'Цены с WB': {e}")
+        raise
 
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
