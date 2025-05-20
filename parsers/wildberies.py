@@ -9,8 +9,12 @@ from database.funcs_db import get_data_from_db, add_set_data_from_db
 from datetime import datetime, timedelta
 from django.utils.dateparse import parse_datetime
 import json
-
+import uuid
+import zipfile
+import math
 import logging
+import io
+import csv
 from context_logger import ContextLogger
 
 logger = ContextLogger(logging.getLogger("parsers"))
@@ -20,6 +24,11 @@ headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 6.4; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2225.0 Safari/537.36",
     "Content-Type": "application/json; charset=UTF-8",
 }
+
+
+def get_uuid()-> str:
+    generated_uuid = str(uuid.uuid4())
+    return generated_uuid
 
 
 def generate_random_user_agent() -> str:
@@ -286,6 +295,65 @@ async def wb_api(session, param):
 
         view = "post"
 
+    if param["type"] == "seller_analytics_generate":
+        # Метод создаёт задание на генерацию отчёта с расширенной аналитикой продавца.
+        # Максимальное количество отчётов, генерируемых в сутки — 20.
+        # Максимум 3 запроса в минуту на один аккаунт продавца
+        API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/nm-report/downloads"
+
+        # https://dev.wildberries.ru/openapi/analytics#tag/Analitika-prodavca-CSV/paths/~1api~1v2~1nm-report~1downloads/post
+        # Ниже типы reportType
+        # DETAIL_HISTORY_REPORT GROUPED_HISTORY_REPORT SEARCH_QUERIES_PREMIUM_REPORT_GROUP
+        # SEARCH_QUERIES_PREMIUM_REPORT_PRODUCT SEARCH_QUERIES_PREMIUM_REPORT_TEXT STOCK_HISTORY_REPORT_CSV
+
+        statuses = [
+            "deficient",
+            "actual",
+            "balanced",
+            "nonActual",
+            "nonLiquid",
+            "invalidData"
+        ]
+
+        data = {
+            "id": param["id"], # ID отчёта в UUID-формате
+            "reportType": param["reportType"],
+            "userReportName": param["userReportName"], # Название отчета
+        }
+        if param["reportType"] == "DETAIL_HISTORY_REPORT":
+            data["params"] = {
+                "startDate": param["start"],  # str
+                "endDate": param["end"],
+                "skipDeletedNm": param.get("skipDeletedNm", True),  # скрыть удаленные товары
+            }
+        elif param["reportType"] == "STOCK_HISTORY_REPORT_CSV":
+            data["params"] = {
+                "currentPeriod": {
+                    "start": param["start"],
+                    "end": param["end"],
+                },  # str
+                "stockType": param.get("stockType", ""),
+                "skipDeletedNm": param.get("skipDeletedNm", True),  # скрыть удаленные товары
+                "availabilityFilters": param.get("availabilityFilters", statuses), # List[str]
+                "orderBy": {
+                    "field": param.get("orderBy", "officeMissingTime"),
+                    "mode": param.get("mode", "desc"),
+                }
+            }
+
+        view = "post"
+
+    if param["type"] == "seller_analytics_report":
+        # Можно получить отчёт, который сгенерирован за последние 48 часов.
+        # Отчёт будет загружен внутри архива ZIP в формате CSV.
+        # Максимум 3 запроса в минуту на один аккаунт продавца
+        API_URL = f"https://seller-analytics-api.wildberries.ru/api/v2/nm-report/downloads/file/{param['downloadId']}"
+
+        params = {
+            "downloadId": param["downloadId"], # string <uuid>
+        }
+        view = "get"
+
     if param["type"] == "get_stocks_data":
         # Метод предоставляет количество остатков товаров на складах WB.
         # Данные обновляются раз в 30 минут.
@@ -317,6 +385,12 @@ async def wb_api(session, param):
 
     if view == 'get':
         async with session.get(API_URL, headers=headers, params=params, timeout=60, ssl=False) as response:
+            if param["type"] == "seller_analytics_report":
+                try:
+                    content = await response.read()
+                    return content
+                except Exception as e:
+                    return e
             response_text = await response.text()
             try:
                 response.raise_for_status()
@@ -366,7 +440,7 @@ async def get_products_and_prices():
         try:
             conn = await async_connect_to_database()
             if not conn:
-                logger.warning("Ошибка подключения к БД")
+                logger.error("Ошибка подключения к БД")
                 raise
             for key, value in id_to_result.items():
                 value = value["data"]["listGoods"]
@@ -415,7 +489,7 @@ async def get_nmids():
                     raise
                 conn = await async_connect_to_database()
                 if not conn:
-                    logger.warning("Ошибка подключения к БД")
+                    logger.error("Ошибка подключения к БД")
                     raise
                 try:
                     for resp in response["cards"]:
@@ -470,7 +544,7 @@ async def get_stocks_data_2_weeks():
 
             conn = await async_connect_to_database()
             if not conn:
-                logger.warning("Ошибка подключения к БД")
+                logger.error("Ошибка подключения к БД")
                 raise
             try:
                 for quant in response:
@@ -627,5 +701,121 @@ async def get_prices_from_lk(lk: dict):
 
 
 
-# loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stocks_data_2_weeks())
+async def get_stock_age_by_period():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+
+    for period in [3, 7, 14, 30]:
+        tasks = []
+        async def get_analitics(cab: dict, period_get: int):
+            async with aiohttp.ClientSession() as session:
+                id_report = get_uuid()
+                param = {
+                    "type": "seller_analytics_generate",
+                    "API_KEY": cab["token"],
+                    "reportType": "STOCK_HISTORY_REPORT_CSV",
+                    "start": (datetime.now() + timedelta(hours=3) - timedelta(days=period_get)).strftime('%Y-%m-%d'),
+                    "end": (datetime.now() + timedelta(hours=3) - timedelta(days=1)).strftime('%Y-%m-%d'), #вчера с текущим временем
+                    "id": id_report, #'685d17f6-ed17-44b4-8a86-b8382b05873c'
+                    "userReportName": get_uuid(),
+                }
+                response = await wb_api(session, param)
+
+                if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
+                    logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
+                    raise
+
+                while True:
+                    await asyncio.sleep(10)
+                    param = {
+                        "type": "seller_analytics_report",
+                        "API_KEY": cab["token"],
+                        "downloadId": id_report
+                    }
+
+                    response = await wb_api(session, param)
+                    if not isinstance(response, bytes):
+                        await asyncio.sleep(55)
+                    else:
+                        try:
+                            text = response.decode('utf-8')
+                            text = json.loads(text)
+                            if text.get("title"):
+                                await asyncio.sleep(55)
+                        except:
+                            break
+
+                with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
+                    for file_name in zip_file.namelist():
+                        with zip_file.open(file_name) as csv_file:
+                            # читаем CSV построчно
+                            reader = csv.reader(io.TextIOWrapper(csv_file, encoding='utf-8'))
+
+                            data = []
+                            header = next(reader)
+                            OfficeMissingTime_index = header.index("OfficeMissingTime")
+                            nmid_index = header.index("NmID")
+                            OfficeName_index = header.index("OfficeName") # может быть пустой строкой
+                            for index, row in enumerate(reader):
+                                if index == 0: continue # пропускаем шапку
+                                if row[OfficeName_index] == "": continue # если пустое название склада
+                                data.append(
+                                    (
+                                        int(row[nmid_index]),
+                                        row[OfficeName_index].replace("Виртуальный ", "").replace("СЦ ", "").replace(" WB", "").replace(", Молодежненское", " (Молодежненское)").replace(" Сталелитейная", ""),
+                                        math.floor((period_get*24-int(row[OfficeMissingTime_index]))/24) if row[OfficeMissingTime_index] not in ["-1", "-2", "-3", "-4"] else 0,
+                                    )
+                                )
+
+                            conn = await async_connect_to_database()
+                            if not conn:
+                                logger.error("Ошибка подключения к БД в add_set_data_from_db")
+                                raise
+
+                            try:
+                                column_map = {
+                                    3: "days_in_stock_last_3",
+                                    7: "days_in_stock_last_7",
+                                    14: "days_in_stock_last_14",
+                                    30: "days_in_stock_last_30"
+                                }
+                                column_period = column_map.get(period_get)
+                                if not column_period:
+                                    raise ValueError(f"Неподдерживаемый период: {period_get}")
+
+                                # Подготовка VALUES и параметров
+                                values_placeholders = []
+                                values_data = []
+                                for idx, (nmid, warehousename, OfficeMissingTime) in enumerate(data):
+                                    values_placeholders.append(f"(${idx * 3 + 1}, ${idx * 3 + 2}, ${idx * 3 + 3})")
+                                    values_data.extend([nmid, warehousename, OfficeMissingTime])
+
+                                query = f"""
+                                    UPDATE myapp_stocks AS p 
+                                    SET
+                                        warehousename = v.warehousename,
+                                        {column_period} = v.OfficeMissingTime
+                                    FROM (
+                                        VALUES {', '.join(values_placeholders)}
+                                    ) AS v(nmid, warehousename, OfficeMissingTime)
+                                    WHERE v.nmid = p.nmid 
+                                        AND p.warehousename ILIKE '%' || v.warehousename || '%'
+                                """
+                                await conn.execute(query, *values_data)
+
+                            except Exception as e:
+                                logger.error(
+                                    f"Ошибка обновления nmid, warehousename, column_period в myapp_stocks. Error: {e}"
+                                )
+                                raise
+                            finally:
+                                await conn.close()
+
+        tasks = [get_analitics(cab, period) for cab in cabinets]
+        await asyncio.gather(*tasks)
+        await asyncio.sleep(60)
+
+
+
+
+loop = asyncio.get_event_loop()
+res = loop.run_until_complete(get_stock_age_by_period())
