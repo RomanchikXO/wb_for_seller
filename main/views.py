@@ -549,8 +549,6 @@ def export_excel_podsort(request):
     data = json.loads(request.body)
     items = data.get("items", [])
 
-    logger.info(items)
-
     for item in items:
         row_num += 1
 
