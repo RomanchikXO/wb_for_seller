@@ -817,5 +817,5 @@ async def get_stock_age_by_period():
 
 
 
-loop = asyncio.get_event_loop()
-res = loop.run_until_complete(get_stock_age_by_period())
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(get_stock_age_by_period())
