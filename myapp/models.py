@@ -127,6 +127,10 @@ class Stocks(models.Model):
     sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
     added_db = models.DateTimeField(auto_now_add=True, null=True)  # по МСК время обновления в бд
     updated_at = models.DateTimeField(auto_now_add=True, null=True) # по сути то же что и выше но в UTC
+    days_in_stock_last_3 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_7 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_14 = models.IntegerField(null=True, default=0)
+    days_in_stock_last_30 = models.IntegerField(null=True, default=0)
 
     class Meta:
         unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
