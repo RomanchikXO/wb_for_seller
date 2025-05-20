@@ -793,7 +793,6 @@ async def get_stock_age_by_period():
                                 query = f"""
                                     UPDATE myapp_stocks AS p 
                                     SET
-                                        warehousename = v.warehousename,
                                         {column_period} = v.OfficeMissingTime
                                     FROM (
                                         VALUES {', '.join(values_placeholders)}
