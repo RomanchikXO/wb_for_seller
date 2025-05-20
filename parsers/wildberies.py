@@ -786,7 +786,8 @@ async def get_stock_age_by_period():
                                 values_placeholders = []
                                 values_data = []
                                 for idx, (nmid, warehousename, OfficeMissingTime) in enumerate(data):
-                                    values_placeholders.append(f"(${idx * 3 + 1}, ${idx * 3 + 2}, ${idx * 3 + 3})")
+                                    base = idx * 3
+                                    values_placeholders.append(f"(${base + 1}::integer, ${base + 2}::text, ${base + 3}::integer)")
                                     values_data.extend([nmid, warehousename, OfficeMissingTime])
 
                                 query = f"""
