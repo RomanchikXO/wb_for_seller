@@ -87,7 +87,7 @@ async def set_prices_on_google():
     # СКОРОСТЬ ПРОДАЖ
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-    two_weeks_ago = yesterday_end - timedelta(weeks=2)
+    seven_days_ago = yesterday_end - timedelta(days=7)
 
     conn = await async_connect_to_database()
     if not conn:
@@ -99,7 +99,7 @@ async def set_prices_on_google():
                "WHERE date >= $1 "
                "GROUP BY supplierarticle")
     try:
-        all_fields = await conn.fetch(request, two_weeks_ago)
+        all_fields = await conn.fetch(request, seven_days_ago)
         data = [
             [row["supplierarticle"], round(row["total_orders"] / 7, 2)]
             for row in all_fields
