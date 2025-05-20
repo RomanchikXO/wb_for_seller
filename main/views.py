@@ -254,12 +254,16 @@ def podsort_view(request):
     period_ord = int(request.GET.get('period_ord', 14))
     if period_ord == 3:
         period = tree_days_ago
+        name_column_available = "s.days_in_stock_last_3"
     elif period_ord == 7:
         period = seven_days_ago
+        name_column_available = "s.days_in_stock_last_7"
     elif period_ord == 14:
         period = two_weeks_ago
+        name_column_available = "s.days_in_stock_last_14"
     elif period_ord == 30:
         period = thirty_days_ago
+        name_column_available = "s.days_in_stock_last_30"
     params = [period]
 
     turnover_change = int(request.GET.get('turnover_change', 40))
@@ -282,6 +286,7 @@ def podsort_view(request):
                     SELECT
                         s.nmid,
                         s.warehousename,
+                        {name_column_available} AS available,
                         SUM(s.quantity) AS total_quantity
                     FROM myapp_stocks s
                     WHERE
@@ -294,7 +299,7 @@ def podsort_view(request):
                         s.warehousename LIKE 'Тула%%' OR
                         s.warehousename LIKE 'Санкт-Петербург%%'
                     GROUP BY
-                        s.nmid, s.warehousename
+                        s.nmid, s.warehousename, {name_column_available}
                 ),
                 
                 -- 2) Количество заказов по складам (за 2 недели)
@@ -334,6 +339,7 @@ def podsort_view(request):
                     p.vendorcode  AS vendorcode,
                     w.warehousename,
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
+                    COALESCE(sa.available, 0)      AS available, 
                     COALESCE(oa.total_orders,   0) AS total_orders
                 FROM
                     myapp_nmids p
@@ -407,6 +413,7 @@ def podsort_view(request):
                         "turnover": int(row["total_quantity"] / (row["total_orders"] / period_ord)) if row[
                             "total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
+                        "time_available": row["available"],
                     }
                 )
 
@@ -416,11 +423,8 @@ def podsort_view(request):
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
                     items[key]["subitems"][index]["rec_delivery"] = int(
-                        (turnover_change - items[key]["subitems"][index]["turnover"]) * (
-                                    items[key]["subitems"][index]["order"] / period_ord))
-                    # items[key]["subitems"][index]["turnover"] = round(
-                    #     items[key]["subitems"][index]["stock"] / items[key]["subitems"][index]["order"]
-                    # ) if items[key]["subitems"][index]["order"] else items[key]["subitems"][index]["stock"]
+                        (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * 25 - items[key]["subitems"][index]["stock"]
+                    ) if items[key]["subitems"][index]["time_available"] else 0
 
         items = abc_classification(items)
         items = sorted_by_current_nmids(items)

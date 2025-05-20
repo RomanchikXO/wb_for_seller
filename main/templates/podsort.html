@@ -146,6 +146,7 @@
                                         <th>Остатки</th>
                                         <th>Оборачиваемость</th>
                                         <th>Рек. поставка</th>
+                                        <th>Дни в наличии</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -156,6 +157,7 @@
                                             <td>{{ subitem.stock }}</td>
                                             <td>{{ subitem.turnover }}</td>
                                             <td>{{ subitem.rec_delivery }}</td>
+                                            <td>{{ subitem.time_available }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
