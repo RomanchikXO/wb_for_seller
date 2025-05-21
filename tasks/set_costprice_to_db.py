@@ -38,6 +38,7 @@ async def get_cost_price_from_google():
                 WHERE v.vendorcode = p.vendorcode
             """
         await conn.execute(request)
+        logger.info(f"Вот такой запрос {request}")
     except Exception as e:
         logger.error(f"Ошибка обновления cost_price в myapp_price. Запрос {request}. Error: {e}")
     finally:
