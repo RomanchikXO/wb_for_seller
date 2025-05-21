@@ -59,6 +59,13 @@ class Price(models.Model):
     redprice = models.IntegerField(default=0, null=True)
     spp = models.IntegerField(default=0, null=True)
     wallet_discount = models.IntegerField(default=0, null=True)
+    cost_price = models.FloatField(default=0.0, null=True)
+    reject = models.IntegerField(default=3, null=True)
+    commission = models.IntegerField(default=28, null=True)
+    acquiring = models.IntegerField(default=1, null=True)
+    drr = models.IntegerField(default=5, null=True)
+    usn = models.IntegerField(default=1, null=True)
+    nds = models.IntegerField(default=7, null=True)
 
     class Meta:
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
