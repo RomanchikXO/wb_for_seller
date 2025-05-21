@@ -45,5 +45,5 @@ async def get_cost_price_from_google():
     finally:
         await conn.close()
 
-loop = asyncio.get_event_loop()
-res = loop.run_until_complete(get_cost_price_from_google())
+# loop = asyncio.get_event_loop()
+# res = loop.run_until_complete(get_cost_price_from_google())
