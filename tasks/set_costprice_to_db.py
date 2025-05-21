@@ -25,18 +25,15 @@ async def get_cost_price_from_google():
         logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
         return
     try:
-        values_clause = ", ".join(
-            f"({vendorcode}, {cost_price})" for vendorcode, cost_price in data
-        )
-        request = f"""
-                UPDATE myapp_price AS p
-                SET cost_price = v.cost_price
-                FROM (VALUES {values_clause}) AS v(vendorcode, cost_price)
-                WHERE v.vendorcode = p.vendorcode;
-            """
-        await conn.execute(request)
+        query = """
+            UPDATE myapp_price AS p
+            SET cost_price = v.cost_price
+            FROM (VALUES %s) AS v(vendorcode, cost_price)
+            WHERE v.vendorcode = p.vendorcode;
+        """
+        await conn.execute(query, data)
     except Exception as e:
-        logger.error(f"Ошибка обновления cost_price в myapp_price. Запрос {request}. Error: {e}")
+        logger.error(f"Ошибка обновления cost_price в myapp_price. Запрос {query}. Error: {e}")
     finally:
         await conn.close()
 
