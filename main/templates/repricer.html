@@ -94,7 +94,15 @@
                             </a>
                         </th>
                         <th>Поддерживать цену</th>
-                        <th>spp</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=spp&order={% if sort_by == "spp" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                spp
+                                {% if sort_by == "spp" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">

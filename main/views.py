@@ -96,6 +96,7 @@ def repricer_view(request):
     valid_sort_fields = {
         'redprice': 'redprice',
         'quantity': 'quantity',
+        'spp': 'spp',
         'status': 'is_active',
     }
 
@@ -169,11 +170,12 @@ def repricer_view(request):
                         ORDER BY
                             r.is_active %s
                     """ % ('ASC' if order == 'asc' else 'DESC')
-            # else:
-            #     sql_query += """
-            #             ORDER BY
-            #                 %s %s
-            #         """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
+            elif sort_by == 'spp':
+                sql_query += """
+                        ORDER BY
+                            (CASE WHEN p.spp IS NULL THEN 1 ELSE 0 END),
+                            %s %s
+                    """ % (sort_field, 'ASC' if order == 'asc' else 'DESC')
 
         # Выполнение SQL запроса и получение данных
         conn = connect_to_database()
