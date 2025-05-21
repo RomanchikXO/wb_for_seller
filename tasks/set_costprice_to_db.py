@@ -30,9 +30,12 @@ async def get_cost_price_from_google():
         )
         request = f"""
                 UPDATE myapp_price AS p
-                SET cost_price = v.cost_price
-                FROM (VALUES {values_clause}) AS v(vendorcode, cost_price)
-                WHERE v.vendorcode = p.vendorcode;
+                SET 
+                    cost_price = v.cost_price
+                FROM (VALUES 
+                    {values_clause}
+                    ) AS v(vendorcode, cost_price)
+                WHERE v.vendorcode = p.vendorcode
             """
         await conn.execute(request)
     except Exception as e:
