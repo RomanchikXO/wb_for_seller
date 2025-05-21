@@ -17,7 +17,7 @@ logger = ContextLogger(logging.getLogger("myapp"))
 
 
 @shared_task
-@with_task_context("get_cost_price_from_google_task")
+@with_task_context("get_cost_price_google_task")
 def get_cost_price_from_google_task():
     logger.info("🟢 Берем себесы из гугл таблицы и записываем в БД")
     asyncio.run(get_cost_price_from_google())

@@ -7,6 +7,7 @@ logger = ContextLogger(logging.getLogger("core"))
 
 
 async def get_cost_price_from_google():
+    logger.info("Привееет")
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=1431573654#gid=1431573654"
     data = fetch_google_sheet_data(
         url,
