@@ -22,7 +22,7 @@ async def get_cost_price_from_google():
 
     conn = await async_connect_to_database()
     if not conn:
-        logger.warning(f"Ошибка подключения к БД в set_wallet_discount")
+        logger.error(f"Ошибка подключения к БД в set_wallet_discount")
         return
     try:
         values_clause = ", ".join(
