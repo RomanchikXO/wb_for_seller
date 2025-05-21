@@ -109,6 +109,7 @@ def repricer_view(request):
                 p.vendorcode as vendorcode,
                 COALESCE(p.redprice, 0) as redprice,
                 r.keep_price as keep_price,
+                p.spp as spp,
                 COALESCE(r.is_active, FALSE) AS is_active,
                 COALESCE(s.total_quantity, 0) AS quantity
             FROM
@@ -464,6 +465,7 @@ def export_excel(request):
         "redprice": "Красная цена",
         "quantity": "Остаток",
         "keep_price": "Поддерживать цену",
+        "spp": "spp",
         "is_active": "Статус",
 
     }

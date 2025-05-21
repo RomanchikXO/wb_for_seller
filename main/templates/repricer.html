@@ -94,6 +94,7 @@
                             </a>
                         </th>
                         <th>Поддерживать цену</th>
+                        <th>spp</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -128,11 +129,11 @@
                                 <input type="number" name="keep_price" value="{{ item.keep_price }}"
                                        class="form-control form-control-sm" style="width: 100px;">
                             </td>
+                            <td>{{ item.spp }}</td>
                             <td>
                                 <input type="checkbox" class="form-check-input"
                                        {% if item.is_active %}checked{% endif %}>
                             </td>
-
                         </tr>
                     {% empty %}
                         <tr>
@@ -257,9 +258,10 @@
           const quantity    = parseInt(cells[4].textContent.trim()) || 0;
           const keepInput   = tr.querySelector('input[type="number"]');
           const keep_price  = keepInput ? keepInput.value : null;
+          const spp         = cells[6].textContent.trim();
           const chk         = tr.querySelector('input[type="checkbox"]');
           const is_active   = chk ? chk.checked : false;
-          return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, is_active };
+          return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, spp, is_active };
         });
       }
 
