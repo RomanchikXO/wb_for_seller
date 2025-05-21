@@ -18,6 +18,7 @@ async def get_cost_price_from_google():
         data = [(i[0], float(i[1].replace(",", ".").replace("\xa0", ""))) for i in data[1:]]
     except Exception as e:
         logger.error(f"Ошибка обработки данных в get_cost_price_from_google. Ошибка {e}")
+        raise
 
     conn = await async_connect_to_database()
     if not conn:
