@@ -7,6 +7,7 @@ from tasks.set_price_on_wb_from_repricer import set_price_on_wb_from_repricer
 from tasks.google_podsort import set_orders_quantity_in_google
 from tasks.google_wb_prices import process_data
 from tasks.google_reviews import fetch_data__get_feedback
+from tasks.set_costprice_to_db import get_cost_price_from_google
 
 import logging
 from decorators import with_task_context
@@ -14,6 +15,13 @@ from context_logger import ContextLogger
 
 logger = ContextLogger(logging.getLogger("myapp"))
 
+
+@shared_task
+@with_task_context("get_cost_price_from_google_task")
+def get_cost_price_from_google_task():
+    logger.info("🟢 Берем себесы из гугл таблицы и записываем в БД")
+    asyncio.run(get_cost_price_from_google())
+    logger.info("Себесы в БД обновлены")
 
 @shared_task
 @with_task_context("get_stock_age_by_period_task")
