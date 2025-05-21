@@ -37,12 +37,13 @@ async def get_cost_price_from_google():
                     ) AS v(vendorcode, cost_price)
                 WHERE v.vendorcode = p.vendorcode
             """
+        logger.info(f"Запрос перед выполнением: {request}")
         await conn.execute(request)
-        logger.info(f"Вот такой запрос {request}")
+        logger.info(f"Запрос выполнен успешно")
     except Exception as e:
         logger.error(f"Ошибка обновления cost_price в myapp_price. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
 
-# loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_cost_price_from_google())
+loop = asyncio.get_event_loop()
+res = loop.run_until_complete(get_cost_price_from_google())
