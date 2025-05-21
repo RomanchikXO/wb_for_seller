@@ -7,7 +7,6 @@ logger = ContextLogger(logging.getLogger("core"))
 
 
 async def get_cost_price_from_google():
-    logger.info("Привееет")
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=1431573654#gid=1431573654"
     data = fetch_google_sheet_data(
         url,
@@ -34,7 +33,7 @@ async def get_cost_price_from_google():
                 FROM (VALUES 
                     {values_clause}
                     ) AS v(vendorcode, cost_price)
-                WHERE v.vendorcode = p.vendorcode
+                WHERE LOWER(v.vendorcode) = LOWER(p.vendorcode)
             """
         await conn.execute(request)
     except Exception as e:
