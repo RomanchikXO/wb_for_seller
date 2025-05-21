@@ -3,24 +3,20 @@ from google.functions import fetch_google_sheet_data
 import logging
 from context_logger import ContextLogger
 
-logger = ContextLogger(logging.getLogger("cost_price_updater"))
+logger = ContextLogger(logging.getLogger("core"))
 
 
 async def get_cost_price_from_google():
-    logger.info("ПРивеееет")
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=1431573654#gid=1431573654"
     data = fetch_google_sheet_data(
         url,
         "Себесы",
     )
-    logger.info(f"Вот data: {data}")
     try:
         data = [(i[0], float(i[1].replace(",", ".").replace("\xa0", ""))) for i in data[1:]]
     except Exception as e:
         logger.error(f"Ошибка обработки данных в get_cost_price_from_google. Ошибка {e}")
         raise
-
-    logger.info(f"Вот data2: {data}")
 
     conn = await async_connect_to_database()
     if not conn:
@@ -39,9 +35,7 @@ async def get_cost_price_from_google():
                     ) AS v(vendorcode, cost_price)
                 WHERE v.vendorcode = p.vendorcode
             """
-        logger.info(f"Запрос перед выполнением: {request}")
         await conn.execute(request)
-        logger.info(f"Запрос выполнен успешно")
     except Exception as e:
         logger.error(f"Ошибка обновления cost_price в myapp_price. Запрос {request}. Error: {e}")
     finally:
