@@ -1,5 +1,3 @@
-import asyncio
-
 from database.DataBase import async_connect_to_database
 from google.functions import fetch_google_sheet_data
 import logging
@@ -9,6 +7,7 @@ logger = ContextLogger(logging.getLogger("cost_price_updater"))
 
 
 async def get_cost_price_from_google():
+    logger.info("ПРивеееет")
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=1431573654#gid=1431573654"
     data = fetch_google_sheet_data(
         url,
