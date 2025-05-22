@@ -68,15 +68,15 @@ def get_price(
         usn: int
 )-> tuple:
     # Константы
-    spp = spp/100
-    disc_wb = disc_wb/100
-    nds = nds/100
-    reject = reject/100
-    commission = commission/100
-    acquiring = acquiring/100
-    drr = drr/100
-    usn = usn/100
-    discount = 1 - discount_seller/100
+    spp = int(spp)/100
+    disc_wb = int(disc_wb)/100
+    nds = int(nds)/100
+    reject = int(reject)/100
+    commission = int(commission)/100
+    acquiring = int(acquiring)/100
+    drr = int(drr)/100
+    usn = int(usn)/100
+    discount = 1 - int(discount_seller)/100
 
     # Переменные
     x = sp.symbols('x', positive=True, real=True)
@@ -115,9 +115,9 @@ def set_current_list(data: List[dict])-> dict:
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
-                    "price": price,
+                    "price": int(price),
                     "black_price": black_price,
-                    "discount": i["discount"],
+                    "discount": int(i["discount"]),
                     "keep_price": i["keep_price"], #это маржа
                     "redprice": red_price,
                 }
