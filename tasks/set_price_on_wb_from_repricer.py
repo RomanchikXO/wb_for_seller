@@ -111,7 +111,7 @@ def set_current_list(data: List[dict])-> dict:
             if not response.get(i["token"]):
                 response[i["token"]] = []
             price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
-            red_price = math.floor(black_price * (1 - i["wallet_discount"]/100))
+            red_price = math.floor(black_price * (1 - int(i["wallet_discount"])/100))
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
@@ -123,7 +123,8 @@ def set_current_list(data: List[dict])-> dict:
                 }
             )
     except Exception as e:
-        raise f"в set_current_list: {e}"
+        logger.error(f"в set_current_list: {e}")
+        raise
     return response
 
 
