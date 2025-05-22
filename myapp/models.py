@@ -60,7 +60,7 @@ class Price(models.Model):
     spp = models.IntegerField(default=0, null=True)
     wallet_discount = models.IntegerField(default=0, null=True)
     cost_price = models.FloatField(default=0.0, null=True)
-    reject = models.IntegerField(default=3, null=True)
+    reject = models.IntegerField(default=3, null=True) # брак
     commission = models.IntegerField(default=28, null=True)
     acquiring = models.IntegerField(default=1, null=True)
     drr = models.IntegerField(default=5, null=True)
@@ -77,7 +77,7 @@ class Price(models.Model):
 class Repricer(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
     nmid = models.IntegerField()
-    keep_price = models.IntegerField(default=0)
+    keep_price = models.IntegerField(default=0) # теперь тут маржа желаемая
     is_active = models.BooleanField(default=False)
 
     class Meta:
