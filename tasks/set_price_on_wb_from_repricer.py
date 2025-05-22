@@ -101,7 +101,7 @@ def get_price(
     try:
         price_without_disc = math.ceil(solutions[0])
     except Exception as e:
-        logger.error(f"Ошибка в get_price: {e}. solution: {solutions}")
+        logger.error(f"Ошибка в get_price: {e}. solution: {solutions}. Параметры: {locals()}")
     response = math.floor(math.floor(price_without_disc * discount) * (1 - spp))
     return price_without_disc, response
 
