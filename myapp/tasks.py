@@ -98,12 +98,16 @@ def get_set_ord_quant_to_google():
 @shared_task
 @with_task_context("set_black_price_spp_on_db")
 def set_black_price_spp_on_db():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     logger.info("🟢 Обновляем spp и blackprice в БД")
-    asyncio.run(get_black_price_spp())
+    loop.run_until_complete(get_black_price_spp())
     logger.info("✅ spp и blackprice в БД обновлены")
 
     logger.info("🟢 Обновляем цену в репрайсере")
-    asyncio.run(set_price_on_wb_from_repricer())
+    loop.run_until_complete(set_price_on_wb_from_repricer())
+    loop.close()
     logger.info("✅ Цены обновлены")
 
 
