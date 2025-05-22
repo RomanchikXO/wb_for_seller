@@ -173,7 +173,7 @@ async def set_price_on_wb_from_repricer():
         logger.warning("Ошибка подключения к БД в set_price_on_wb_from_repricer")
         return
     try:
-        values = [(item["nmID"], item["keep_price"], item["price"], item["black_price"], item["redprice"]) for item in combined]
+        values = [(item["nmID"], int(item["keep_price"]), int(item["price"]), int(item["black_price"]), int(item["redprice"])) for item in combined]
         groups = []
         for idx in range(len(values)):
             # base — сдвиг для этой тройки
