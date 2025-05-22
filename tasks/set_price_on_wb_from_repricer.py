@@ -101,7 +101,7 @@ def get_price(
     try:
         price_without_disc = math.ceil(solutions[0])
     except Exception as e:
-        logger.error(f"Ошибка в get_price: {e}. solution: {solutions}. Параметры: {locals()}")
+        logger.error(f"Ошибка в get_price: {e}. solution: {solutions}")
     response = math.floor(math.floor(price_without_disc * discount) * (1 - spp))
     return price_without_disc, response
 
@@ -113,6 +113,7 @@ def set_current_list(data: List[dict])-> dict:
         for i in data:
             if not response.get(i["token"]):
                 response[i["token"]] = []
+            logger.info(f'передаем {i["keep_price"]}, {i["cost_price"]}, {i["spp"]}, {i["discount"]}, {i["wallet_discount"]}, {i["nds"]}, {i["reject"]}, {i["commission"]}, {i["acquiring"]}, {i["drr"]}, {i["usn"]}')
             price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
             red_price = math.floor(black_price * (1 - int(i["wallet_discount"])/100))
             response[i["token"]].append(
