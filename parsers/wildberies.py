@@ -103,7 +103,7 @@ def parse_link(
 
     if not data or not data["data"]["products"]:
         logger.info(f"Fail {link}. Функция: parse_link. Data: {data}")
-        return
+        return 0
 
     sku = data["data"]["products"][0]
 
@@ -377,6 +377,19 @@ async def wb_api(session, param):
         } # List[dict]  где dict {"nmID": int, "price": int, "discount": int}
         view = "post"
 
+    if param["type"] == "get_question":
+        # Метод предоставляет список вопросов по заданным фильтрам.
+        # Можно получить максимум 10 000 вопросов в одном ответе
+        # Максимум 1 запрос в секунду
+        # Если превысить лимит в 3 запроса в секунду, отправка запросов будет заблокирована на 60 секунд
+
+        API_URL = "https://feedbacks-api.wildberries.ru/api/v1/questions"
+        params = {
+            "isAnswered": param["isAnswered"], # bool отвеченные (True)
+            "take": param.get("take", 10000), # Количество запрашиваемых вопросов (максимально допустимое значение для параметра - 10 000, при этом сумма значений параметров take и skip не должна превышать 10 000)
+            "skip": param.get("skip", 0), # Количество вопросов для пропуска (максимально допустимое значение для параметра - 10 000, при этом сумма значений параметров take и skip не должна превышать 10 000)
+        }
+        view = "get"
 
 
     headers = {
@@ -815,7 +828,5 @@ async def get_stock_age_by_period():
         await asyncio.sleep(60)
 
 
-
-
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stock_age_by_period())
+# res = loop.run_until_complete(get_qustions())
