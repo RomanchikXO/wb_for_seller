@@ -293,8 +293,10 @@ def podsort_view(request):
 
     turnover_change = int(request.GET.get('turnover_change', 40))
 
-    warehouses = ["Казань", "Подольск", "Екатеринбург", "Новосибирск", "Краснодар", "Коледино", "Тула",
-                  "Санкт-Петербург"]
+    warehouses = ["Казань", "Подольск", "Коледино", "Электросталь", "Екатеринбург - Испытателей 14г", "Тула",
+                  "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
+    # Создаём отображение для быстрого доступа к индексу
+    warehouse_priority = {name: index for index, name in enumerate(warehouses)}
 
     if nmid_filter:
         placeholders = ', '.join(['%s'] * len(nmid_filter))
@@ -447,6 +449,10 @@ def podsort_view(request):
                 if items[key]["orders"] else items[key]["stock"]
             items[key]["color"] = "green"
             if items[key]["subitems"]:
+                items[key]["subitems"].sort(
+                    key=lambda x: warehouse_priority.get(x["warehouse"], len(warehouse_priority))
+                )
+
                 for index, i in enumerate(items[key]["subitems"]):
                     items[key]["subitems"][index]["rec_delivery"] = int(
                         (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * 25 - items[key]["subitems"][index]["stock"]
