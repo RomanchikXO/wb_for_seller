@@ -84,7 +84,7 @@ def get_price(
     result = sp.symbols('result', real=True)
 
     # Вычисления, заменяем floor на просто выражение (приближенно)
-    j = x * 0.1
+    j = x * discount
     redprice = j * (1 - spp) * (1 - disc_wb)
 
     n = cost_price + cost_price * reject + j * commission + j * acquiring + j * drr + redprice * usn + redprice * nds
