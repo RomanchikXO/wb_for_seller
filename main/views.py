@@ -452,12 +452,12 @@ def podsort_view(request):
                         (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * 25 - items[key]["subitems"][index]["stock"]
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
-                    if items[key]["subitems"][index]["turnover"] < -20 or items[key]["subitems"][index]["turnover"] > 40:
+                    if items[key]["subitems"][index]["rec_delivery"] < -20 or items[key]["subitems"][index]["rec_delivery"] > 40:
                         items[key]["subitems"][index]["color"] = "red"
                         items[key]["color"] = "red"
-                    elif 0 < items[key]["subitems"][index]["turnover"] < 20 or -1 >= items[key]["subitems"][index]["turnover"] >= -20:
+                    elif 0 < items[key]["subitems"][index]["rec_delivery"] < 20 or -1 >= items[key]["subitems"][index]["rec_delivery"] >= -20:
                         items[key]["subitems"][index]["color"] = "yellow"
-                    elif 40 >= items[key]["subitems"][index]["turnover"] >= 20:
+                    elif 40 >= items[key]["subitems"][index]["rec_delivery"] >= 20:
                         items[key]["subitems"][index]["color"] = "green"
                     else:
                         items[key]["subitems"][index]["color"] = "white"
