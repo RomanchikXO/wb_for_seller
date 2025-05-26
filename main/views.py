@@ -445,12 +445,22 @@ def podsort_view(request):
         for key, value in items.items():
             items[key]["turnover_total"] = int(items[key]["stock"] / (items[key]["orders"] / period_ord)) \
                 if items[key]["orders"] else items[key]["stock"]
+            items[key]["color"] = "green"
             if items[key]["subitems"]:
                 for index, i in enumerate(items[key]["subitems"]):
                     items[key]["subitems"][index]["rec_delivery"] = int(
                         (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * 25 - items[key]["subitems"][index]["stock"]
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
+                    if items[key]["subitems"][index]["turnover"] < -20 or items[key]["subitems"][index]["turnover"] > 40:
+                        items[key]["subitems"][index]["color"] = "red"
+                        items[key]["color"] = "red"
+                    elif 0 < items[key]["subitems"][index]["turnover"] < 20 or -1 >= items[key]["subitems"][index]["turnover"] >= -20:
+                        items[key]["subitems"][index]["color"] = "yellow"
+                    elif 40 >= items[key]["subitems"][index]["turnover"] >= 20:
+                        items[key]["subitems"][index]["color"] = "green"
+                    else:
+                        items[key]["subitems"][index]["color"] = "white"
         items = abc_classification(items)
 
         if sort_by == "turnover_total":

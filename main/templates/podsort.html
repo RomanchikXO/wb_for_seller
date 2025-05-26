@@ -26,6 +26,15 @@
             -webkit-user-select: text;
             -moz-user-select: text;
         }
+        .row-red td {
+            background-color: #f8d7da !important; /* Bootstrap danger background */
+        }
+        .row-green td {
+            background-color: #d7f8da !important; /* Bootstrap danger background */
+        }
+        .row-yellow td {
+            background-color: #faee26 !important; /* Bootstrap danger background */
+        }
     </style>
 {% endblock %}
 
@@ -114,7 +123,7 @@
             </thead>
             <tbody>
                 {% for item in items %}
-                    <tr>
+                    <tr {% if item.color == "red" %} class="row-red" {% elif item.color == "green" %} class="row-green" {% endif %}>
                         <td>
                             <div class="d-flex align-items-center justify-content-between w-100">
                                 <!-- Левая кнопка раскрытия -->
@@ -159,7 +168,7 @@
                                 </thead>
                                 <tbody>
                                     {% for subitem in item.subitems %}
-                                        <tr>
+                                        <tr {% if subitem.color == "red" %} class="row-red" {% elif subitem.color == "green" %} class="row-green" {% elif subitem.color == "yellow" %} class="row-yellow" {% endif %}>
                                             <td>{{ subitem.warehouse }}</td>
                                             <td>{{ subitem.order }}</td>
                                             <td>{{ subitem.stock }}</td>
