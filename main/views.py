@@ -273,8 +273,8 @@ def podsort_view(request):
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
 
-    sort_by = request.GET.get("sort_by", "turnover_total")  # значение по умолчанию
-    order = request.GET.get("order", "asc")  # asc / desc
+    sort_by = request.GET.get("sort_by", "")  # значение по умолчанию
+    order = request.GET.get("order", "")  # asc / desc
 
     period_ord = int(request.GET.get('period_ord', 14))
     if period_ord == 3:
@@ -472,8 +472,6 @@ def podsort_view(request):
         if sort_by == "turnover_total":
             descending = False if order == "asc" else True
             items = sorted_by_turnover_total(items, descending)
-        else:
-            items = sorted_by_turnover_total(items)
 
 
         items = list(items.values())
