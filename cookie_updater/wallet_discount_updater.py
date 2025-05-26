@@ -97,7 +97,7 @@ async def login_and_get_context():
         await page.goto("https://www.wildberries.ru/seller/1209217", wait_until="domcontentloaded")
 
         # Шаг 4: Поиск первого блока карточки товара
-        await page.wait_for_selector("div.product-card__wrapper", timeout=10000)
+        await page.wait_for_selector("div.product-card__wrapper", timeout=60000)
         first_card = await page.query_selector("div.product-card__wrapper")
 
         card_html = await first_card.inner_html()
