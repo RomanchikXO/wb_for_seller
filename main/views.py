@@ -58,7 +58,7 @@ def sorted_by_current_nmids(items):
     return sorted_items
 
 
-def sorted_by_turnover_total(items: dict, descending: bool = True) -> dict:
+def sorted_by_turnover_total(items: dict, descending: bool = False) -> dict:
     """
     Сортирует словарь items по значению ключа 'turnover_total' во вложенных словарях.
 
