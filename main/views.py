@@ -473,7 +473,7 @@ def podsort_view(request):
             descending = False if order == "asc" else True
             items = sorted_by_turnover_total(items, descending)
         else:
-            sorted_by_current_nmids(items)
+            items = sorted_by_current_nmids(items)
 
 
         items = list(items.values())
