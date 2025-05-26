@@ -273,6 +273,9 @@ def podsort_view(request):
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
 
+    sort_by = request.GET.get('sort_by', '')  # значение по умолчанию
+    order = request.GET.get('order', 'asc')  # asc / desc
+
     period_ord = int(request.GET.get('period_ord', 14))
     if period_ord == 3:
         period = tree_days_ago
@@ -449,7 +452,14 @@ def podsort_view(request):
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
         items = abc_classification(items)
-        items = sorted_by_turnover_total(items)
+
+        if sort_by == "turnover_total":
+            descending = False if order == "asc" else True
+            items = sorted_by_turnover_total(items, descending)
+        else:
+            items = sorted_by_turnover_total(items)
+
+
         items = list(items.values())
 
         paginator = Paginator(items, per_page)
@@ -471,8 +481,10 @@ def podsort_view(request):
             "order_periods": order_periods,
             "period_ord": period_ord,
             "turnover_change": turnover_change,
-            'page_sizes': page_sizes,
-            'per_page': per_page,
+            "page_sizes": page_sizes,
+            "per_page": per_page,
+            "sort_by": sort_by,
+            "order": order,
         }
     )
 

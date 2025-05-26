@@ -101,7 +101,15 @@
                     <th>Заказы</th>
                     <th>Остатки</th>
                     <th>ABC</th>
-                    <th>Оборачиваемость общая</th>
+                    <th>
+                        <a style="color: black"
+                           href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
+                            Оборачиваемость общая
+                            {% if sort_by == "turnover_total" %}
+                                {% if order == "asc" %}▲{% else %}▼{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
                 </tr>
             </thead>
             <tbody>
@@ -171,7 +179,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <nav>
                 <ul class="pagination mb-0">
-                    {% with base_params="&per_page="|add:per_page %}
+                    {% with base_params="&per_page="|add:per_page|add:"&order="|add:order|add:"&sort_by="|add:sort_by %}
                         {% for nmid in nmid_filter %}
                             {% with base_params=base_params|add:"&nmid="|add:nmid|stringformat:"s" %}
                             {% endwith %}
