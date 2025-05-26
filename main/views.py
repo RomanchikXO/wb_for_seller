@@ -58,6 +58,25 @@ def sorted_by_current_nmids(items):
     return sorted_items
 
 
+def sorted_by_turnover_total(items: dict, descending: bool = True) -> dict:
+    """
+    Сортирует словарь items по значению ключа 'turnover_total' во вложенных словарях.
+
+    :param items: словарь, где ключ — артикул, значение — словарь с ключом 'turnover_total'
+    :param descending: если True — сортировка по убыванию, иначе — по возрастанию
+    :return: новый отсортированный словарь
+    """
+    sorted_items = dict(
+        sorted(
+            items.items(),
+            key=lambda item: item[1].get('turnover_total', 0),
+            reverse=descending
+        )
+    )
+    return sorted_items
+
+
+
 def abc_classification(data: dict):
     # Шаг 1: Сортируем по количеству заказов (убывание)
     sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
@@ -430,7 +449,7 @@ def podsort_view(request):
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
         items = abc_classification(items)
-        items = sorted_by_current_nmids(items)
+        items = sorted_by_turnover_total(items)
         items = list(items.values())
 
         paginator = Paginator(items, per_page)
