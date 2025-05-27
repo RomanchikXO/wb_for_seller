@@ -356,6 +356,7 @@ def podsort_view(request):
                         s.warehousename LIKE 'Краснодар%%' OR
                         s.warehousename LIKE 'Коледино%%' OR
                         s.warehousename LIKE 'Тула%%' OR
+                        s.warehousename LIKE 'Электросталь%%' OR
                         s.warehousename LIKE 'Санкт-Петербург%%'
                     GROUP BY
                         s.nmid, s.warehousename, {name_column_available}
@@ -378,6 +379,7 @@ def podsort_view(request):
                             o.warehousename LIKE 'Краснодар%%' OR
                             o.warehousename LIKE 'Коледино%%' OR
                             o.warehousename LIKE 'Тула%%' OR
+                            o.warehousename LIKE 'Электросталь%%' OR
                             o.warehousename LIKE 'Санкт-Петербург%%'
                         )
                     GROUP BY
