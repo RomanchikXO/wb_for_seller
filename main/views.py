@@ -64,10 +64,11 @@ def get_group_nmids(nmids):
             tail_groups[vendorcode].append(nmid)
 
     # Преобразуем в список для передачи в шаблон
-    tail_filter_options = [
-        {'tail': tail, 'nmids': ids}
-        for tail, ids in tail_groups.items()
-    ]
+    # Сортировка по алфавиту по ключу 'tail'
+    tail_filter_options = sorted(
+        [{'tail': tail, 'nmids': ids} for tail, ids in tail_groups.items()],
+        key=lambda x: x['tail'].lower()  # регистронезависимо
+    )
 
     return tail_filter_options
 
