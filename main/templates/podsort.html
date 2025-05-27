@@ -35,6 +35,12 @@
         .row-yellow td {
             background-color: #faee26 !important; /* Bootstrap danger background */
         }
+        .w-66 {
+            width: 66.6666%;
+        }
+        .w-33 {
+            width: 33.3333%;
+        }
     </style>
 {% endblock %}
 
@@ -84,9 +90,9 @@
     </div>
     <div class="card mt-4 p-4">
 {#        <form method="get" class="mb-3">#}
-            <div class="d-flex align-items-end">
+            <div class="d-flex align-items-end w-100">
                 <!-- селектор занимает всю доступную ширину -->
-                <div class="flex-grow-1 me-2">
+                <div class="me-2 w-66">
                     <label for="nmid-select" class="form-label">Фильтр по артикулу:</label>
                     <select id="nmid-select" name="nmid" class="form-select" multiple>
                         {% for nmid in nmids %}
@@ -96,7 +102,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="d-flex align-items-end">
+                <div class="me-2 w-33">
                     <select id="group-select" class="form-select">
                         <option value="">-- выбрать группу --</option>
                         {% for group in tail_filter_options %}
@@ -107,7 +113,7 @@
                     </select>
                 </div>
                 <!-- кнопки справа от селектора -->
-                <div class="btn-group">
+                <div class="btn-group align-self-end">
                     <button type="submit" class="btn btn-primary">Фильтровать</button>
                 </div>
             </div>
@@ -267,22 +273,6 @@
 {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        document.getElementById("group-select").addEventListener("change", function () {
-            const selected = this.value;
-            const selectedIds = selected.split(',');
-            const nmidSelect = document.getElementById("nmid-select");
-
-            for (const option of nmidSelect.options) {
-                option.selected = selectedIds.includes(option.value);
-            }
-
-            // Для Select2: если используется
-            if ($(nmidSelect).hasClass("select2-hidden-accessible")) {
-                $(nmidSelect).trigger('change');
-            }
-        });
-    </script>
 
     <script>
         $(document).ready(function () {
@@ -290,6 +280,27 @@
                 placeholder: 'Введите артикул для поиска',
                 allowClear: true,
                 width: '100%'
+            });
+            // Для групп
+            $('#group-select').select2({
+                placeholder: 'Выберите группу',
+                allowClear: true,
+                width: '100%'
+            });
+            // Обработчик выбора группы
+            $('#group-select').on('change', function () {
+                const selected = $(this).val();
+                const selectedIds = selected ? selected.split(',') : [];
+                const $nmidSelect = $('#nmid-select');
+
+                // Установим флаг selected
+                $nmidSelect.find('option').each(function () {
+                    const isSelected = selectedIds.includes(this.value);
+                    this.selected = isSelected;
+                });
+
+                // Обновим Select2
+                $nmidSelect.trigger('change');
             });
         });
     </script>
