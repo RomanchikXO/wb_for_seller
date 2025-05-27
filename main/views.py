@@ -195,6 +195,7 @@ def repricer_view(request):
             }
             for item in nmids
         ]
+        tail_filter_options = get_group_nmids(combined_list)
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -260,6 +261,7 @@ def repricer_view(request):
         "nmid_filter": nmid_filter,
         "sort_by": sort_by,
         "order": order,
+        "tail_filter_options": tail_filter_options,
     })
 
 
