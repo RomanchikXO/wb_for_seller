@@ -103,7 +103,7 @@
                     </select>
                 </div>
                 <div class="me-2 w-20">
-                    <label for="ngroup-select" class="form-label">Фильтр по группам:</label>
+                    <label for="group-select" class="form-label">Фильтр по группам:</label>
                     <select id="group-select" class="form-select">
                         {% for group in tail_filter_options %}
                             <option value="{{ group.nmids|join:',' }}">
