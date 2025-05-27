@@ -442,7 +442,6 @@ def podsort_view(request):
         for item in nmids
     ]
     tail_filter_options = get_group_nmids(combined_list)
-    logger.info(tail_filter_options)
 
     try:
         items = {}
@@ -531,6 +530,7 @@ def podsort_view(request):
             "per_page": per_page,
             "sort_by": sort_by,
             "order": order,
+            "tail_filter_options": tail_filter_options,
         }
     )
 

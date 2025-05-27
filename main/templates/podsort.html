@@ -96,6 +96,17 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="flex-grow-1 me-2">
+                    <label for="group-select" class="form-label">Фильтр по группам:</label>
+                    <select id="group-select" class="form-select">
+                        <option value="">-- выбрать группу --</option>
+                        {% for group in tail_filter_options %}
+                            <option value="{{ group.nmids|join:',' }}">
+                                {{ group.tail }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <!-- кнопки справа от селектора -->
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary">Фильтровать</button>
@@ -257,6 +268,23 @@
 {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.getElementById("group-select").addEventListener("change", function () {
+            const selected = this.value;
+            const selectedIds = selected.split(',');
+            const nmidSelect = document.getElementById("nmid-select");
+
+            for (const option of nmidSelect.options) {
+                option.selected = selectedIds.includes(option.value);
+            }
+
+            // Для Select2: если используется
+            if ($(nmidSelect).hasClass("select2-hidden-accessible")) {
+                $(nmidSelect).trigger('change');
+            }
+        });
+    </script>
+
     <script>
         $(document).ready(function () {
             $('#nmid-select').select2({
