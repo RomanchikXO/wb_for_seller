@@ -136,6 +136,10 @@
                             {% endif %}
                         </a>
                     </th>
+                    <th>Красная цена</th>
+                    <th>SPP</th>
+                    <th>Маржа</th>
+                    <th>Статус</th>
                 </tr>
             </thead>
             <tbody>
@@ -169,6 +173,16 @@
                         <td>{{ item.stock }}</td>
                         <td>{{ item.ABC }}</td>
                         <td>{{ item.turnover_total }}</td>
+                        <td>{{ item.redprice|default:0 }}</td>
+                        <td>{{ item.spp|default:0 }}</td>
+                        <td>
+                            <input type="number" name="keep_price" value="{{ item.keep_price }}"
+                                   class="form-control form-control-sm" style="width: 100px;">
+                        </td>
+                        <td>
+                            <input type="checkbox" class="form-check-input"
+                                   {% if item.is_active %}checked{% endif %}>
+                        </td>
                     </tr>
                     <tr class="collapse" id="subitems-{{ item.id }}">
                         <td colspan="6">
@@ -324,6 +338,10 @@
                 stock: parseInt(cells[3]?.textContent.trim()) || 0,
                 ABC: cells[4]?.textContent.trim() || '',
                 turnover_total: parseFloat(cells[5]?.textContent.trim()) || 0,
+                redprice: parseInt(cells[6]?.textContent.trim()) || 0,
+                spp: parseInt(cells[7]?.textContent.trim()) || 0,
+                keep_price: keepInput ? parseInt(keepInput.value) || 0 : 0,
+                is_active: chk ? chk.checked : false,
                 subitems: []
               };
 

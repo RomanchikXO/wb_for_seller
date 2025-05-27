@@ -401,7 +401,11 @@ def podsort_view(request):
                     w.warehousename,
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
                     COALESCE(sa.available, 0)      AS available, 
-                    COALESCE(oa.total_orders,   0) AS total_orders
+                    COALESCE(oa.total_orders,   0) AS total_orders,
+                    pr.redprice   AS redprice,
+                    pr.spp   AS spp,
+                    rp.keep_price AS keep_price,
+                    rp.is_active AS is_active
                 FROM
                     myapp_nmids p
                 LEFT JOIN all_wh w
@@ -409,6 +413,10 @@ def podsort_view(request):
                 LEFT JOIN stocks_agg sa
                     ON p.nmid = sa.nmid
                    AND w.warehousename = sa.warehousename
+                LEFT JOIN myapp_price pr
+                    ON p.nmid = pr.nmid
+                LEFT JOIN myapp_repricer rp
+                    ON p.nmid = rp.nmid
                 LEFT JOIN orders_agg oa
                     ON p.nmid = oa.nmid
                    AND w.warehousename = oa.warehousename {nmid_query}
@@ -464,6 +472,10 @@ def podsort_view(request):
                     "stock": row["total_quantity"],
                     "ABC": "формула",
                     "turnover_total": 0,
+                    "redprice": row["redprice"],
+                    "spp": row["spp"],
+                    "keep_price": row["keep_price"],
+                    "is_active": row["is_active"],
                     "subitems": []
                 }
             if row["warehousename"]:
@@ -623,7 +635,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая"
+        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка"]
 
@@ -649,6 +661,10 @@ def export_excel_podsort(request):
         ws.cell(row=row_num, column=4, value=item["stock"])
         ws.cell(row=row_num, column=5, value=item["ABC"])
         ws.cell(row=row_num, column=6, value=item["turnover_total"])
+        ws.cell(row=row_num, column=7, value=item["redprice"])
+        ws.cell(row=row_num, column=8, value=item["spp"])
+        ws.cell(row=row_num, column=9, value=item["keep_price"])
+        ws.cell(row=row_num, column=10, value="Да" if item["is_active"] else "Нет")
 
         # Вложенные subitems
         if item.get("subitems"):
