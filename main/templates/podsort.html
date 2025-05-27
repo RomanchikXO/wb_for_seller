@@ -104,7 +104,6 @@
                 </div>
                 <div class="me-2 w-33">
                     <select id="group-select" class="form-select">
-                        <option value="">-- выбрать группу --</option>
                         {% for group in tail_filter_options %}
                             <option value="{{ group.nmids|join:',' }}">
                                 {{ group.tail }}
