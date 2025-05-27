@@ -54,14 +54,15 @@ def get_group_nmids(nmids):
         vendorcode = item['vendorcode']
         nmid = item['nmid']
 
-        # Извлечение "хвоста": строчные буквы и спец. символы после префикса
-        match = re.search(r'[А-ЯA-Z\d]+([а-яa-z\W_]+)', vendorcode)
-        if match:
-            tail = match.group(1)
-            tail_groups[tail].append(nmid)
+        # Проверяем, начинается ли строка с букв и заканчивается цифрами
+        if re.match(r'^[A-Za-zА-Яа-я\W_]+[0-9]+$', vendorcode):
+            # Весь vendorcode целиком
+            tail = vendorcode
         else:
-            # fallback если не нашли паттерн
-            tail_groups[vendorcode].append(nmid)
+            # Убираем все цифры из строки
+            tail = re.sub(r'\d+', '', vendorcode)
+
+        tail_groups[tail].append(nmid)
 
     # Преобразуем в список для передачи в шаблон
     # Сортировка по алфавиту по ключу 'tail'
