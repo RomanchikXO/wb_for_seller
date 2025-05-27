@@ -13,6 +13,9 @@ from django.views.decorators.http import require_POST
 from database.DataBase import connect_to_database
 from datetime import datetime, timedelta
 
+import re
+from collections import defaultdict
+
 import logging
 from context_logger import ContextLogger
 from myapp.models import CustomUser
@@ -42,6 +45,31 @@ current_ids = [62999164, 90443540, 90439842, 70497720, 70498242, 90443538, 90439
                236127733, 236127734, 236127735, 385578749, 219934666, 219936475, 219936476, 385585415,
                219936477, 219936478, 219936479, 385588115, 236127736, 236127737, 236127738, 236127739,
                236127740, 236127741, 411689443, 411695592, 411698852, 411707482, 411710924, 411715897]
+
+
+def get_group_nmids(nmids):
+    tail_groups = defaultdict(list)
+
+    for item in nmids:
+        vendorcode = item['vendorcode']
+        nmid = item['nmid']
+
+        # Извлечение "хвоста": строчные буквы и спец. символы после префикса
+        match = re.search(r'[А-ЯA-Z\d]+([а-яa-z\W_]+)', vendorcode)
+        if match:
+            tail = match.group(1)
+            tail_groups[tail].append(nmid)
+        else:
+            # fallback если не нашли паттерн
+            tail_groups[vendorcode].append(nmid)
+
+    # Преобразуем в список для передачи в шаблон
+    tail_filter_options = [
+        {'tail': tail, 'nmids': ids}
+        for tail, ids in tail_groups.items()
+    ]
+
+    return tail_filter_options
 
 
 def sorted_by_current_nmids(items):
@@ -413,6 +441,8 @@ def podsort_view(request):
         }
         for item in nmids
     ]
+    tail_filter_options = get_group_nmids(combined_list)
+    logger.info(tail_filter_options)
 
     try:
         items = {}
