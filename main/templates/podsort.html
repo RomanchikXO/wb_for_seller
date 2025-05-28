@@ -177,11 +177,11 @@
                         <td>{{ item.spp|default:0 }}</td>
                         <td>
                             <input type="number" name="keep_price" value="{{ item.keep_price }}"
-                                   class="form-control form-control-sm" style="width: 100px;">
+                                   class="form-control form-control-sm" style="width: 100px;" disabled>
                         </td>
                         <td>
                             <input type="checkbox" class="form-check-input"
-                                   {% if item.is_active %}checked{% endif %}>
+                                   {% if item.is_active %}checked{% endif %} disabled>
                         </td>
                     </tr>
                     <tr class="collapse" id="subitems-{{ item.id }}">
