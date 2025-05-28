@@ -907,6 +907,7 @@ async def get_qustions():
                         """
                         INSERT INTO myapp_questions (nmid, id_question, created_at, question, answer, is_answered)
                         VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (nmid, id_question) DO NOTHING
                         """,
                         quant["nmid"], quant["id_question"], parse_datetime(quant["createdDate"]),
                         quant["question"], "", False
