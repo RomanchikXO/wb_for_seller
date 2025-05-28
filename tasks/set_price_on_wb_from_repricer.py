@@ -44,7 +44,6 @@ async def get_price_from_db_dor_wb()->List[dict]:
             INNER JOIN myapp_price price ON price.nmid = rp.nmid
             WHERE 
                 rp.is_active IS TRUE 
-                AND price.spp != 0
         """
         rows = await conn.fetch(query)
         columns = [dict(row) for row in rows]
