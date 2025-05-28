@@ -69,6 +69,7 @@ class Price(models.Model):
 
     class Meta:
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
+        verbose_name_plural = "Цены и товары"
 
     def __str__(self):
         return f"{self.vendorcode} - {self.nmid}"
@@ -82,9 +83,22 @@ class Repricer(models.Model):
 
     class Meta:
         unique_together = ['nmid', 'lk']
+        verbose_name_plural = "Репрайсер"
 
     def __str__(self):
         return f"{self.lk} - {self.nmid}"
+
+
+class Questions(models.Model):
+    nmid = models.IntegerField()
+    id_question = models.CharField(max_length=255)
+    created_at = models.DateTimeField() #дата создания вопроса на WB
+    question = models.TextField(default="")
+    answer = models.TextField(default="") # это поле пока что только для ответов бота
+    is_answered = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name_plural = "Вопросы WB"
 
 
 
@@ -192,6 +206,9 @@ class CeleryLog(models.Model):
     level = models.CharField(max_length=50)
     source = models.CharField(max_length=255, null=True)
     message = models.TextField()
+
+    class Meta:
+        verbose_name_plural = "Логи"
 
     def __str__(self):
         return f"[{self.timestamp}] {self.level}: {self.message}"

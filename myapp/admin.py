@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer
+from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions
+
+
+class QuestionsAdmin(admin.ModelAdmin):
+    list_display = ('nmid', 'id_question', 'created_at', 'question')
+    search_fields = ('nmid', 'id_question')
+    ordering = ('created_at',)
+    list_filter = ('is_answered',)
 
 
 class PriceAdmin(admin.ModelAdmin):
