@@ -16,6 +16,7 @@ import logging
 import io
 import csv
 from context_logger import ContextLogger
+from itertools import chain
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
@@ -543,6 +544,7 @@ async def get_nmids():
                     param["updatedAt"] = response["cursor"]["updatedAt"]
                     param["nmID"] = response["cursor"]["nmID"]
 
+
 async def get_stocks_data_2_weeks():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
@@ -713,7 +715,6 @@ async def get_prices_from_lk(lk: dict):
                 return None
 
 
-
 async def get_stock_age_by_period():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
@@ -826,6 +827,95 @@ async def get_stock_age_by_period():
         tasks = [get_analitics(cab, period) for cab in cabinets]
         await asyncio.gather(*tasks)
         await asyncio.sleep(60)
+
+
+async def get_qustions():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    async def get_data(cab: dict):
+        """
+        Получаем неотвеченный вопросы
+        """
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_question",
+                "API_KEY": cab["token"],
+                "isAnswered": 0,
+            }
+            response = await wb_api(session, param)
+            response = response["data"]["questions"]
+
+            data = [
+                {
+                    "id_question": i["id"],
+                    "nmid": i["productDetails"]["nmId"],
+                    "createdDate": i["createdDate"],
+                    "question": i["text"]
+                }
+                for i in response
+            ]
+
+            return data
+
+
+    tasks = [
+        get_data(cab)
+        for cab in cabinets
+    ]
+    data = await asyncio.gather(*tasks)
+    data = list(chain.from_iterable(data))
+
+    api_ids_questions = [i["id_questions"] for i in data]
+
+    ids_db_is_not_ans = await get_data_from_db("myapp_questions", ["id_question"], {"is_answered": False})
+    ids_db_is_not_ans = [i["id_question"] for i in ids_db_is_not_ans]
+
+    ids_need_change_to_true = list(set(ids_db_is_not_ans) - set(api_ids_questions))
+
+    if ids_need_change_to_true:
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.error("Ошибка подключения к БД в get_qustions")
+            raise
+        try:
+            query = f"""
+                UPDATE myapp_questions 
+                SET
+                    is_answered = TRUE
+                WHERE id_question IN ({",".join(ids_need_change_to_true)})
+            """
+            await conn.execute(query)
+        except Exception as e:
+            logger.error(
+                f"Ошибка обновления отвеченных вопросов в myapp_questions. Error: {e}"
+            )
+            raise
+        finally:
+            await conn.close()
+
+    data = [i for i in data if i["id_question"] not in ids_need_change_to_true]
+
+    if data:
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.error("Ошибка подключения к БД в get_qustions")
+            raise
+        try:
+            for quant in data:
+                await add_set_data_from_db(
+                    conn=conn,
+                    table_name="myapp_questions",
+                    data=dict(
+                        nmid=quant["nmid"],
+                        id_question=quant["id_question"],
+                        created_at=parse_datetime(quant["createdDate"]),
+                        question=quant["question"],
+                    )
+                )
+        except Exception as e:
+            logger.error(f"Ошибка при добавлении вопросов в БД. Error: {e}")
+        finally:
+            await conn.close()
+
 
 
 # loop = asyncio.get_event_loop()
