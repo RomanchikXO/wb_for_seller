@@ -3,7 +3,7 @@ from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, O
 
 
 class QuestionsAdmin(admin.ModelAdmin):
-    list_display = ('nmid', 'id_question', 'created_at', 'question')
+    list_display = ('nmid', 'id_question', 'created_at', 'question', 'is_answered')
     search_fields = ('nmid', 'id_question')
     ordering = ('created_at',)
     list_filter = ('is_answered',)
