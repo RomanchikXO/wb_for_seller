@@ -98,6 +98,7 @@ class Questions(models.Model):
     is_answered = models.BooleanField(default=False)
 
     class Meta:
+        unique_together = ['nmid', 'id_question']
         verbose_name_plural = "Вопросы WB"
 
 
