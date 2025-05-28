@@ -864,7 +864,7 @@ async def get_qustions():
     data = await asyncio.gather(*tasks)
     data = list(chain.from_iterable(data))
 
-    api_ids_questions = [i["id_questions"] for i in data]
+    api_ids_questions = [i["id_question"] for i in data]
 
     ids_db_is_not_ans = await get_data_from_db("myapp_questions", ["id_question"], {"is_answered": False})
     ids_db_is_not_ans = [i["id_question"] for i in ids_db_is_not_ans]
@@ -899,18 +899,18 @@ async def get_qustions():
         if not conn:
             logger.error("Ошибка подключения к БД в get_qustions")
             raise
+        conn = await conn.acquire()
         try:
-            for quant in data:
-                await add_set_data_from_db(
-                    conn=conn,
-                    table_name="myapp_questions",
-                    data=dict(
-                        nmid=quant["nmid"],
-                        id_question=quant["id_question"],
-                        created_at=parse_datetime(quant["createdDate"]),
-                        question=quant["question"],
+            async with conn.transaction():
+                for quant in data:
+                    await conn.execute(
+                        """
+                        INSERT INTO myapp_questions (nmid, id_question, created_at, question, answer, is_answered)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        """,
+                        quant["nmid"], quant["id_question"], parse_datetime(quant["createdDate"]),
+                        quant["question"], "", False
                     )
-                )
         except Exception as e:
             logger.error(f"Ошибка при добавлении вопросов в БД. Error: {e}")
         finally:
