@@ -1039,17 +1039,17 @@ async def get_stat_products():
                                 )
                                 VALUES {', '.join(values_placeholders)}
                                 ON CONFLICT (nmid, date_wb) DO UPDATE SET
-                                    openCardCount = EXCLUDED.openCardCount,
-                                    addToCartCount = EXCLUDED.addToCartCount,
-                                    ordersCount = EXCLUDED.ordersCount,
-                                    ordersSumRub = EXCLUDED.ordersSumRub,
-                                    buyoutsCount = EXCLUDED.buyoutsCount,
-                                    buyoutsSumRub = EXCLUDED.buyoutsSumRub,
-                                    cancelCount = EXCLUDED.cancelCount,
-                                    cancelSumRub = EXCLUDED.cancelSumRub,
-                                    addToCartConversion = EXCLUDED.addToCartConversion,
-                                    cartToOrderConversion = EXCLUDED.cartToOrderConversion,
-                                    buyoutPercent = EXCLUDED.buyoutPercent;
+                                    "openCardCount" = EXCLUDED."openCardCount",
+                                    "addToCartCount" = EXCLUDED."addToCartCount",
+                                    "ordersCount" = EXCLUDED."ordersCount",
+                                    "ordersSumRub" = EXCLUDED."ordersSumRub",
+                                    "buyoutsCount" = EXCLUDED."buyoutsCount",
+                                    "buyoutsSumRub" = EXCLUDED."buyoutsSumRub",
+                                    "cancelCount" = EXCLUDED."cancelCount",
+                                    "cancelSumRub" = EXCLUDED."cancelSumRub",
+                                    "addToCartConversion" = EXCLUDED."addToCartConversion",
+                                    "cartToOrderConversion" = EXCLUDED."cartToOrderConversion",
+                                    "buyoutPercent" = EXCLUDED."buyoutPercent";
                             """
                             await conn.execute(query, *values_data)
 
