@@ -44,7 +44,7 @@ class CustomUser(models.Model):
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
 
-# Модель для таблицы prices
+
 class Price(models.Model):
     # myapp_price
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
@@ -73,6 +73,26 @@ class Price(models.Model):
 
     def __str__(self):
         return f"{self.vendorcode} - {self.nmid}"
+
+
+class ProductsStat(models.Model):
+    nmid = models.IntegerField()
+    date = models.DateField() #дата от WB
+    openCardCount = models.IntegerField() # Переходы в карточку товара
+    addToCartCount = models.IntegerField() # Положили в корзину, шт.
+    ordersCount = models.IntegerField() # Заказали товаров, шт.
+    ordersSumRub = models.IntegerField() # Заказали на сумму, ₽
+    buyoutsCount = models.IntegerField() # Выкупили товаров, шт.
+    buyoutsSumRub = models.IntegerField() # Выкупили на сумму, ₽
+    cancelCount = models.IntegerField() # Отменили товаров, шт.
+    cancelSumRub = models.IntegerField() # Отменили на сумму, ₽
+    addToCartConversion = models.IntegerField() # Конверсия в корзину, %
+    cartToOrderConversion = models.IntegerField() # Конверсия в заказ, %
+    buyoutPercent = models.IntegerField() # Процент выкупа, %
+
+    class Meta:
+        unique_together = ['nmid', 'date']  # Уникальное ограничение на комбинацию nmid и date
+        verbose_name_plural = "Статистика товаров"
 
 
 class Repricer(models.Model):

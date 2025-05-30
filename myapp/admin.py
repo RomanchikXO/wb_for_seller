@@ -1,11 +1,18 @@
 from django.contrib import admin
-from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions
+from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions, ProductsStat
+
+
+class ProductsStatAdmin(admin.ModelAdmin):
+    list_display = ('nmid', 'date', 'buyoutPercent')
+    search_fields = ('nmid',)
+    ordering = ('date',)  # Сортировка по умолчанию
+    list_filter = ('date',)
 
 
 class QuestionsAdmin(admin.ModelAdmin):
     list_display = ('nmid', 'id_question', 'created_at', 'question', 'is_answered')
     search_fields = ('nmid', 'id_question')
-    ordering = ('created_at',)
+    ordering = ('created_at',) # Сортировка по умолчанию
     list_filter = ('is_answered',)
 
 
@@ -75,3 +82,4 @@ admin.site.register(Groups)
 admin.site.register(CustomUser)
 admin.site.register(Price, PriceAdmin)
 admin.site.register(Questions, QuestionsAdmin)
+admin.site.register(ProductsStat, ProductsStatAdmin)
