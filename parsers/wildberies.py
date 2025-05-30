@@ -1019,7 +1019,7 @@ async def get_stat_products():
                                     buyoutPercent) in enumerate(data):
                                 base = idx * 13
                                 values_placeholders.append(
-                                    f"(${base + 1}::integer, ${base + 2}::integer, ${base + 3}::integer, "
+                                    f"(${base + 1}::integer, ${base + 2}, ${base + 3}::integer, "
                                     f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
                                     f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
                                     f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
