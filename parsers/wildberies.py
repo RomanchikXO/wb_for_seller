@@ -969,7 +969,7 @@ async def get_stat_products():
                         header = next(reader)
 
                         nmid_index = header.index("nmID")
-                        date = header.index("dt")
+                        date_wb = header.index("dt")
                         openCardCount = header.index("openCardCount")
                         addToCartCount = header.index("addToCartCount")
                         ordersCount = header.index("ordersCount")
@@ -988,7 +988,7 @@ async def get_stat_products():
                             data.append(
                                 (
                                     int(row[nmid_index]),
-                                    parse_datetime(row[date]),
+                                    parse_datetime(row[date_wb]),
                                     row[openCardCount],
                                     row[addToCartCount],
                                     row[ordersCount],
@@ -1014,7 +1014,7 @@ async def get_stat_products():
                             values_placeholders = []
                             values_data = []
                             for idx, (
-                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
+                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
                                     buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
                                     buyoutPercent) in enumerate(data):
                                 base = idx * 13
@@ -1025,19 +1025,19 @@ async def get_stat_products():
                                     f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
                                     f"${base + 13}::integer")
                                 values_data.extend([
-                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
                                     buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
                                     addToCartConversion, cartToOrderConversion, buyoutPercent
                                 ])
 
                             query = f"""
                                 INSERT INTO myapp_productsstat (
-                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
                                     buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
                                     addToCartConversion, cartToOrderConversion, buyoutPercent
                                 )
                                 VALUES {', '.join(values_placeholders)}
-                                ON CONFLICT (nmid, date) DO UPDATE SET
+                                ON CONFLICT (nmid, date_wb) DO UPDATE SET
                                     openCardCount = EXCLUDED.openCardCount,
                                     addToCartCount = EXCLUDED.addToCartCount,
                                     ordersCount = EXCLUDED.ordersCount,
