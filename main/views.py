@@ -706,3 +706,8 @@ def export_excel_podsort(request):
     )
     response['Content-Disposition'] = 'attachment; filename=podsort_export.xlsx'
     return response
+
+
+@login_required_cust
+def margin_view(request):
+    return render(request, 'margin.html')
