@@ -1063,7 +1063,7 @@ async def get_stat_products():
                             raise
                         finally:
                             await conn.close()
-    tasks = [get_analitics(cab, 30) for cab in cabinets]
+    tasks = [get_analitics(cab, 7) for cab in cabinets]
     await asyncio.gather(*tasks)
 
 
