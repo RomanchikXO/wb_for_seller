@@ -77,7 +77,7 @@ class Price(models.Model):
 
 class ProductsStat(models.Model):
     nmid = models.IntegerField()
-    date_wb = models.DateField() #дата от WB
+    date_wb = models.DateField(auto_now_add=True, null=True) #дата от WB
     openCardCount = models.IntegerField() # Переходы в карточку товара
     addToCartCount = models.IntegerField() # Положили в корзину, шт.
     ordersCount = models.IntegerField() # Заказали товаров, шт.
