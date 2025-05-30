@@ -715,6 +715,95 @@ async def get_prices_from_lk(lk: dict):
                 return None
 
 
+async def get_qustions():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    async def get_data(cab: dict):
+        """
+        Получаем неотвеченный вопросы
+        """
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_question",
+                "API_KEY": cab["token"],
+                "isAnswered": 0,
+            }
+            response = await wb_api(session, param)
+            response = response["data"]["questions"]
+
+            data = [
+                {
+                    "id_question": i["id"],
+                    "nmid": i["productDetails"]["nmId"],
+                    "createdDate": i["createdDate"],
+                    "question": i["text"]
+                }
+                for i in response
+            ]
+
+            return data
+
+
+    tasks = [
+        get_data(cab)
+        for cab in cabinets
+    ]
+    data = await asyncio.gather(*tasks)
+    data = list(chain.from_iterable(data))
+
+    api_ids_questions = [i["id_question"] for i in data]
+
+    ids_db_is_not_ans = await get_data_from_db("myapp_questions", ["id_question"], {"is_answered": False})
+    ids_db_is_not_ans = [i["id_question"] for i in ids_db_is_not_ans]
+
+    ids_need_change_to_true = list(set(ids_db_is_not_ans) - set(api_ids_questions))
+
+    if ids_need_change_to_true:
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.error("Ошибка подключения к БД в get_qustions")
+            raise
+        try:
+            query = f"""
+                UPDATE myapp_questions 
+                SET
+                    is_answered = TRUE
+                WHERE id_question IN ({",".join(ids_need_change_to_true)})
+            """
+            await conn.execute(query)
+        except Exception as e:
+            logger.error(
+                f"Ошибка обновления отвеченных вопросов в myapp_questions. Error: {e}"
+            )
+            raise
+        finally:
+            await conn.close()
+
+    data = [i for i in data if i["id_question"] not in ids_need_change_to_true]
+
+    if data:
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.error("Ошибка подключения к БД в get_qustions")
+            raise
+        conn = await conn.acquire()
+        try:
+            async with conn.transaction():
+                for quant in data:
+                    await conn.execute(
+                        """
+                        INSERT INTO myapp_questions (nmid, id_question, created_at, question, answer, is_answered)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (nmid, id_question) DO NOTHING
+                        """,
+                        quant["nmid"], quant["id_question"], parse_datetime(quant["createdDate"]),
+                        quant["question"], "", False
+                    )
+        except Exception as e:
+            logger.error(f"Ошибка при добавлении вопросов в БД. Error: {e}")
+        finally:
+            await conn.close()
+
+
 async def get_stock_age_by_period():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
@@ -829,95 +918,150 @@ async def get_stock_age_by_period():
         await asyncio.sleep(60)
 
 
-async def get_qustions():
+async def get_stat_products():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
-    async def get_data(cab: dict):
-        """
-        Получаем неотвеченный вопросы
-        """
+
+    async def get_analitics(cab: dict, period_get: int):
         async with aiohttp.ClientSession() as session:
+            id_report = get_uuid()
             param = {
-                "type": "get_question",
+                "type": "seller_analytics_generate",
                 "API_KEY": cab["token"],
-                "isAnswered": 0,
+                "reportType": "DETAIL_HISTORY_REPORT",
+                "start": (datetime.now() + timedelta(hours=3) - timedelta(days=period_get)).strftime('%Y-%m-%d'),
+                "end": (datetime.now() + timedelta(hours=3) - timedelta(days=1)).strftime('%Y-%m-%d'),
+                "id": id_report,  # '685d17f6-ed17-44b4-8a86-b8382b05873c'
+                "userReportName": get_uuid(),
             }
             response = await wb_api(session, param)
-            response = response["data"]["questions"]
 
-            data = [
-                {
-                    "id_question": i["id"],
-                    "nmid": i["productDetails"]["nmId"],
-                    "createdDate": i["createdDate"],
-                    "question": i["text"]
+            if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
+                logger.error(
+                    f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
+                raise
+
+            while True:
+                await asyncio.sleep(10)
+                param = {
+                    "type": "seller_analytics_report",
+                    "API_KEY": cab["token"],
+                    "downloadId": id_report
                 }
-                for i in response
-            ]
 
-            return data
+                response = await wb_api(session, param)
+                if not isinstance(response, bytes):
+                    await asyncio.sleep(55)
+                else:
+                    try:
+                        text = response.decode('utf-8')
+                        text = json.loads(text)
+                        if text.get("title"):
+                            await asyncio.sleep(55)
+                    except Exception as e:
+                        break
+            with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
+                for file_name in zip_file.namelist():
+                    with zip_file.open(file_name) as csv_file:
+                        # читаем CSV построчно
+                        reader = csv.reader(io.TextIOWrapper(csv_file, encoding='utf-8'))
+
+                        data = []
+                        header = next(reader)
+
+                        nmid_index = header.index("nmID")
+                        date = parse_datetime(header.index("dt"))
+                        openCardCount = header.index("openCardCount")
+                        addToCartCount = header.index("addToCartCount")
+                        ordersCount = header.index("ordersCount")
+                        ordersSumRub = header.index("ordersSumRub")
+                        buyoutsCount = header.index("buyoutsCount")
+                        buyoutsSumRub = header.index("buyoutsSumRub")
+                        cancelCount = header.index("cancelCount")
+                        cancelSumRub = header.index("cancelSumRub")
+                        addToCartConversion = header.index("addToCartConversion")
+                        cartToOrderConversion = header.index("cartToOrderConversion")
+                        buyoutPercent = header.index("buyoutPercent")
 
 
-    tasks = [
-        get_data(cab)
-        for cab in cabinets
-    ]
-    data = await asyncio.gather(*tasks)
-    data = list(chain.from_iterable(data))
+                        for index, row in enumerate(reader):
+                            if index == 0: continue  # пропускаем шапку
+                            data.append(
+                                (
+                                    int(row[nmid_index]),
+                                    row[date],
+                                    row[openCardCount],
+                                    row[addToCartCount],
+                                    row[ordersCount],
+                                    row[ordersSumRub],
+                                    row[buyoutsCount],
+                                    row[buyoutsSumRub],
+                                    row[cancelCount],
+                                    row[cancelSumRub],
+                                    row[addToCartConversion],
+                                    row[cartToOrderConversion],
+                                    row[buyoutPercent],
+                                )
+                            )
 
-    api_ids_questions = [i["id_question"] for i in data]
+                        conn = await async_connect_to_database()
+                        if not conn:
+                            logger.error("Ошибка подключения к БД в get_stat_products")
+                            raise
 
-    ids_db_is_not_ans = await get_data_from_db("myapp_questions", ["id_question"], {"is_answered": False})
-    ids_db_is_not_ans = [i["id_question"] for i in ids_db_is_not_ans]
+                        try:
 
-    ids_need_change_to_true = list(set(ids_db_is_not_ans) - set(api_ids_questions))
+                            # Подготовка VALUES и параметров
+                            values_placeholders = []
+                            values_data = []
+                            for idx, (
+                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
+                                    buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
+                                    buyoutPercent) in enumerate(data):
+                                base = idx * 13
+                                values_placeholders.append(
+                                    f"(${base + 1}::integer, ${base + 2}::integer, ${base + 3}::integer, "
+                                    f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
+                                    f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
+                                    f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
+                                    f"${base + 13}::integer")
+                                values_data.extend([
+                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                    buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
+                                    addToCartConversion, cartToOrderConversion, buyoutPercent
+                                ])
 
-    if ids_need_change_to_true:
-        conn = await async_connect_to_database()
-        if not conn:
-            logger.error("Ошибка подключения к БД в get_qustions")
-            raise
-        try:
-            query = f"""
-                UPDATE myapp_questions 
-                SET
-                    is_answered = TRUE
-                WHERE id_question IN ({",".join(ids_need_change_to_true)})
-            """
-            await conn.execute(query)
-        except Exception as e:
-            logger.error(
-                f"Ошибка обновления отвеченных вопросов в myapp_questions. Error: {e}"
-            )
-            raise
-        finally:
-            await conn.close()
+                            query = f"""
+                                INSERT INTO myapp_productsstat (
+                                    nmid, date, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                    buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
+                                    addToCartConversion, cartToOrderConversion, buyoutPercent
+                                )
+                                VALUES {', '.join(values_placeholders)}
+                                ON CONFLICT (nmid, date) DO UPDATE SET
+                                    openCardCount = EXCLUDED.openCardCount,
+                                    addToCartCount = EXCLUDED.addToCartCount,
+                                    ordersCount = EXCLUDED.ordersCount,
+                                    ordersSumRub = EXCLUDED.ordersSumRub,
+                                    buyoutsCount = EXCLUDED.buyoutsCount,
+                                    buyoutsSumRub = EXCLUDED.buyoutsSumRub,
+                                    cancelCount = EXCLUDED.cancelCount,
+                                    cancelSumRub = EXCLUDED.cancelSumRub,
+                                    addToCartConversion = EXCLUDED.addToCartConversion,
+                                    cartToOrderConversion = EXCLUDED.cartToOrderConversion,
+                                    buyoutPercent = EXCLUDED.buyoutPercent;
+                            """
+                            await conn.execute(query, *values_data)
 
-    data = [i for i in data if i["id_question"] not in ids_need_change_to_true]
-
-    if data:
-        conn = await async_connect_to_database()
-        if not conn:
-            logger.error("Ошибка подключения к БД в get_qustions")
-            raise
-        conn = await conn.acquire()
-        try:
-            async with conn.transaction():
-                for quant in data:
-                    await conn.execute(
-                        """
-                        INSERT INTO myapp_questions (nmid, id_question, created_at, question, answer, is_answered)
-                        VALUES ($1, $2, $3, $4, $5, $6)
-                        ON CONFLICT (nmid, id_question) DO NOTHING
-                        """,
-                        quant["nmid"], quant["id_question"], parse_datetime(quant["createdDate"]),
-                        quant["question"], "", False
-                    )
-        except Exception as e:
-            logger.error(f"Ошибка при добавлении вопросов в БД. Error: {e}")
-        finally:
-            await conn.close()
-
+                        except Exception as e:
+                            logger.error(
+                                f"Ошибка обновления данных в myapp_productsstat. Error: {e}"
+                            )
+                            raise
+                        finally:
+                            await conn.close()
+    tasks = [get_analitics(cab, 30) for cab in cabinets]
+    await asyncio.gather(*tasks)
 
 
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_qustions())
+# res = loop.run_until_complete(get_stat_products())
