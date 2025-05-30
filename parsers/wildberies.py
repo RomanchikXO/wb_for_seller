@@ -989,17 +989,17 @@ async def get_stat_products():
                                 (
                                     int(row[nmid_index]),
                                     parse_datetime(row[date_wb]),
-                                    row[openCardCount],
-                                    row[addToCartCount],
-                                    row[ordersCount],
-                                    row[ordersSumRub],
-                                    row[buyoutsCount],
-                                    row[buyoutsSumRub],
-                                    row[cancelCount],
-                                    row[cancelSumRub],
-                                    row[addToCartConversion],
-                                    row[cartToOrderConversion],
-                                    row[buyoutPercent],
+                                    int(row[openCardCount]),
+                                    int(row[addToCartCount]),
+                                    int(row[ordersCount]),
+                                    int(row[ordersSumRub]),
+                                    int(row[buyoutsCount]),
+                                    int(row[buyoutsSumRub]),
+                                    int(row[cancelCount]),
+                                    int(row[cancelSumRub]),
+                                    int(row[addToCartConversion]),
+                                    int(row[cartToOrderConversion]),
+                                    int(row[buyoutPercent]),
                                 )
                             )
 
