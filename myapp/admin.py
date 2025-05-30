@@ -3,10 +3,10 @@ from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, O
 
 
 class ProductsStatAdmin(admin.ModelAdmin):
-    list_display = ('nmid', 'date', 'buyoutPercent')
+    list_display = ('nmid', 'date_wb', 'buyoutPercent')
     search_fields = ('nmid',)
-    ordering = ('date',)  # Сортировка по умолчанию
-    list_filter = ('date',)
+    ordering = ('date_wb',)  # Сортировка по умолчанию
+    list_filter = ('date_wb',)
 
 
 class QuestionsAdmin(admin.ModelAdmin):

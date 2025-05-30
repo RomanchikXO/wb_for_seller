@@ -77,7 +77,7 @@ class Price(models.Model):
 
 class ProductsStat(models.Model):
     nmid = models.IntegerField()
-    date = models.DateField() #дата от WB
+    date_wb = models.DateField() #дата от WB
     openCardCount = models.IntegerField() # Переходы в карточку товара
     addToCartCount = models.IntegerField() # Положили в корзину, шт.
     ordersCount = models.IntegerField() # Заказали товаров, шт.
@@ -91,7 +91,7 @@ class ProductsStat(models.Model):
     buyoutPercent = models.IntegerField() # Процент выкупа, %
 
     class Meta:
-        unique_together = ['nmid', 'date']  # Уникальное ограничение на комбинацию nmid и date
+        unique_together = ['nmid', 'date_wb']  # Уникальное ограничение на комбинацию nmid и date_wb
         verbose_name_plural = "Статистика товаров"
 
 
