@@ -1009,49 +1009,52 @@ async def get_stat_products():
                             raise
 
                         try:
+                            BATCH_SIZE = 1000
+                            for batch_start in range(0, len(data), BATCH_SIZE):
+                                batch = data[batch_start:batch_start + BATCH_SIZE]
+                                # Подготовка VALUES и параметров
+                                values_placeholders = []
+                                values_data = []
 
-                            # Подготовка VALUES и параметров
-                            values_placeholders = []
-                            values_data = []
-                            for idx, (
-                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
-                                    buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
-                                    buyoutPercent) in enumerate(data):
-                                base = idx * 13
-                                values_placeholders.append(
-                                    f"(${base + 1}::integer, ${base + 2}, ${base + 3}::integer, "
-                                    f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
-                                    f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
-                                    f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
-                                    f"${base + 13}::integer)"
-                                )
-                                values_data.extend([
-                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
-                                    buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
-                                    addToCartConversion, cartToOrderConversion, buyoutPercent
-                                ])
+                                for idx, (
+                                        nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
+                                        buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
+                                        buyoutPercent) in enumerate(batch):
+                                    base = idx * 13
+                                    values_placeholders.append(
+                                        f"(${base + 1}::integer, ${base + 2}, ${base + 3}::integer, "
+                                        f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
+                                        f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
+                                        f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
+                                        f"${base + 13}::integer)"
+                                    )
+                                    values_data.extend([
+                                        nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
+                                        buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
+                                        addToCartConversion, cartToOrderConversion, buyoutPercent
+                                    ])
 
-                            query = f"""
-                                INSERT INTO myapp_productsstat (
-                                    nmid, date_wb, "openCardCount", "addToCartCount", "ordersCount", "ordersSumRub",
-                                    "buyoutsCount", "buyoutsSumRub", "cancelCount", "cancelSumRub",
-                                    "addToCartConversion", "cartToOrderConversion", "buyoutPercent"
-                                )
-                                VALUES {', '.join(values_placeholders)}
-                                ON CONFLICT (nmid, date_wb) DO UPDATE SET
-                                    "openCardCount" = EXCLUDED."openCardCount",
-                                    "addToCartCount" = EXCLUDED."addToCartCount",
-                                    "ordersCount" = EXCLUDED."ordersCount",
-                                    "ordersSumRub" = EXCLUDED."ordersSumRub",
-                                    "buyoutsCount" = EXCLUDED."buyoutsCount",
-                                    "buyoutsSumRub" = EXCLUDED."buyoutsSumRub",
-                                    "cancelCount" = EXCLUDED."cancelCount",
-                                    "cancelSumRub" = EXCLUDED."cancelSumRub",
-                                    "addToCartConversion" = EXCLUDED."addToCartConversion",
-                                    "cartToOrderConversion" = EXCLUDED."cartToOrderConversion",
-                                    "buyoutPercent" = EXCLUDED."buyoutPercent";
-                            """
-                            await conn.execute(query, *values_data)
+                                query = f"""
+                                    INSERT INTO myapp_productsstat (
+                                        nmid, date_wb, "openCardCount", "addToCartCount", "ordersCount", "ordersSumRub",
+                                        "buyoutsCount", "buyoutsSumRub", "cancelCount", "cancelSumRub",
+                                        "addToCartConversion", "cartToOrderConversion", "buyoutPercent"
+                                    )
+                                    VALUES {', '.join(values_placeholders)}
+                                    ON CONFLICT (nmid, date_wb) DO UPDATE SET
+                                        "openCardCount" = EXCLUDED."openCardCount",
+                                        "addToCartCount" = EXCLUDED."addToCartCount",
+                                        "ordersCount" = EXCLUDED."ordersCount",
+                                        "ordersSumRub" = EXCLUDED."ordersSumRub",
+                                        "buyoutsCount" = EXCLUDED."buyoutsCount",
+                                        "buyoutsSumRub" = EXCLUDED."buyoutsSumRub",
+                                        "cancelCount" = EXCLUDED."cancelCount",
+                                        "cancelSumRub" = EXCLUDED."cancelSumRub",
+                                        "addToCartConversion" = EXCLUDED."addToCartConversion",
+                                        "cartToOrderConversion" = EXCLUDED."cartToOrderConversion",
+                                        "buyoutPercent" = EXCLUDED."buyoutPercent";
+                                """
+                                await conn.execute(query, *values_data)
 
                         except Exception as e:
                             logger.error(
