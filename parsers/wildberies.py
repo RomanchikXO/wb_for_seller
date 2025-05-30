@@ -1033,9 +1033,9 @@ async def get_stat_products():
 
                             query = f"""
                                 INSERT INTO myapp_productsstat (
-                                    nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
-                                    buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
-                                    addToCartConversion, cartToOrderConversion, buyoutPercent
+                                    nmid, date_wb, "openCardCount", "addToCartCount", "ordersCount", "ordersSumRub",
+                                    "buyoutsCount", "buyoutsSumRub", "cancelCount", "cancelSumRub",
+                                    "addToCartConversion", "cartToOrderConversion", "buyoutPercent"
                                 )
                                 VALUES {', '.join(values_placeholders)}
                                 ON CONFLICT (nmid, date_wb) DO UPDATE SET
