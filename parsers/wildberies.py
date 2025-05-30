@@ -969,7 +969,7 @@ async def get_stat_products():
                         header = next(reader)
 
                         nmid_index = header.index("nmID")
-                        date = parse_datetime(header.index("dt"))
+                        date = header.index("dt")
                         openCardCount = header.index("openCardCount")
                         addToCartCount = header.index("addToCartCount")
                         ordersCount = header.index("ordersCount")
@@ -988,7 +988,7 @@ async def get_stat_products():
                             data.append(
                                 (
                                     int(row[nmid_index]),
-                                    row[date],
+                                    parse_datetime(row[date]),
                                     row[openCardCount],
                                     row[addToCartCount],
                                     row[ordersCount],
