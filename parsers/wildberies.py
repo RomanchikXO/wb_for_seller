@@ -1023,7 +1023,8 @@ async def get_stat_products():
                                     f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
                                     f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
                                     f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
-                                    f"${base + 13}::integer")
+                                    f"${base + 13}::integer)"
+                                )
                                 values_data.extend([
                                     nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
                                     buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
