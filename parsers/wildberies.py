@@ -841,6 +841,9 @@ async def get_stock_age_by_period():
                     else:
                         try:
                             text = response.decode('utf-8')
+                            if "check correctness of download id or supplier id" in text:
+                                logger.error("Ошибка!!!: check correctness of download id or supplier id")
+                                raise
                             text = json.loads(text)
                             if text.get("title"):
                                 await asyncio.sleep(55)
@@ -1068,4 +1071,4 @@ async def get_stat_products():
 
 
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stat_products())
+# res = loop.run_until_complete(get_stock_age_by_period())
