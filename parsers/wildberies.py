@@ -763,13 +763,14 @@ async def get_qustions():
             logger.error("Ошибка подключения к БД в get_qustions")
             raise
         try:
+            placeholders = ','.join(f'${i + 1}' for i in range(len(ids_need_change_to_true)))
             query = f"""
                 UPDATE myapp_questions 
                 SET
                     is_answered = TRUE
-                WHERE id_question IN ({",".join(ids_need_change_to_true)})
+                WHERE id_question IN ({placeholders})
             """
-            await conn.execute(query)
+            await conn.execute(query, *ids_need_change_to_true)
         except Exception as e:
             logger.error(
                 f"Ошибка обновления отвеченных вопросов в myapp_questions. Error: {e}"
