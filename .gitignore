@@ -11,3 +11,4 @@ __pycache__/
 /tests_some.py
 /myapp/migrations/
 /main/migrations/
+/celerybeat-schedule
