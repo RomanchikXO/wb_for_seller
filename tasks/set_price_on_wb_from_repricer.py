@@ -119,7 +119,10 @@ def set_current_list(data: List[dict])-> dict:
             if not price and not black_price:
                 logger.info(f"Не нашлось цены для {i}")
                 continue
-            red_price = math.floor(black_price * (1 - int(i["wallet_discount"])/100))
+            try:
+                red_price = math.floor(black_price * (1 - int(i["wallet_discount"])/100))
+            except:
+                raise Exception(f"Ошибка при формировании red_price. Данные: {i}")
             response[i["token"]].append(
                 {
                     "nmID":int(i["nmid"]),
