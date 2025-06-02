@@ -115,7 +115,10 @@ def set_current_list(data: List[dict])-> dict:
         for i in data:
             if not response.get(i["token"]):
                 response[i["token"]] = []
-            price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
+            try:
+                price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
+            except:
+                raise Exception(f"Ошибка при формировании price, black_price. Данные: {i}")
             if not price and not black_price:
                 logger.info(f"Не нашлось цены для {i}")
                 continue
