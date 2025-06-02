@@ -123,16 +123,19 @@ def set_current_list(data: List[dict])-> dict:
                 red_price = math.floor(black_price * (1 - int(i["wallet_discount"])/100))
             except:
                 raise Exception(f"Ошибка при формировании red_price. Данные: {i}")
-            response[i["token"]].append(
-                {
-                    "nmID":int(i["nmid"]),
-                    "price": int(price),
-                    "black_price": black_price,
-                    "discount": int(i["discount"]),
-                    "keep_price": i["keep_price"], #это маржа
-                    "redprice": red_price,
-                }
-            )
+            try:
+                response[i["token"]].append(
+                    {
+                        "nmID":int(i["nmid"]),
+                        "price": int(price),
+                        "black_price": black_price,
+                        "discount": int(i["discount"]),
+                        "keep_price": i["keep_price"], #это маржа
+                        "redprice": red_price,
+                    }
+                )
+            except:
+                raise Exception(f"Ошибка при добавлении в response. Данные: {i}")
     except Exception as e:
         logger.error(f"в set_current_list: {e}")
         raise
