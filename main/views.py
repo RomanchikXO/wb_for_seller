@@ -5,6 +5,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
 import json
 from io import BytesIO
+from parsers.wildberies import get_uuid
 
 from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
@@ -747,7 +748,7 @@ def export_excel_podsort(request):
 
 @login_required_cust
 def margin_view(request):
-    query = """
+    sql_query = """
         WITH base AS (
           SELECT
             m.vendorcode,
@@ -785,6 +786,55 @@ def margin_view(request):
         ) AS final;
     """
 
+    # Выполнение SQL запроса и получение данных
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        cursor.execute(sql_query,)
+        rows = cursor.fetchall()
+
+    columns = [desc[0] for desc in cursor.description]
+    dict_rows = [dict(zip(columns, row)) for row in rows]
+
+    items = []
+    for key_1, value_1 in dict_rows[0]["result"].items(): # например key_1 "МРАМОР" value_1 "белый"
+        items.append(
+            {
+                "id": get_uuid(),
+                'name': key_1,
+                'margin_plan': '500',
+                'margin_fact': '400',
+                'margin_trend': '56',
+                'margin_left': '100',
+                'margin_plan_day': '50',
+                "children": []
+            }
+        )
+        for key_2, value_2 in value_1.items(): # например key_1 "белый" value_1 [массив артикулов]
+            items[0]["children"].append(
+                {
+                    "id": get_uuid(),
+                    'name': key_2,
+                    'margin_plan': '300',
+                    'margin_fact': '250',
+                    'margin_trend': '4657',
+                    'margin_left': '50',
+                    'margin_plan_day': '25',
+                    "children": []
+                }
+            )
+            for val_3 in value_2:
+                items[0]["children"][0]["children"].append(
+                    {
+                        'id': get_uuid(),
+                        'name': val_3,
+                        'margin_plan': '100',
+                        'margin_fact': '90',
+                        'margin_trend': '456',
+                        'margin_left': '10',
+                        'margin_plan_day': '5',
+                    }
+                )
+    logger.info(items)
 
     context = {
         'total': {
@@ -794,79 +844,7 @@ def margin_view(request):
             'plan_need': '432',
             'day_plan': '24'
         },
-        'items': [
-            {
-                'id': 1,
-                'name': 'Группа 1',
-                'margin_plan': '500',
-                'margin_fact': '400',
-                'margin_trend': '56',
-                'margin_left': '100',
-                'margin_plan_day': '50',
-                'children': [
-                    {
-                        'id': 11,
-                        'name': 'Подгруппа 1',
-                        'margin_plan': '300',
-                        'margin_fact': '250',
-                        'margin_trend': '4657',
-                        'margin_left': '50',
-                        'margin_plan_day': '25',
-                        'children': [
-                            {
-                                'id': 17,
-                                'name': 'Артикул',
-                                'margin_plan': '100',
-                                'margin_fact': '90',
-                                'margin_trend': '456',
-                                'margin_left': '10',
-                                'margin_plan_day': '5',
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                'id': 2,
-                'name': 'Группа 2',
-                'margin_plan': '500',
-                'margin_fact': '400',
-                'margin_trend': '56',
-                'margin_left': '100',
-                'margin_plan_day': '50',
-                'children': [
-                    {
-                        'id': 12,
-                        'name': 'Подгруппа 2',
-                        'margin_plan': '300',
-                        'margin_fact': '250',
-                        'margin_trend': '4657',
-                        'margin_left': '50',
-                        'margin_plan_day': '25',
-                        'children': [
-                            {
-                                'id': 13,
-                                'name': 'Артикул',
-                                'margin_plan': '100',
-                                'margin_fact': '90',
-                                'margin_trend': '456',
-                                'margin_left': '10',
-                                'margin_plan_day': '5',
-                            },
-                            {
-                                'id': 14,
-                                'name': 'Артикул',
-                                'margin_plan': '100',
-                                'margin_fact': '90',
-                                'margin_trend': '456',
-                                'margin_left': '10',
-                                'margin_plan_day': '5',
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
+        'items': items
     }
 
     return render(
