@@ -488,6 +488,7 @@ def podsort_view(request):
                             "total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
                         "time_available": row["available"],
+                        "be_shipped": 0
                     }
                 )
 
@@ -637,7 +638,7 @@ def export_excel_podsort(request):
     headers = [
         "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус"
     ]
-    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка"]
+    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии", "Будет отгружено (шт)"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -682,6 +683,8 @@ def export_excel_podsort(request):
                 ws.cell(row=row_num, column=4, value=subitem["stock"])
                 ws.cell(row=row_num, column=5, value=subitem["turnover"])
                 ws.cell(row=row_num, column=6, value=subitem["rec_delivery"])
+                ws.cell(row=row_num, column=7, value=subitem["time_available"])
+                ws.cell(row=row_num, column=8, value=subitem["be_shipped"])
 
     # Автоширина колонок
     for col in ws.columns:
