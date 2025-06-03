@@ -1128,7 +1128,7 @@ async def get_supplies():
                             "dateClose", "warehouseName", "status"
                         )
                         VALUES {', '.join(values_placeholders)}
-                        ON CONFLICT (nmid, incomeId) DO UPDATE SET
+                        ON CONFLICT (nmid, "incomeId") DO UPDATE SET
                             "number" = EXCLUDED."number",
                             "date_post" = EXCLUDED."date_post",
                             "lastChangeDate" = EXCLUDED."lastChangeDate",
