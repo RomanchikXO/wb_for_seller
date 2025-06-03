@@ -1123,7 +1123,7 @@ async def get_supplies():
                 try:
                     query = f"""
                         INSERT INTO myapp_supplies (
-                            nmid, incomeId, "number", "date_post", "lastChangeDate", "supplierArticle",
+                            nmid, "incomeId", "number", "date_post", "lastChangeDate", "supplierArticle",
                             "techSize", "barcode", "quantity", "totalPrice",
                             "dateClose", "warehouseName", "status"
                         )
