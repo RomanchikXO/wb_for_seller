@@ -810,7 +810,7 @@ def margin_view(request):
             }
         )
         for key_2, value_2 in value_1.items(): # например key_1 "белый" value_1 [массив артикулов]
-            items[0]["children"].append(
+            items[-1]["children"].append(
                 {
                     "id": get_uuid(),
                     'name': key_2,
@@ -823,7 +823,7 @@ def margin_view(request):
                 }
             )
             for val_3 in value_2:
-                items[0]["children"][0]["children"].append(
+                items[-1]["children"][-1]["children"].append(
                     {
                         'id': get_uuid(),
                         'name': val_3,
