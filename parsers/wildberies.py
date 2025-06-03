@@ -1102,20 +1102,6 @@ async def get_supplies():
                 for i in response
                 if i["status"] == "Принято"
             ]
-            values_placeholders = []
-            values_data = []
-            for idx, (nmid, incomeId, number, date_post, lastChangeDate, supplierArticle, techSize, barcode, quantity,
-                      totalPrice, dateClose, warehouseName, status) in enumerate(data):
-                base = idx * 13
-                values_placeholders.append(f"(${base + 1}, ${base + 2}, ${base + 3}, ${base + 4}, ${base + 5},"
-                                           f"${base + 6}, ${base + 7}, ${base + 8}, ${base + 9}, ${base + 10},"
-                                           f"${base + 11}, ${base + 12}, ${base + 13})")
-                values_data.extend(
-                    [
-                        nmid, incomeId, number, date_post, lastChangeDate, supplierArticle, techSize, barcode, quantity,
-                        totalPrice, dateClose, warehouseName, status
-                    ]
-                )
             conn = await async_connect_to_database()
             if not conn:
                 logger.error("Ошибка подключения к БД")
@@ -1127,7 +1113,11 @@ async def get_supplies():
                         "techSize", "barcode", "quantity", "totalPrice",
                         "dateClose", "warehouseName", "status"
                     )
-                    VALUES {', '.join(values_placeholders)}
+                    VALUES (
+                        $1, $2, $3, $4, $5, $6,
+                        $7, $8, $9, $10, $11,
+                        $12, $13
+                    )
                     ON CONFLICT (nmid, "incomeId") DO UPDATE SET
                         "number" = EXCLUDED."number",
                         "date_post" = EXCLUDED."date_post",
@@ -1141,7 +1131,7 @@ async def get_supplies():
                         "warehouseName" = EXCLUDED."warehouseName",
                         "status" = EXCLUDED."status";
                 """
-                await conn.execute(query, *values_data)
+                await conn.executemany(query, data)
             except Exception as e:
                 logger.error(
                     f"Ошибка обновления данных в myapp_supplies. Error: {e}"
