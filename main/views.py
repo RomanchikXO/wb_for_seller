@@ -476,6 +476,8 @@ def podsort_view(request):
                     "spp": row["spp"],
                     "keep_price": row["keep_price"],
                     "is_active": row["is_active"],
+                    "stock_on_produce": 0,
+                    "move_to_rf": "пока пусто",
                     "subitems": []
                 }
             if row["warehousename"]:
@@ -636,7 +638,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус"
+        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии", "Будет отгружено (шт)"]
 
@@ -666,6 +668,8 @@ def export_excel_podsort(request):
         ws.cell(row=row_num, column=8, value=item["spp"])
         ws.cell(row=row_num, column=9, value=item["keep_price"])
         ws.cell(row=row_num, column=10, value="Да" if item["is_active"] else "Нет")
+        ws.cell(row=row_num, column=11, value=item["stock_on_produce"])
+        ws.cell(row=row_num, column=12, value=item["move_to_rf"])
 
         # Вложенные subitems
         if item.get("subitems"):

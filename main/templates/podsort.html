@@ -119,104 +119,110 @@
                 </div>
             </div>
         </form>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Артикул</th>
-                    <th>Внутренний артикул</th>
-                    <th>Заказы</th>
-                    <th>Остатки</th>
-                    <th>ABC</th>
-                    <th>
-                        <a style="color: black"
-                           href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
-                            Оборачиваемость общая
-                            {% if sort_by == "turnover_total" %}
-                                {% if order == "asc" %}▲{% else %}▼{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>Красная цена</th>
-                    <th>SPP</th>
-                    <th>Маржа</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in items %}
-                    <tr {% if item.color == "red" %} class="row-red" {% elif item.color == "green" %} class="row-green" {% endif %}>
-                        <td>
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                                <!-- Левая кнопка раскрытия -->
-                                <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#subitems-{{ item.id }}"
-                                    aria-expanded="false"
-                                    aria-controls="subitems-{{ item.id }}">
-                                    <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i>
-                                    <span class="user-select-text">{{ item.article }}</span>
-                                </button>
-
-                                <!-- Правая кнопка — ссылка на WB с иконкой -->
-                                <a href="https://www.wildberries.ru/catalog/{{ item.article }}/detail.aspx?targetUrl=SP"
-                                   target="_blank"
-                                   class="btn p-0 border-0 bg-transparent text-primary"
-                                   title="Открыть на Wildberries">
-                                    <i class="bi bi-tencent-qq"></i>
-                                </a>
-                            </div>
-                        </td>
-
-                        <td>{{ item.vendorcode }}</td>
-                        <td>{{ item.orders }}</td>
-                        <td>{{ item.stock }}</td>
-                        <td>{{ item.ABC }}</td>
-                        <td>{{ item.turnover_total }}</td>
-                        <td>{{ item.redprice|default:0 }}</td>
-                        <td>{{ item.spp|default:0 }}</td>
-                        <td>
-                            <input type="number" name="keep_price" value="{{ item.keep_price }}"
-                                   class="form-control form-control-sm" style="width: 100px;" disabled>
-                        </td>
-                        <td>
-                            <input type="checkbox" class="form-check-input"
-                                   {% if item.is_active %}checked{% endif %} disabled>
-                        </td>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Артикул</th>
+                        <th>Внутренний артикул</th>
+                        <th>Заказы</th>
+                        <th>Остатки</th>
+                        <th>ABC</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Оборачиваемость общая
+                                {% if sort_by == "turnover_total" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>Красная цена</th>
+                        <th>SPP</th>
+                        <th>Маржа</th>
+                        <th>Статус</th>
+                        <th>Остатки на производстве (метр)</th>
+                        <th>В дороге до РФ (дата)</th>
                     </tr>
-                    <tr class="collapse" id="subitems-{{ item.id }}">
-                        <td colspan="6">
-                            <table class="table table-sm table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Склад</th>
-                                        <th>Заказы</th>
-                                        <th>Остатки</th>
-                                        <th>Оборачиваемость</th>
-                                        <th>Рек. поставка</th>
-                                        <th>Дни в наличии</th>
-                                        <th>Будет отгружено (шт)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for subitem in item.subitems %}
-                                        <tr {% if subitem.color == "red" %} class="row-red" {% elif subitem.color == "green" %} class="row-green" {% elif subitem.color == "yellow" %} class="row-yellow" {% endif %}>
-                                            <td>{{ subitem.warehouse }}</td>
-                                            <td>{{ subitem.order }}</td>
-                                            <td>{{ subitem.stock }}</td>
-                                            <td>{{ subitem.turnover }}</td>
-                                            <td>{{ subitem.rec_delivery }}</td>
-                                            <td>{{ subitem.time_available }}</td>
-                                            <td>{{ subitem.be_shipped }}</td>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr {% if item.color == "red" %} class="row-red" {% elif item.color == "green" %} class="row-green" {% endif %}>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-between w-100">
+                                    <!-- Левая кнопка раскрытия -->
+                                    <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#subitems-{{ item.id }}"
+                                        aria-expanded="false"
+                                        aria-controls="subitems-{{ item.id }}">
+                                        <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item.id }}"></i>
+                                        <span class="user-select-text">{{ item.article }}</span>
+                                    </button>
+
+                                    <!-- Правая кнопка — ссылка на WB с иконкой -->
+                                    <a href="https://www.wildberries.ru/catalog/{{ item.article }}/detail.aspx?targetUrl=SP"
+                                       target="_blank"
+                                       class="btn p-0 border-0 bg-transparent text-primary"
+                                       title="Открыть на Wildberries">
+                                        <i class="bi bi-tencent-qq"></i>
+                                    </a>
+                                </div>
+                            </td>
+
+                            <td>{{ item.vendorcode }}</td>
+                            <td>{{ item.orders }}</td>
+                            <td>{{ item.stock }}</td>
+                            <td>{{ item.ABC }}</td>
+                            <td>{{ item.turnover_total }}</td>
+                            <td>{{ item.redprice|default:0 }}</td>
+                            <td>{{ item.spp|default:0 }}</td>
+                            <td>
+                                <input type="number" name="keep_price" value="{{ item.keep_price }}"
+                                       class="form-control form-control-sm" style="width: 100px;" disabled>
+                            </td>
+                            <td>
+                                <input type="checkbox" class="form-check-input"
+                                       {% if item.is_active %}checked{% endif %} disabled>
+                            </td>
+                            <td>{{ item.stock_on_produce }}</td>
+                            <td>{{ item.move_to_rf }}</td>
+                        </tr>
+                        <tr class="collapse" id="subitems-{{ item.id }}">
+                            <td colspan="8">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Склад</th>
+                                            <th>Заказы</th>
+                                            <th>Остатки</th>
+                                            <th>Оборачиваемость</th>
+                                            <th>Рек. поставка</th>
+                                            <th>Дни в наличии</th>
+                                            <th>Будет отгружено (шт)</th>
                                         </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                                    </thead>
+                                    <tbody>
+                                        {% for subitem in item.subitems %}
+                                            <tr {% if subitem.color == "red" %} class="row-red" {% elif subitem.color == "green" %} class="row-green" {% elif subitem.color == "yellow" %} class="row-yellow" {% endif %}>
+                                                <td>{{ subitem.warehouse }}</td>
+                                                <td>{{ subitem.order }}</td>
+                                                <td>{{ subitem.stock }}</td>
+                                                <td>{{ subitem.turnover }}</td>
+                                                <td>{{ subitem.rec_delivery }}</td>
+                                                <td>{{ subitem.time_available }}</td>
+                                                <td>{{ subitem.be_shipped }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <!-- Пагинация -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <nav>
@@ -349,6 +355,8 @@
                 spp: parseInt(cells[7]?.textContent.trim()) || 0,
                 keep_price: keepInput ? parseInt(keepInput.value) || 0 : 0,
                 is_active: chk ? chk.checked : false,
+                stock_on_produce: parseInt(cells[10]?.textContent.trim()) || 0,
+                move_to_rf: cells[11]?.textContent.trim() || '',
                 subitems: []
               };
 
