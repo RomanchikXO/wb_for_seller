@@ -237,6 +237,15 @@ async def wb_api(session, param):
             data["settings"]["cursor"]["nmID"] = param["nmID"]
         view = "post"
 
+    if param["type"] == "get_delivery_fbw":
+        API_URL = "https://statistics-api.wildberries.ru/api/v1/supplier/incomes"
+
+        params = {
+            "dateFrom": param["dateFrom"]
+        }
+
+        view = "get"
+
     if param["type"] == "get_products_and_prices":
         # получить товары с ценами
         # максимальный лимит 1000
@@ -1074,5 +1083,79 @@ async def get_stat_products():
     await asyncio.gather(*tasks)
 
 
+async def get_supplies():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    async def get_analitics(cab, period_get: int):
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_delivery_fbw",
+                "API_KEY": cab["token"],
+                "dateFrom": (datetime.now() + timedelta(hours=3) - timedelta(days=period_get)).strftime('%Y-%m-%d')
+            }
+            response = await wb_api(session, param)
+            data = [
+                (
+                    i["nmId"], i["incomeId"], i["number"], parse_datetime(i["date"]), parse_datetime(i["lastChangeDate"]),
+                    i["supplierArticle"], i["techSize"], i["barcode"], i["quantity"], i["totalPrice"], parse_datetime(i["dateClose"]),
+                    i["warehouseName"], i["status"]
+            )
+                for i in response
+                if i["status"] == "Принято"
+            ]
+            values_placeholders = []
+            values_data = []
+            for idx, (nmid, incomeId, number, date_post, lastChangeDate, supplierArticle, techSize, barcode, quantity,
+                      totalPrice, dateClose, warehouseName, status) in enumerate(data):
+                base = idx * 13
+                values_placeholders.append(f"(${base + 1}, ${base + 2}, ${base + 3}, ${base + 4}, ${base + 5},"
+                                           f"${base + 6}, ${base + 7}, ${base + 8}, ${base + 9}, ${base + 10},"
+                                           f"${base + 11}, ${base + 12}, ${base + 13})")
+                values_data.extend(
+                    [
+                        nmid, incomeId, number, date_post, lastChangeDate, supplierArticle, techSize, barcode, quantity,
+                        totalPrice, dateClose, warehouseName, status
+                    ]
+                )
+                conn = await async_connect_to_database()
+                if not conn:
+                    logger.error("Ошибка подключения к БД")
+                    raise
+                try:
+                    query = f"""
+                        INSERT INTO myapp_supplies (
+                            nmid, incomeId, "number", "date_post", "lastChangeDate", "supplierArticle",
+                            "techSize", "barcode", "quantity", "totalPrice",
+                            "dateClose", "warehouseName", "status"
+                        )
+                        VALUES {', '.join(values_placeholders)}
+                        ON CONFLICT (nmid, incomeId) DO UPDATE SET
+                            "number" = EXCLUDED."number",
+                            "date_post" = EXCLUDED."date_post",
+                            "lastChangeDate" = EXCLUDED."lastChangeDate",
+                            "supplierArticle" = EXCLUDED."supplierArticle",
+                            "techSize" = EXCLUDED."techSize",
+                            "barcode" = EXCLUDED."barcode",
+                            "quantity" = EXCLUDED."quantity",
+                            "totalPrice" = EXCLUDED."totalPrice",
+                            "dateClose" = EXCLUDED."dateClose",
+                            "warehouseName" = EXCLUDED."warehouseName",
+                            "status" = EXCLUDED."status";
+                    """
+                    await conn.execute(query, *values_data)
+                except Exception as e:
+                    logger.error(
+                        f"Ошибка обновления данных в myapp_supplies. Error: {e}"
+                    )
+                    raise
+                finally:
+                    await conn.close()
+
+
+
+    tasks = [get_analitics(cab, 7) for cab in cabinets]
+    await asyncio.gather(*tasks)
+
 # loop = asyncio.get_event_loop()
-# res = loop.run_until_complete(get_stat_products())
+# res = loop.run_until_complete(test_addv())
+
+

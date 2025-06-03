@@ -1,7 +1,8 @@
 from celery import shared_task
 import asyncio
 
-from parsers.wildberies import get_nmids, get_stocks_data_2_weeks, get_orders, get_stock_age_by_period, get_qustions, get_stat_products
+from parsers.wildberies import (get_nmids, get_stocks_data_2_weeks, get_orders, get_stock_age_by_period,
+                                get_qustions, get_stat_products, get_supplies)
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices, get_black_price_spp
 from tasks.set_price_on_wb_from_repricer import set_price_on_wb_from_repricer
 from tasks.google_podsort import set_orders_quantity_in_google
@@ -14,6 +15,14 @@ from decorators import with_task_context
 from context_logger import ContextLogger
 
 logger = ContextLogger(logging.getLogger("myapp"))
+
+
+@shared_task
+@with_task_context("get_supplies_task")
+def get_supplies_task():
+    logger.info("🟢 Обновляем стату по поставкам в БД")
+    asyncio.run(get_supplies())
+    logger.info("Стата по поставкам в БД обновлена")
 
 
 @shared_task
