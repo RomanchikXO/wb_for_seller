@@ -1116,39 +1116,39 @@ async def get_supplies():
                         totalPrice, dateClose, warehouseName, status
                     ]
                 )
-                conn = await async_connect_to_database()
-                if not conn:
-                    logger.error("Ошибка подключения к БД")
-                    raise
-                try:
-                    query = f"""
-                        INSERT INTO myapp_supplies (
-                            nmid, "incomeId", "number", "date_post", "lastChangeDate", "supplierArticle",
-                            "techSize", "barcode", "quantity", "totalPrice",
-                            "dateClose", "warehouseName", "status"
-                        )
-                        VALUES {', '.join(values_placeholders)}
-                        ON CONFLICT (nmid, "incomeId") DO UPDATE SET
-                            "number" = EXCLUDED."number",
-                            "date_post" = EXCLUDED."date_post",
-                            "lastChangeDate" = EXCLUDED."lastChangeDate",
-                            "supplierArticle" = EXCLUDED."supplierArticle",
-                            "techSize" = EXCLUDED."techSize",
-                            "barcode" = EXCLUDED."barcode",
-                            "quantity" = EXCLUDED."quantity",
-                            "totalPrice" = EXCLUDED."totalPrice",
-                            "dateClose" = EXCLUDED."dateClose",
-                            "warehouseName" = EXCLUDED."warehouseName",
-                            "status" = EXCLUDED."status";
-                    """
-                    await conn.execute(query, *values_data)
-                except Exception as e:
-                    logger.error(
-                        f"Ошибка обновления данных в myapp_supplies. Error: {e}"
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.error("Ошибка подключения к БД")
+                raise
+            try:
+                query = f"""
+                    INSERT INTO myapp_supplies (
+                        nmid, "incomeId", "number", "date_post", "lastChangeDate", "supplierArticle",
+                        "techSize", "barcode", "quantity", "totalPrice",
+                        "dateClose", "warehouseName", "status"
                     )
-                    raise
-                finally:
-                    await conn.close()
+                    VALUES {', '.join(values_placeholders)}
+                    ON CONFLICT (nmid, "incomeId") DO UPDATE SET
+                        "number" = EXCLUDED."number",
+                        "date_post" = EXCLUDED."date_post",
+                        "lastChangeDate" = EXCLUDED."lastChangeDate",
+                        "supplierArticle" = EXCLUDED."supplierArticle",
+                        "techSize" = EXCLUDED."techSize",
+                        "barcode" = EXCLUDED."barcode",
+                        "quantity" = EXCLUDED."quantity",
+                        "totalPrice" = EXCLUDED."totalPrice",
+                        "dateClose" = EXCLUDED."dateClose",
+                        "warehouseName" = EXCLUDED."warehouseName",
+                        "status" = EXCLUDED."status";
+                """
+                await conn.execute(query, *values_data)
+            except Exception as e:
+                logger.error(
+                    f"Ошибка обновления данных в myapp_supplies. Error: {e}"
+                )
+                raise
+            finally:
+                await conn.close()
 
 
 
