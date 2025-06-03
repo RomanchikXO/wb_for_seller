@@ -670,7 +670,7 @@ def export_excel_podsort(request):
     headers = [
         "Артикул", "Внутренний артикул", "Заказы", "Остатки", "ABC", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
     ]
-    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии", "Будет отгружено (шт)"]
+    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии", "Принято на ВБ за 7 дней, шт"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -747,6 +747,45 @@ def export_excel_podsort(request):
 
 @login_required_cust
 def margin_view(request):
+    query = """
+        WITH base AS (
+          SELECT
+            m.vendorcode,
+            рисунок.value AS main_group,
+            цвет.value AS color
+          FROM myapp_nmids m
+          LEFT JOIN LATERAL (
+            SELECT (item->'value')->>0 AS value
+            FROM jsonb_array_elements(m.characteristics) AS item
+            WHERE (item->>'id')::int = 12
+            LIMIT 1
+          ) AS рисунок ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT (item->'value')->>0 AS value
+            FROM jsonb_array_elements(m.characteristics) AS item
+            WHERE (item->>'id')::int = 14177449
+            LIMIT 1
+          ) AS цвет ON TRUE
+          WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL
+        )
+        SELECT jsonb_object_agg(main_group, colors) AS result
+        FROM (
+          SELECT
+            main_group,
+            jsonb_object_agg(color, vendorcodes) AS colors
+          FROM (
+            SELECT
+              main_group,
+              color,
+              jsonb_agg(vendorcode) AS vendorcodes
+            FROM base
+            GROUP BY main_group, color
+          ) AS grouped
+          GROUP BY main_group
+        ) AS final;
+    """
+
+
     context = {
         'total': {
             'margin_plan': '1000',
