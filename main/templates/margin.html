@@ -3,15 +3,140 @@
 {% block title %}Маржинальность{% endblock %}
 
 {% block extra_head %}
+    <style>
+        .collapse {
+            transition: all 0.3s ease-in-out;
+        }
 
+        .table tr.collapse:not(.show) {
+            display: none !important;
+        }
+
+        .table tr.collapse.show {
+            display: table-row !important;
+        }
+    </style>
 {% endblock %}
 
 
 {% block main_content %}
-    <h1>Любопытный, тут пока пусто :)</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Любопытный, тут пока пусто :)</h1>
+        <button class="btn btn-outline-primary btn-sm">
+            Загрузить маржу
+        </button>
+    </div>
+    <table class="table table-bordered md-0">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Маржа план</th>
+                <th>Маржа факт</th>
+                <th>Маржа тренд</th>
+                <th>Сколько осталось для плана</th>
+                <th>Маржа план день</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="fw-bold table-light">
+                <td>Итого</td>
+                <td>{{ total.margin_plan }}</td>
+                <td>{{ total.margin_fact }}</td>
+                <td>{{ total.margin_trend }}</td>
+                <td>{{ total.plan_need }}</td>
+                <td>{{ total.day_plan }}</td>
+            </tr>
+            <!-- Уровень A -->
+            {% for item_a in items %}
+                <tr class="table-primary">
+                    <td>
+                        <button class="btn btn-sm p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target=".level-b-parent-{{ item_a.id }}"
+                                aria-expanded="false"
+                                aria-controls="level-b-{{ item_a.id }}">
+                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-a-{{ item_a.id }}"></i>
+                            {{ item_a.name }}
+                        </button>
+                    </td>
+                    <td>{{ item_a.margin_plan }}</td>
+                    <td>{{ item_a.margin_fact }}</td>
+                    <td>{{ item_a.margin_trend }}</td>
+                    <td>{{ item_a.margin_left }}</td>
+                    <td>{{ item_a.margin_plan_day }}</td>
+                </tr>
+
+                <!-- Уровень B -->
+                {% for item_b in item_a.children %}
+                    <tr class="collapse table-secondary level-b-parent-{{ item_a.id }}" id="level-b-{{ item_b.id }}">
+                        <td class="ps-4">
+                            <button class="btn btn-sm p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target=".level-c-parent-{{ item_b.id }}"
+                                    aria-expanded="false"
+                                    aria-controls="level-c-{{ item_b.id }}">
+                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-b-{{ item_b.id }}"></i>
+                                {{ item_b.name }}
+                            </button>
+                        </td>
+                        <td>{{ item_b.margin_plan }}</td>
+                        <td>{{ item_b.margin_fact }}</td>
+                        <td>{{ item_b.margin_trend }}</td>
+                        <td>{{ item_b.margin_left }}</td>
+                        <td>{{ item_b.margin_plan_day }}</td>
+                    </tr>
+
+                    <!-- Уровень C -->
+                    {% for item_c in item_b.children %}
+                        <tr class="collapse table-light level-c-parent-{{ item_b.id }}" id="level-c-{{ item_c.id }}">
+                            <td class="ps-5">{{ item_c.name }}</td>
+                            <td>{{ item_c.margin_plan }}</td>
+                            <td>{{ item_c.margin_fact }}</td>
+                            <td>{{ item_c.margin_trend }}</td>
+                            <td>{{ item_c.margin_left }}</td>
+                            <td>{{ item_c.margin_plan_day }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+
 {% endblock %}
 
 
 {% block extra_js %}
-
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    const icon = btn.querySelector(".bi");
+                    if (icon) {
+                        icon.classList.toggle("bi-chevron-right");
+                        icon.classList.toggle("bi-chevron-down");
+                    }
+                });
+            });
+            // Автоматическое закрытие вложенных collapse при закрытии родителя
+            document.querySelectorAll('.collapse').forEach(function (parentRow) {
+                parentRow.addEventListener('hide.bs.collapse', function () {
+                    let next = parentRow.nextElementSibling;
+                    while (next && next.classList.contains('collapse')) {
+                        if (next.classList.contains('show')) {
+                            bootstrap.Collapse.getOrCreateInstance(next).hide();
+                        }
+                        next = next.nextElementSibling;
+                    }
+                    const iconsB = parentRow.querySelectorAll('[id^="icon-b-"]');
+                    iconsB.forEach(icon => {
+                        icon.classList.remove("bi-chevron-down");
+                        icon.classList.add("bi-chevron-right");
+                    });
+                });
+            });
+        });
+    </script>
 {% endblock %}
