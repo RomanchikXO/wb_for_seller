@@ -152,6 +152,26 @@ class nmids(models.Model):
         return f"{self.nmid} – {self.title} ({self.brand})"
 
 
+class Supplies(models.Model):
+    nmid = models.IntegerField()
+    incomeId = models.IntegerField()
+    number = models.CharField(max_length=50)
+    date_post = models.DateTimeField() # дата поступления (не меняется)
+    lastChangeDate = models.DateTimeField() # дата последнего изменения. соответствует параметру dateFrom в запросе (меняется)
+    supplierArticle = models.CharField(max_length=255) #Артикул продавца
+    techSize = models.CharField()
+    barcode = models.CharField(max_length=50)
+    quantity = models.IntegerField()
+    totalPrice = models.IntegerField() # Цена из УПД
+    dateClose = models.DateTimeField() # Дата принятия (закрытия) в WB.
+    warehouseName = models.CharField(max_length=255, null=True) #Название склада
+    status = models.CharField() #Текущий статус поставки
+
+    class Meta:
+        unique_together = ['incomeId', 'nmid']
+        verbose_name_plural = "Поставки WB"
+
+
 class Stocks(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
     lastchangedate = models.DateTimeField() #Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)

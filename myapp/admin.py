@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions, ProductsStat
+from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions, ProductsStat, Supplies
+
+
+class SuppliesAdmin(admin.ModelAdmin):
+    list_display = ('incomeId', 'nmid', 'warehouseName', 'dateClose')
+    search_fields = ('incomeId', 'nmid')
+    ordering = ('-dateClose',)
+    list_filter = ('incomeId', 'dateClose', 'warehouseName')
 
 
 class ProductsStatAdmin(admin.ModelAdmin):
@@ -83,3 +90,4 @@ admin.site.register(CustomUser)
 admin.site.register(Price, PriceAdmin)
 admin.site.register(Questions, QuestionsAdmin)
 admin.site.register(ProductsStat, ProductsStatAdmin)
+admin.site.register(Supplies, SuppliesAdmin)
