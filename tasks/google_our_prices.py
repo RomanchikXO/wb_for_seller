@@ -131,10 +131,12 @@ async def set_prices_on_google():
                "GROUP BY supplierarticle")
     try:
         all_fields = await conn.fetch(request)
-        result_dict = {
-            row["supplierarticle"]: row["total_quantity"]
+        result_dict = [
+            [row["supplierarticle"], int(row["total_quantity"])]
             for row in all_fields
-        }
+        ]
+        for _ in range(50):
+            result_dict.append(["", ""])
     except Exception as e:
         logger.error(f"Ошибка получения данных из myapp_stocks в set_prices_on_google. Запрос {request}. Error: {e}")
         raise
@@ -143,37 +145,12 @@ async def set_prices_on_google():
 
     url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=2136512051#gid=2136512051"
     try:
-        google_data = fetch_google_sheet_data(
-            spreadsheet_url=url,
-            sheet_identifier="Остатки",
-        )
-    except Exception as e:
-        logger.error(f"Ошибка получения данных с листа 'Остатки': {e}")
-        raise
-
-    try:
-        for index, _string in enumerate(google_data):
-            if index == 0: continue
-            supplierarticle = _string[0]
-
-            if nm_info:=result_dict.get(supplierarticle):
-                total_quantity = int(nm_info) if isinstance(nm_info, int) else ""
-
-                google_data[index][8] = total_quantity
-            else:
-                google_data[index][8] = "0"
-    except Exception as e:
-        logger.error(f"Ошибка обработки данных для листа 'Остатки' в set_prices_on_google {e}")
-        raise
-
-    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=573978297#gid=573978297"
-    try:
         update_google_sheet_data(
-            url, "Остатки", f"A1:I{len(google_data)}", google_data
+            url, "Остатки", f"A2:B{len(result_dict)+1}", result_dict
         )
     except Exception as e:
         logger.error(f"Ошибка обновления листа 'Остатки': {e}")
-
+        raise
 
 
 async def get_black_price_spp():
