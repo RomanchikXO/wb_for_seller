@@ -87,8 +87,8 @@ def get_price(
     j = x * discount
     redprice = j * (1 - spp) * (1 - disc_wb)
 
-    n = cost_price + cost_price * reject + j * commission + j * acquiring + j * drr + redprice * usn + redprice * nds
-    p = redprice * nds + (redprice - redprice * nds) * usn
+    n = cost_price + cost_price * reject + j * commission + j * acquiring + j * drr
+    p = j * nds + (j - j * nds) * usn
     s = n + p
 
     # Выражение для result (без round для аналитики)
