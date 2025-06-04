@@ -817,116 +817,117 @@ async def get_qustions():
 async def get_stock_age_by_period():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
+    async def get_analitics(cab: dict, period_get: int, id_report):
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "seller_analytics_generate",
+                "API_KEY": cab["token"],
+                "reportType": "STOCK_HISTORY_REPORT_CSV",
+                "start": (datetime.now() + timedelta(hours=3) - timedelta(days=period_get)).strftime('%Y-%m-%d'),
+                "end": (datetime.now() + timedelta(hours=3) - timedelta(days=1)).strftime('%Y-%m-%d'), #вчера с текущим временем
+                "id": id_report, #'685d17f6-ed17-44b4-8a86-b8382b05873c'
+                "userReportName": get_uuid(),
+            }
+            response = await wb_api(session, param)
+
+            if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
+                logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
+                raise
+
+            while True:
+                await asyncio.sleep(10)
+                param = {
+                    "type": "seller_analytics_report",
+                    "API_KEY": cab["token"],
+                    "downloadId": id_report
+                }
+
+                response = await wb_api(session, param)
+                if not isinstance(response, bytes):
+                    await asyncio.sleep(55)
+                else:
+                    try:
+                        text = response.decode('utf-8')
+                        if "check correctness of download id or supplier id" in text:
+                            logger.error("Ошибка!!!: check correctness of download id or supplier id")
+                            raise
+                        text = json.loads(text)
+                        if text.get("title"):
+                            await asyncio.sleep(55)
+                    except:
+                        break
+
+            with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
+                for file_name in zip_file.namelist():
+                    with zip_file.open(file_name) as csv_file:
+                        # читаем CSV построчно
+                        reader = csv.reader(io.TextIOWrapper(csv_file, encoding='utf-8'))
+
+                        data = []
+                        header = next(reader)
+                        OfficeMissingTime_index = header.index("OfficeMissingTime")
+                        nmid_index = header.index("NmID")
+                        OfficeName_index = header.index("OfficeName") # может быть пустой строкой
+                        for index, row in enumerate(reader):
+                            if index == 0: continue # пропускаем шапку
+                            if row[OfficeName_index] == "": continue # если пустое название склада
+                            data.append(
+                                (
+                                    int(row[nmid_index]),
+                                    row[OfficeName_index].replace("Виртуальный ", "").replace("СЦ ", "").replace(" WB", "").replace(", Молодежненское", " (Молодежненское)").replace(" Сталелитейная", ""),
+                                    math.floor((period_get*24-int(row[OfficeMissingTime_index]))/24) if row[OfficeMissingTime_index] not in ["-1", "-2", "-3", "-4"] else 0,
+                                )
+                            )
+
+                        conn = await async_connect_to_database()
+                        if not conn:
+                            logger.error("Ошибка подключения к БД в add_set_data_from_db")
+                            raise
+
+                        try:
+                            column_map = {
+                                3: "days_in_stock_last_3",
+                                7: "days_in_stock_last_7",
+                                14: "days_in_stock_last_14",
+                                30: "days_in_stock_last_30"
+                            }
+                            column_period = column_map.get(period_get)
+                            if not column_period:
+                                raise ValueError(f"Неподдерживаемый период: {period_get}")
+
+                            # Подготовка VALUES и параметров
+                            values_placeholders = []
+                            values_data = []
+                            for idx, (nmid, warehousename, OfficeMissingTime) in enumerate(data):
+                                base = idx * 3
+                                values_placeholders.append(f"(${base + 1}::integer, ${base + 2}::text, ${base + 3}::integer)")
+                                values_data.extend([nmid, warehousename, OfficeMissingTime])
+
+                            query = f"""
+                                UPDATE myapp_stocks AS p 
+                                SET
+                                    {column_period} = v.OfficeMissingTime
+                                FROM (
+                                    VALUES {', '.join(values_placeholders)}
+                                ) AS v(nmid, warehousename, OfficeMissingTime)
+                                WHERE v.nmid = p.nmid 
+                                    AND p.warehousename ILIKE '%' || v.warehousename || '%'
+                            """
+                            await conn.execute(query, *values_data)
+
+                        except Exception as e:
+                            logger.error(
+                                f"Ошибка обновления nmid, warehousename, column_period в myapp_stocks. Error: {e}"
+                            )
+                            raise
+                        finally:
+                            await conn.close()
+
     for period in [3, 7, 14, 30]:
         tasks = []
-        async def get_analitics(cab: dict, period_get: int):
-            async with aiohttp.ClientSession() as session:
-                id_report = get_uuid()
-                param = {
-                    "type": "seller_analytics_generate",
-                    "API_KEY": cab["token"],
-                    "reportType": "STOCK_HISTORY_REPORT_CSV",
-                    "start": (datetime.now() + timedelta(hours=3) - timedelta(days=period_get)).strftime('%Y-%m-%d'),
-                    "end": (datetime.now() + timedelta(hours=3) - timedelta(days=1)).strftime('%Y-%m-%d'), #вчера с текущим временем
-                    "id": id_report, #'685d17f6-ed17-44b4-8a86-b8382b05873c'
-                    "userReportName": get_uuid(),
-                }
-                response = await wb_api(session, param)
-
-                if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
-                    logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
-                    raise
-
-                while True:
-                    await asyncio.sleep(10)
-                    param = {
-                        "type": "seller_analytics_report",
-                        "API_KEY": cab["token"],
-                        "downloadId": id_report
-                    }
-
-                    response = await wb_api(session, param)
-                    if not isinstance(response, bytes):
-                        await asyncio.sleep(55)
-                    else:
-                        try:
-                            text = response.decode('utf-8')
-                            if "check correctness of download id or supplier id" in text:
-                                logger.error("Ошибка!!!: check correctness of download id or supplier id")
-                                raise
-                            text = json.loads(text)
-                            if text.get("title"):
-                                await asyncio.sleep(55)
-                        except:
-                            break
-
-                with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
-                    for file_name in zip_file.namelist():
-                        with zip_file.open(file_name) as csv_file:
-                            # читаем CSV построчно
-                            reader = csv.reader(io.TextIOWrapper(csv_file, encoding='utf-8'))
-
-                            data = []
-                            header = next(reader)
-                            OfficeMissingTime_index = header.index("OfficeMissingTime")
-                            nmid_index = header.index("NmID")
-                            OfficeName_index = header.index("OfficeName") # может быть пустой строкой
-                            for index, row in enumerate(reader):
-                                if index == 0: continue # пропускаем шапку
-                                if row[OfficeName_index] == "": continue # если пустое название склада
-                                data.append(
-                                    (
-                                        int(row[nmid_index]),
-                                        row[OfficeName_index].replace("Виртуальный ", "").replace("СЦ ", "").replace(" WB", "").replace(", Молодежненское", " (Молодежненское)").replace(" Сталелитейная", ""),
-                                        math.floor((period_get*24-int(row[OfficeMissingTime_index]))/24) if row[OfficeMissingTime_index] not in ["-1", "-2", "-3", "-4"] else 0,
-                                    )
-                                )
-
-                            conn = await async_connect_to_database()
-                            if not conn:
-                                logger.error("Ошибка подключения к БД в add_set_data_from_db")
-                                raise
-
-                            try:
-                                column_map = {
-                                    3: "days_in_stock_last_3",
-                                    7: "days_in_stock_last_7",
-                                    14: "days_in_stock_last_14",
-                                    30: "days_in_stock_last_30"
-                                }
-                                column_period = column_map.get(period_get)
-                                if not column_period:
-                                    raise ValueError(f"Неподдерживаемый период: {period_get}")
-
-                                # Подготовка VALUES и параметров
-                                values_placeholders = []
-                                values_data = []
-                                for idx, (nmid, warehousename, OfficeMissingTime) in enumerate(data):
-                                    base = idx * 3
-                                    values_placeholders.append(f"(${base + 1}::integer, ${base + 2}::text, ${base + 3}::integer)")
-                                    values_data.extend([nmid, warehousename, OfficeMissingTime])
-
-                                query = f"""
-                                    UPDATE myapp_stocks AS p 
-                                    SET
-                                        {column_period} = v.OfficeMissingTime
-                                    FROM (
-                                        VALUES {', '.join(values_placeholders)}
-                                    ) AS v(nmid, warehousename, OfficeMissingTime)
-                                    WHERE v.nmid = p.nmid 
-                                        AND p.warehousename ILIKE '%' || v.warehousename || '%'
-                                """
-                                await conn.execute(query, *values_data)
-
-                            except Exception as e:
-                                logger.error(
-                                    f"Ошибка обновления nmid, warehousename, column_period в myapp_stocks. Error: {e}"
-                                )
-                                raise
-                            finally:
-                                await conn.close()
-
-        tasks = [get_analitics(cab, period) for cab in cabinets]
+        for cab in cabinets:
+            id_report = get_uuid()  # 👉 делаем тут
+            tasks.append(get_analitics(cab, period, id_report))
         await asyncio.gather(*tasks)
         await asyncio.sleep(60)
 
