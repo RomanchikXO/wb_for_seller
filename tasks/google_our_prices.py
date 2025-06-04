@@ -104,6 +104,8 @@ async def set_prices_on_google():
             [row["supplierarticle"], round(row["total_orders"] / 7, 2)]
             for row in all_fields
         ]
+        for _ in range(50):
+            data.append(["", ""])
     except Exception as e:
         logger.error(f"Ошибка получения данных из myapp_orders в set_prices_on_google. Запрос {request}. Error: {e}")
         raise
