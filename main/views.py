@@ -253,7 +253,8 @@ def repricer_view(request):
             }
             for item in nmids
         ]
-        tail_filter_options = get_group_nmids(combined_list)
+        # tail_filter_options = get_group_nmids(combined_list)
+        tail_filter_options = get_filter_by_articles()
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -545,7 +546,6 @@ def podsort_view(request):
     ]
     # tail_filter_options = get_group_nmids(combined_list)
     tail_filter_options = get_filter_by_articles()
-    # logger.info(get_filter_by_articles())
 
     try:
         items = {}
