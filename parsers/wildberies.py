@@ -837,7 +837,7 @@ async def get_stock_age_by_period():
 
             for attempt in range(4):
                 if attempt == 3:
-                    logger.error(f"Ошибка получения данных в get_stock_age_by_period. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                    logger.error(f"‼️Ошибка получения данных в get_stock_age_by_period. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
                     raise
 
                 await asyncio.sleep(10)
