@@ -835,7 +835,7 @@ async def get_stock_age_by_period():
                 logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
                 raise
 
-            while True:
+            for _ in range(3):
                 await asyncio.sleep(10)
                 param = {
                     "type": "seller_analytics_report",
@@ -850,11 +850,13 @@ async def get_stock_age_by_period():
                     try:
                         text = response.decode('utf-8')
                         if "check correctness of download id or supplier id" in text:
+                            await asyncio.sleep(55)
                             logger.error(f"Ошибка!!!: check correctness of download id or supplier id. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
-                            raise
+                            continue
                         text = json.loads(text)
                         if text.get("title"):
                             await asyncio.sleep(55)
+                            continue
                     except:
                         break
 
