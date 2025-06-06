@@ -107,6 +107,55 @@ def sorted_by_turnover_total(items: dict, descending: bool = False) -> dict:
     return sorted_items
 
 
+def get_filter_by_articles():
+    sql_query = """
+        WITH base AS (
+          SELECT
+            m.vendorcode,
+            рисунок.value AS main_group,
+            цвет.value AS color
+          FROM myapp_nmids m
+          LEFT JOIN LATERAL (
+            SELECT (item->'value')->>0 AS value
+            FROM jsonb_array_elements(m.characteristics) AS item
+            WHERE (item->>'id')::int = 12
+            LIMIT 1
+          ) AS рисунок ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT (item->'value')->>0 AS value
+            FROM jsonb_array_elements(m.characteristics) AS item
+            WHERE (item->>'id')::int = 14177449
+            LIMIT 1
+          ) AS цвет ON TRUE
+          WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL
+        )
+        SELECT jsonb_object_agg(main_group, colors) AS result
+        FROM (
+          SELECT
+            main_group,
+            jsonb_object_agg(color, nmid) AS colors
+          FROM (
+            SELECT
+              main_group,
+              color,
+              jsonb_agg(vendorcode) AS nmid
+            FROM base
+            GROUP BY main_group, color
+          ) AS grouped
+          GROUP BY main_group
+        ) AS final;
+    """
+
+    # Выполнение SQL запроса и получение данных
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        cursor.execute(sql_query, )
+        rows = cursor.fetchall()
+
+    columns = [desc[0] for desc in cursor.description]
+    dict_rows = [dict(zip(columns, row)) for row in rows]
+    return dict_rows
+
 
 def abc_classification(data: dict):
     # Шаг 1: Сортируем по количеству заказов (убывание)
@@ -487,6 +536,7 @@ def podsort_view(request):
         for item in nmids
     ]
     tail_filter_options = get_group_nmids(combined_list)
+    logger.info(get_filter_by_articles())
 
     try:
         items = {}
