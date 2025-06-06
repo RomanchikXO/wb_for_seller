@@ -154,7 +154,12 @@ def get_filter_by_articles():
 
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
-    return dict_rows
+    data = dict_rows[0]["result"]
+
+    data = [
+        {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
+    ]
+    return data
 
 
 def abc_classification(data: dict):
