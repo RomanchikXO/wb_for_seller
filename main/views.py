@@ -156,9 +156,12 @@ def get_filter_by_articles():
     dict_rows = [dict(zip(columns, row)) for row in rows]
     data = dict_rows[0]["result"]
 
-    data = [
-        {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
-    ]
+    data = sorted(
+        [
+            {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
+        ],
+        key=lambda x: x['tail'].lower()
+    )
     return data
 
 
@@ -540,8 +543,9 @@ def podsort_view(request):
         }
         for item in nmids
     ]
-    tail_filter_options = get_group_nmids(combined_list)
-    logger.info(get_filter_by_articles())
+    # tail_filter_options = get_group_nmids(combined_list)
+    tail_filter_options = get_filter_by_articles()
+    # logger.info(get_filter_by_articles())
 
     try:
         items = {}
