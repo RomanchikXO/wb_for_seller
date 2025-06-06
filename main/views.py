@@ -794,6 +794,7 @@ def margin_view(request):
 
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
+    logger.info(dict_rows)
 
     items = []
     for key_1, value_1 in dict_rows[0]["result"].items(): # например key_1 "МРАМОР" value_1 "белый"
@@ -834,7 +835,6 @@ def margin_view(request):
                         'margin_plan_day': '5',
                     }
                 )
-    logger.info(items)
 
     context = {
         'total': {
