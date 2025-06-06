@@ -829,6 +829,7 @@ async def get_stock_age_by_period():
                 "userReportName": get_uuid(),
             }
             response = await wb_api(session, param)
+            logger.info(f"Генерируем отчет для {cab['name']}. ID: {id_report}. Period: {period_get}")
 
             if not (response and response.get("data") and response["data"] == "Началось формирование файла/отчета"):
                 logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
@@ -849,7 +850,7 @@ async def get_stock_age_by_period():
                     try:
                         text = response.decode('utf-8')
                         if "check correctness of download id or supplier id" in text:
-                            logger.error("Ошибка!!!: check correctness of download id or supplier id")
+                            logger.error(f"Ошибка!!!: check correctness of download id or supplier id. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
                             raise
                         text = json.loads(text)
                         if text.get("title"):
