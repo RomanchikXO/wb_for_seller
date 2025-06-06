@@ -111,7 +111,7 @@ def get_filter_by_articles():
     sql_query = """
         WITH base AS (
           SELECT
-            m.vendorcode,
+            m.nmid,
             рисунок.value AS main_group,
             цвет.value AS color
           FROM myapp_nmids m
@@ -138,7 +138,7 @@ def get_filter_by_articles():
             SELECT
               main_group,
               color,
-              jsonb_agg(vendorcode) AS nmid
+              jsonb_agg(nmid) AS nmid
             FROM base
             GROUP BY main_group, color
           ) AS grouped
