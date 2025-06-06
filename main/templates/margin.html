@@ -50,13 +50,13 @@
             {% for item_a in items %}
                 <tr class="table-primary">
                     <td>
-                        <button class="btn btn-sm p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                        <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
                                 type="button"
                                 data-bs-toggle="collapse"
-                                data-bs-target=".level-b-parent-{{ item_a.id }}"
+                                data-bs-target=".level-b-{{ item_a.id }}"
                                 aria-expanded="false"
                                 aria-controls="level-b-{{ item_a.id }}">
-                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-a-{{ item_a.id }}"></i>
+                            <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_a.id }}"></i>
                             {{ item_a.name }}
                         </button>
                     </td>
@@ -69,15 +69,15 @@
 
                 <!-- Уровень B -->
                 {% for item_b in item_a.children %}
-                    <tr class="collapse table-secondary level-b-parent-{{ item_a.id }}" id="level-b-{{ item_b.id }}">
+                    <tr class="collapse level-b-{{ item_a.id }}">
                         <td class="ps-4">
-                            <button class="btn btn-sm p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                            <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
                                     type="button"
                                     data-bs-toggle="collapse"
-                                    data-bs-target=".level-c-parent-{{ item_b.id }}"
+                                    data-bs-target=".level-c-{{ item_b.id }}"
                                     aria-expanded="false"
                                     aria-controls="level-c-{{ item_b.id }}">
-                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-b-{{ item_b.id }}"></i>
+                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_b.id }}"></i>
                                 {{ item_b.name }}
                             </button>
                         </td>
@@ -90,7 +90,7 @@
 
                     <!-- Уровень C -->
                     {% for item_c in item_b.children %}
-                        <tr class="collapse table-light level-c-parent-{{ item_b.id }}" id="level-c-{{ item_c.id }}">
+                        <tr class="collapse level-c-{{ item_b.id }}">
                             <td class="ps-5">{{ item_c.name }}</td>
                             <td>{{ item_c.margin_plan }}</td>
                             <td>{{ item_c.margin_fact }}</td>
@@ -109,34 +109,45 @@
 
 
 {% block extra_js %}
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (btn) {
-                btn.addEventListener("click", function () {
-                    const icon = btn.querySelector(".bi");
-                    if (icon) {
-                        icon.classList.toggle("bi-chevron-right");
-                        icon.classList.toggle("bi-chevron-down");
-                    }
-                });
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
+            const targetId = btn.getAttribute("data-bs-target");
+            const icon = btn.querySelector("i");
+
+            const collapseElement = document.querySelector(targetId);
+
+            collapseElement.addEventListener("show.bs.collapse", function () {
+                icon.classList.remove("bi-chevron-right");
+                icon.classList.add("bi-chevron-down");
             });
-            // Автоматическое закрытие вложенных collapse при закрытии родителя
-            document.querySelectorAll('.collapse').forEach(function (parentRow) {
-                parentRow.addEventListener('hide.bs.collapse', function () {
-                    let next = parentRow.nextElementSibling;
-                    while (next && next.classList.contains('collapse')) {
-                        if (next.classList.contains('show')) {
-                            bootstrap.Collapse.getOrCreateInstance(next).hide();
-                        }
-                        next = next.nextElementSibling;
-                    }
-                    const iconsB = parentRow.querySelectorAll('[id^="icon-b-"]');
-                    iconsB.forEach(icon => {
-                        icon.classList.remove("bi-chevron-down");
-                        icon.classList.add("bi-chevron-right");
+            collapseElement.addEventListener("hide.bs.collapse", function () {
+                const elements = document.querySelectorAll(targetId);
+                elements.forEach(el => {
+                    const btn_2 = el.querySelector('button[data-bs-toggle="collapse"]');
+                    if (!btn_2) return;
+
+                    const targetId_2 = btn_2.getAttribute("data-bs-target");
+                    const icon_2 = btn_2.querySelector("i");
+                    const nestedRows = document.querySelectorAll(targetId_2);
+
+                    nestedRows.forEach(row => {
+                        row.classList.remove('show'); // Bootstrap класс, скрывает элемент
+                        // Для таблиц дополнительно меняем display вручную
+                        row.style.display = 'none';
                     });
+
+                    if (icon_2) {
+                        icon_2.classList.remove("bi-chevron-down");
+                        icon_2.classList.add("bi-chevron-right");
+                    }
                 });
+
+                icon.classList.remove("bi-chevron-down");
+                icon.classList.add("bi-chevron-right");
             });
         });
-    </script>
+    });
+</script>
+
 {% endblock %}
