@@ -835,7 +835,11 @@ async def get_stock_age_by_period():
                 logger.error(f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
                 raise
 
-            for _ in range(3):
+            for attempt in range(4):
+                if attempt == 3:
+                    logger.error(f"Ошибка получения данных в get_stock_age_by_period. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                    raise
+
                 await asyncio.sleep(10)
                 param = {
                     "type": "seller_analytics_report",
@@ -851,7 +855,7 @@ async def get_stock_age_by_period():
                         text = response.decode('utf-8')
                         if "check correctness of download id or supplier id" in text:
                             await asyncio.sleep(55)
-                            logger.error(f"Ошибка!!!: check correctness of download id or supplier id. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                            logger.info(f"ВНИМАНИЕ!!!: check correctness of download id or supplier id. ПОПЫТКА: {attempt + 1}. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
                             continue
                         text = json.loads(text)
                         if text.get("title"):
