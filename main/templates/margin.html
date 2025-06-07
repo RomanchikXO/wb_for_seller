@@ -21,89 +21,129 @@
 
 {% block main_content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">Любопытный, тут пока пусто :)</h1>
+        <h1 class="mb-0">Дашборд</h1>
         <button class="btn btn-outline-primary btn-sm">
             Загрузить маржу
         </button>
     </div>
-    <table class="table table-bordered md-0">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Маржа план</th>
-                <th>Маржа факт</th>
-                <th>Маржа тренд</th>
-                <th>Сколько осталось для плана</th>
-                <th>Маржа план день</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="fw-bold table-light">
-                <td>Итого</td>
-                <td>{{ total.margin_plan }}</td>
-                <td>{{ total.margin_fact }}</td>
-                <td>{{ total.margin_trend }}</td>
-                <td>{{ total.plan_need }}</td>
-                <td>{{ total.day_plan }}</td>
-            </tr>
-            <!-- Уровень A -->
-            {% for item_a in items %}
-                <tr class="table-primary">
-                    <td>
-                        <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target=".level-b-{{ item_a.id }}"
-                                aria-expanded="false"
-                                aria-controls="level-b-{{ item_a.id }}">
-                            <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_a.id }}"></i>
-                            {{ item_a.name }}
-                        </button>
-                    </td>
-                    <td>{{ item_a.margin_plan }}</td>
-                    <td>{{ item_a.margin_fact }}</td>
-                    <td>{{ item_a.margin_trend }}</td>
-                    <td>{{ item_a.margin_left }}</td>
-                    <td>{{ item_a.margin_plan_day }}</td>
+    <div class="table-responsive">
+        <table class="table table-bordered md-0">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Выручка план</th>
+                    <th>Выручка факт</th>
+                    <th>Выручка тренд</th>
+                    <th>Маржа факт</th>
+                    <th>"ДРР, % от продаж"</th>
+                    <th>Сколько осталось до плана</th>
+                    <th>Выучка план день</th>
+                    <th colspan="2">Неделя к неделе</th>
+                    <th>% выполнения</th>
+                    <th></th>
                 </tr>
-
-                <!-- Уровень B -->
-                {% for item_b in item_a.children %}
-                    <tr class="collapse level-b-{{ item_a.id }}">
-                        <td class="ps-4">
+            </thead>
+            <tbody>
+                <tr class="fw-bold table-light">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>В деньгах</td>
+                    <td>В процентах</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr class="fw-bold table-light">
+                    <td>Итого</td>
+                    <td>{{ total.margin_plan }}</td>
+                    <td>{{ total.margin_fact }}</td>
+                    <td>{{ total.margin_trend }}</td>
+                    <td>{{ total.plan_need }}</td>
+                    <td>{{ total.day_plan }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <!-- Уровень A -->
+                {% for item_a in items %}
+                    <tr class="table-primary">
+                        <td>
                             <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
                                     type="button"
                                     data-bs-toggle="collapse"
-                                    data-bs-target=".level-c-{{ item_b.id }}"
+                                    data-bs-target=".level-b-{{ item_a.id }}"
                                     aria-expanded="false"
-                                    aria-controls="level-c-{{ item_b.id }}">
-                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_b.id }}"></i>
-                                {{ item_b.name }}
+                                    aria-controls="level-b-{{ item_a.id }}">
+                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_a.id }}"></i>
+                                {{ item_a.name }}
                             </button>
                         </td>
-                        <td>{{ item_b.margin_plan }}</td>
-                        <td>{{ item_b.margin_fact }}</td>
-                        <td>{{ item_b.margin_trend }}</td>
-                        <td>{{ item_b.margin_left }}</td>
-                        <td>{{ item_b.margin_plan_day }}</td>
+                        <td>{{ item_a.margin_plan }}</td>
+                        <td>{{ item_a.margin_fact }}</td>
+                        <td>{{ item_a.margin_trend }}</td>
+                        <td>{{ item_a.margin_left }}</td>
+                        <td>{{ item_a.margin_plan_day }}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
 
-                    <!-- Уровень C -->
-                    {% for item_c in item_b.children %}
-                        <tr class="collapse level-c-{{ item_b.id }}">
-                            <td class="ps-5">{{ item_c.name }}</td>
-                            <td>{{ item_c.margin_plan }}</td>
-                            <td>{{ item_c.margin_fact }}</td>
-                            <td>{{ item_c.margin_trend }}</td>
-                            <td>{{ item_c.margin_left }}</td>
-                            <td>{{ item_c.margin_plan_day }}</td>
+                    <!-- Уровень B -->
+                    {% for item_b in item_a.children %}
+                        <tr class="collapse level-b-{{ item_a.id }}">
+                            <td class="ps-4">
+                                <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target=".level-c-{{ item_b.id }}"
+                                        aria-expanded="false"
+                                        aria-controls="level-c-{{ item_b.id }}">
+                                    <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_b.id }}"></i>
+                                    {{ item_b.name }}
+                                </button>
+                            </td>
+                            <td>{{ item_b.margin_plan }}</td>
+                            <td>{{ item_b.margin_fact }}</td>
+                            <td>{{ item_b.margin_trend }}</td>
+                            <td>{{ item_b.margin_left }}</td>
+                            <td>{{ item_b.margin_plan_day }}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
+
+                        <!-- Уровень C -->
+                        {% for item_c in item_b.children %}
+                            <tr class="collapse level-c-{{ item_b.id }}">
+                                <td class="ps-5">{{ item_c.name }}</td>
+                                <td>{{ item_c.margin_plan }}</td>
+                                <td>{{ item_c.margin_fact }}</td>
+                                <td>{{ item_c.margin_trend }}</td>
+                                <td>{{ item_c.margin_left }}</td>
+                                <td>{{ item_c.margin_plan_day }}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        {% endfor %}
                     {% endfor %}
                 {% endfor %}
-            {% endfor %}
-        </tbody>
-    </table>
-
+            </tbody>
+        </table>
+    </div>
 
 {% endblock %}
 

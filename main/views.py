@@ -894,15 +894,18 @@ def margin_view(request):
                     }
                 )
 
+    # dates = [i for i in ]
+
     context = {
-        'total': {
+        "total": {
             'margin_plan': '1000',
             'margin_fact': '800',
             'margin_trend': '2354',
             'plan_need': '432',
             'day_plan': '24'
         },
-        'items': items
+        "items": items,
+        # "dates": dates,
     }
 
     return render(
