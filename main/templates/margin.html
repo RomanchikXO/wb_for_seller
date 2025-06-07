@@ -32,7 +32,7 @@
             Загрузить маржу
         </button>
     </div>
-    <div class="table-responsive" style="height: 100vh; overflow-y: auto;">
+    <div class="table-responsive table-dragscroll" style="height: 100vh; overflow: auto; cursor: grab;">
         <table class="table table-bordered md-0">
             <thead>
                 <tr>
@@ -265,4 +265,36 @@
         });
 
     </script>
+    <script>
+        const container = document.querySelector('.table-dragscroll');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        container.addEventListener('mousedown', (e) => {
+            isDown = true;
+            container.classList.add('dragging');
+            startX = e.pageX - container.offsetLeft;
+            scrollLeft = container.scrollLeft;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            isDown = false;
+            container.classList.remove('dragging');
+        });
+
+        container.addEventListener('mouseup', () => {
+            isDown = false;
+            container.classList.remove('dragging');
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            const walk = (x - startX) * 1.5; // чувствительность
+            container.scrollLeft = scrollLeft - walk;
+        });
+    </script>
+
 {% endblock %}
