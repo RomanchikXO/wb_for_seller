@@ -807,77 +807,92 @@ def export_excel_podsort(request):
 
 @login_required_cust
 def margin_view(request):
+    return render(
+        request,
+        'margin.html',
+    )
+
+
+def get_margin_data(request):
+    now_msk = datetime.now() + timedelta(hours=3)
+    first_day = now_msk.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
     sql_query = """
-        WITH base AS (
-          SELECT
-            m.vendorcode,
-            рисунок.value AS main_group,
-            цвет.value AS color
-          FROM myapp_nmids m
-          LEFT JOIN LATERAL (
-            SELECT (item->'value')->>0 AS value
-            FROM jsonb_array_elements(m.characteristics) AS item
-            WHERE (item->>'id')::int = 12
-            LIMIT 1
-          ) AS рисунок ON TRUE
-          LEFT JOIN LATERAL (
-            SELECT (item->'value')->>0 AS value
-            FROM jsonb_array_elements(m.characteristics) AS item
-            WHERE (item->>'id')::int = 14177449
-            LIMIT 1
-          ) AS цвет ON TRUE
-          WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL
-        )
-        SELECT jsonb_object_agg(main_group, colors) AS result
-        FROM (
-          SELECT
-            main_group,
-            jsonb_object_agg(color, vendorcodes) AS colors
-          FROM (
-            SELECT
-              main_group,
-              color,
-              jsonb_agg(vendorcode) AS vendorcodes
-            FROM base
-            GROUP BY main_group, color
-          ) AS grouped
-          GROUP BY main_group
-        ) AS final;
-    """
+            WITH base AS (
+              SELECT
+                m.vendorcode,
+                рисунок.value AS main_group,
+                цвет.value AS color
+              FROM myapp_nmids m
+              LEFT JOIN LATERAL (
+                SELECT (item->'value')->>0 AS value
+                FROM jsonb_array_elements(m.characteristics) AS item
+                WHERE (item->>'id')::int = 12
+                LIMIT 1
+              ) AS рисунок ON TRUE
+              LEFT JOIN LATERAL (
+                SELECT (item->'value')->>0 AS value
+                FROM jsonb_array_elements(m.characteristics) AS item
+                WHERE (item->>'id')::int = 14177449
+                LIMIT 1
+              ) AS цвет ON TRUE
+              WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL
+            )
+            SELECT jsonb_object_agg(main_group, colors) AS result
+            FROM (
+              SELECT
+                main_group,
+                jsonb_object_agg(color, vendorcodes) AS colors
+              FROM (
+                SELECT
+                  main_group,
+                  color,
+                  jsonb_agg(vendorcode) AS vendorcodes
+                FROM base
+                GROUP BY main_group, color
+              ) AS grouped
+              GROUP BY main_group
+            ) AS final;
+        """
 
     # Выполнение SQL запроса и получение данных
     conn = connect_to_database()
     with conn.cursor() as cursor:
-        cursor.execute(sql_query,)
+        cursor.execute(sql_query, )
         rows = cursor.fetchall()
 
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
 
     items = []
-    for key_1, value_1 in dict_rows[0]["result"].items(): # например key_1 "МРАМОР" value_1 "белый"
+    for key_1, value_1 in dict_rows[0]["result"].items():  # например key_1 "МРАМОР" value_1 "белый"
         items.append(
             {
                 "id": get_uuid(),
                 'name': key_1,
-                'margin_plan': '500',
-                'margin_fact': '400',
-                'margin_trend': '56',
-                'margin_left': '100',
-                'margin_plan_day': '50',
+                'revenue_plan': '500',
+                'revenue_fact': '400',
+                'revenue_trend': '56',
+                'margin_fact': '100',
+                'drr': '50',
+                'how_much_before_plan': '50',
+                'revenue_plan_day': '10',
                 "children": []
             }
         )
-        for key_2, value_2 in value_1.items(): # например key_1 "белый" value_1 [массив артикулов]
+        for key_2, value_2 in value_1.items():  # например key_1 "белый" value_1 [массив артикулов]
             items[-1]["children"].append(
                 {
                     "id": get_uuid(),
                     'name': key_2,
-                    'margin_plan': '300',
-                    'margin_fact': '250',
-                    'margin_trend': '4657',
-                    'margin_left': '50',
-                    'margin_plan_day': '25',
+                    'revenue_plan': '500',
+                    'revenue_fact': '400',
+                    'revenue_trend': '56',
+                    'margin_fact': '100',
+                    'drr': '50',
+                    'how_much_before_plan': '50',
+                    'revenue_plan_day': '10',
                     "children": []
                 }
             )
@@ -886,30 +901,31 @@ def margin_view(request):
                     {
                         'id': get_uuid(),
                         'name': val_3,
-                        'margin_plan': '100',
-                        'margin_fact': '90',
-                        'margin_trend': '456',
-                        'margin_left': '10',
-                        'margin_plan_day': '5',
+                        'revenue_plan': '500',
+                        'revenue_fact': '400',
+                        'revenue_trend': '56',
+                        'margin_fact': '100',
+                        'drr': '50',
+                        'how_much_before_plan': '50',
+                        'revenue_plan_day': '10',
                     }
                 )
 
-    # dates = [i for i in ]
-
-    context = {
-        "total": {
-            'margin_plan': '1000',
-            'margin_fact': '800',
-            'margin_trend': '2354',
-            'plan_need': '432',
-            'day_plan': '24'
-        },
-        "items": items,
-        # "dates": dates,
+    total = {
+        'revenue_plan': '500',
+        'revenue_fact': '400',
+        'revenue_trend': '56',
+        'margin_fact': '100',
+        'drr': '50',
+        'how_much_before_plan': '50',
+        'revenue_plan_day': '10',
     }
 
-    return render(
-        request,
-        'margin.html',
-        context=context,
-    )
+    dates = [(first_day + timedelta(days=i)).strftime('%d.%m.%Y')
+             for i in range((now_msk.date() - first_day.date()).days + 1)]
+
+    return JsonResponse({
+        'total': total,
+        'items': items,
+        'dates': dates,
+    })

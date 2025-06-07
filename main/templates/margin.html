@@ -40,7 +40,6 @@
                     <th>Выучка план день</th>
                     <th colspan="2">Неделя к неделе</th>
                     <th>% выполнения</th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -56,91 +55,20 @@
                     <td>В деньгах</td>
                     <td>В процентах</td>
                     <td></td>
-                    <td></td>
                 </tr>
                 <tr class="fw-bold table-light">
                     <td>Итого</td>
-                    <td>{{ total.margin_plan }}</td>
-                    <td>{{ total.margin_fact }}</td>
-                    <td>{{ total.margin_trend }}</td>
-                    <td>{{ total.plan_need }}</td>
-                    <td>{{ total.day_plan }}</td>
-                    <td></td>
-                    <td></td>
+                    <td id="total-revenue_plan"></td>
+                    <td id="total-revenue_fact"></td>
+                    <td id="total-revenue_trend"></td>
+                    <td id="total-margin_fact"></td>
+                    <td id="total-drr"></td>
+                    <td id="total-how_much_before_plan"></td>
+                    <td id="total-revenue_plan_day"></td>
                     <td></td>
                     <td></td>
                     <td></td>
                 </tr>
-                <!-- Уровень A -->
-                {% for item_a in items %}
-                    <tr class="table-primary">
-                        <td>
-                            <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target=".level-b-{{ item_a.id }}"
-                                    aria-expanded="false"
-                                    aria-controls="level-b-{{ item_a.id }}">
-                                <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_a.id }}"></i>
-                                {{ item_a.name }}
-                            </button>
-                        </td>
-                        <td>{{ item_a.margin_plan }}</td>
-                        <td>{{ item_a.margin_fact }}</td>
-                        <td>{{ item_a.margin_trend }}</td>
-                        <td>{{ item_a.margin_left }}</td>
-                        <td>{{ item_a.margin_plan_day }}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-
-                    <!-- Уровень B -->
-                    {% for item_b in item_a.children %}
-                        <tr class="collapse level-b-{{ item_a.id }}">
-                            <td class="ps-4">
-                                <button class="btn p-0 border-0 bg-transparent text-dark d-flex align-items-center"
-                                        type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target=".level-c-{{ item_b.id }}"
-                                        aria-expanded="false"
-                                        aria-controls="level-c-{{ item_b.id }}">
-                                    <i class="bi bi-chevron-right me-1 transition-icon" id="icon-{{ item_b.id }}"></i>
-                                    {{ item_b.name }}
-                                </button>
-                            </td>
-                            <td>{{ item_b.margin_plan }}</td>
-                            <td>{{ item_b.margin_fact }}</td>
-                            <td>{{ item_b.margin_trend }}</td>
-                            <td>{{ item_b.margin_left }}</td>
-                            <td>{{ item_b.margin_plan_day }}</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-
-                        <!-- Уровень C -->
-                        {% for item_c in item_b.children %}
-                            <tr class="collapse level-c-{{ item_b.id }}">
-                                <td class="ps-5">{{ item_c.name }}</td>
-                                <td>{{ item_c.margin_plan }}</td>
-                                <td>{{ item_c.margin_fact }}</td>
-                                <td>{{ item_c.margin_trend }}</td>
-                                <td>{{ item_c.margin_left }}</td>
-                                <td>{{ item_c.margin_plan_day }}</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        {% endfor %}
-                    {% endfor %}
-                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -149,45 +77,186 @@
 
 
 {% block extra_js %}
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
-            const targetId = btn.getAttribute("data-bs-target");
-            const icon = btn.querySelector("i");
+    <script>
+        function addDates(dates, location=null) {
+            dates.forEach(date => {
+                if (location === null) {
+                    const theadRow = document.querySelector('table thead tr');
+                    const th = document.createElement('th');
+                    th.textContent = date;
+                    theadRow.appendChild(th);
+                }
 
-            const collapseElement = document.querySelector(targetId);
-
-            collapseElement.addEventListener("show.bs.collapse", function () {
-                icon.classList.remove("bi-chevron-right");
-                icon.classList.add("bi-chevron-down");
+                if (location === 'all_row') {
+                    const tbodyRows = document.querySelectorAll('table tbody tr');
+                    tbodyRows.forEach(row => {
+                        const td = document.createElement('td');
+                        td.textContent = "";  // или любое значение, если нужно
+                        row.appendChild(td);
+                    });
+                }
             });
-            collapseElement.addEventListener("hide.bs.collapse", function () {
-                const elements = document.querySelectorAll(targetId);
-                elements.forEach(el => {
-                    const btn_2 = el.querySelector('button[data-bs-toggle="collapse"]');
-                    if (!btn_2) return;
+        }
 
-                    const targetId_2 = btn_2.getAttribute("data-bs-target");
-                    const icon_2 = btn_2.querySelector("i");
-                    const nestedRows = document.querySelectorAll(targetId_2);
+        function createRow(item, level) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-id', item.id);
+            tr.setAttribute('data-level', level);
 
-                    nestedRows.forEach(row => {
-                        row.classList.remove('show'); // Bootstrap класс, скрывает элемент
-                        // Для таблиц дополнительно меняем display вручную
-                        row.style.display = 'none';
+            if (level === 'a') tr.classList.add('table-primary');
+            if (level === 'b') tr.classList.add('collapse', 'table-secondary', `level-b-${item.parentId}`);
+            if (level === 'c') tr.classList.add('collapse', `level-c-${item.parentId}`);
+
+            // первая ячейка с кнопкой раскрытия для уровней a и b
+            const tdName = document.createElement('td');
+            if (level === 'a' || level === 'b') {
+                const button = document.createElement('button');
+                button.className = 'btn p-0 border-0 bg-transparent text-dark d-flex align-items-center';
+                button.type = 'button';
+                button.setAttribute('data-bs-toggle', 'collapse');
+
+                const targetClass = level === 'a' ? `.level-b-${item.id}` : `.level-c-${item.id}`;
+                button.setAttribute('data-bs-target', targetClass);
+                button.setAttribute('aria-expanded', 'false');
+                button.setAttribute('aria-controls', targetClass.replace('.', ''));
+
+                const icon = document.createElement('i');
+                icon.className = 'bi bi-chevron-right me-1 transition-icon';
+                icon.id = `icon-${item.id}`;
+                button.appendChild(icon);
+
+                // Вставляем пробел между иконкой и текстом (важно для отступа)
+                button.appendChild(document.createTextNode(' '));
+                // Добавляем текст названия
+                button.appendChild(document.createTextNode(item.name));
+
+                tdName.appendChild(button);
+                if (level === 'b') {
+                    tdName.classList.add('ps-3');  // padding-left для смещения
+                }
+            } else if (level === 'c') {
+                tdName.className = 'ps-5';
+                tdName.textContent = item.name;
+            }
+
+            tr.appendChild(tdName);
+
+            // остальные <td> с данными
+            const fields = ['revenue_plan', 'revenue_fact', 'revenue_trend', 'margin_fact', 'drr',
+                'how_much_before_plan', 'revenue_plan_day', '', '', ''];
+            fields.forEach(() => {
+                const td = document.createElement('td');
+                tr.appendChild(td);
+            });
+
+            // Заполнение значений в <td> после вставки
+            tr.children[1].textContent = item.revenue_plan;
+            tr.children[2].textContent = item.revenue_fact;
+            tr.children[3].textContent = item.revenue_trend;
+            tr.children[4].textContent = item.margin_fact;
+            tr.children[5].textContent = item.drr;
+            tr.children[6].textContent = item.how_much_before_plan;
+            tr.children[7].textContent = item.revenue_plan_day;
+
+            return tr;
+        }
+
+        function fillTable(total, items) {
+            // Подставляем итоги
+            document.getElementById('total-revenue_plan').textContent = total.revenue_plan;
+            document.getElementById('total-revenue_fact').textContent = total.revenue_fact;
+            document.getElementById('total-revenue_trend').textContent = total.revenue_trend;
+            document.getElementById('total-margin_fact').textContent = total.margin_fact;
+            document.getElementById('total-drr').textContent = total.drr;
+            document.getElementById('total-how_much_before_plan').textContent = total.how_much_before_plan;
+            document.getElementById('total-revenue_plan_day').textContent = total.revenue_plan_day;
+
+            // Чистим tbody с данными (если нужно)
+            const tbody = document.querySelector('table tbody');
+            // удаляем все кроме итоговой строки, если она есть
+            [...tbody.querySelectorAll('tr:not(.fw-bold.table-light)')].forEach(r => r.remove());
+
+            // Добавляем динамически строки уровней A/B/C
+            items.forEach(itemA => {
+                const rowA = createRow(itemA, 'a');
+                tbody.appendChild(rowA);
+
+                itemA.children.forEach(itemB => {
+                    itemB.parentId = itemA.id;
+                    const rowB = createRow(itemB, 'b');
+                    tbody.appendChild(rowB);
+
+                    itemB.children.forEach(itemC => {
+                        itemC.parentId = itemB.id;
+                        const rowC = createRow(itemC, 'c');
+                        tbody.appendChild(rowC);
+                    });
+                });
+            });
+            // Инициализируем Bootstrap Collapse для созданных строк
+            initBootstrapCollapse();
+            // Навешиваем обработчики для управления иконками и вложенными свёртками
+            initCollapseHandlers();
+        }
+
+        // Инициализация Bootstrap Collapse для динамически созданных элементов
+        function initBootstrapCollapse() {
+            document.querySelectorAll('tr.collapse').forEach(tr => {
+                if (!bootstrap.Collapse.getInstance(tr)) {
+                    new bootstrap.Collapse(tr, {toggle: false});
+                }
+            });
+        }
+
+        // Навешивает обработчики для иконок и вложенных свёрток
+        function initCollapseHandlers() {
+            document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
+                const targetId = btn.getAttribute("data-bs-target");
+                const icon = btn.querySelector("i");
+
+                const collapseElement = document.querySelector(targetId);
+
+                collapseElement.addEventListener("show.bs.collapse", function () {
+                    icon.classList.remove("bi-chevron-right");
+                    icon.classList.add("bi-chevron-down");
+                });
+                collapseElement.addEventListener("hide.bs.collapse", function () {
+                    const elements = document.querySelectorAll(targetId);
+                    elements.forEach(el => {
+                        const btn_2 = el.querySelector('button[data-bs-toggle="collapse"]');
+                        if (!btn_2) return;
+
+                        const targetId_2 = btn_2.getAttribute("data-bs-target");
+                        const icon_2 = btn_2.querySelector("i");
+                        const nestedRows = document.querySelectorAll(targetId_2);
+
+                        nestedRows.forEach(row => {
+                            row.classList.remove('show'); // Bootstrap класс, скрывает элемент
+                            // Для таблиц дополнительно меняем display вручную
+                            row.style.display = 'none';
+                        });
+
+                        if (icon_2) {
+                            icon_2.classList.remove("bi-chevron-down");
+                            icon_2.classList.add("bi-chevron-right");
+                        }
                     });
 
-                    if (icon_2) {
-                        icon_2.classList.remove("bi-chevron-down");
-                        icon_2.classList.add("bi-chevron-right");
-                    }
+                    icon.classList.remove("bi-chevron-down");
+                    icon.classList.add("bi-chevron-right");
                 });
-
-                icon.classList.remove("bi-chevron-down");
-                icon.classList.add("bi-chevron-right");
             });
-        });
-    });
-</script>
+        }
 
+        document.addEventListener("DOMContentLoaded", () => {
+            fetch('api/margin-data/')
+                .then(res => res.json())
+                .then(data => {
+                    addDates(data.dates);
+                    fillTable(data.total, data.items);
+                    addDates(data.dates, 'all_row');
+                });
+        });
+
+    </script>
 {% endblock %}
