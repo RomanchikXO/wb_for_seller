@@ -15,6 +15,12 @@
         .table tr.collapse.show {
             display: table-row !important;
         }
+        .table thead th {
+          position: sticky;
+          top: 0;
+          background-color: #fff; /* или другой фон */
+          z-index: 10;
+        }
     </style>
 {% endblock %}
 
@@ -26,7 +32,7 @@
             Загрузить маржу
         </button>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive" style="height: 100vh; overflow-y: auto;">
         <table class="table table-bordered md-0">
             <thead>
                 <tr>
