@@ -3,6 +3,7 @@
 {% block title %}Маржинальность{% endblock %}
 
 {% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <style>
         .collapse {
             transition: all 0.3s ease-in-out;
@@ -278,7 +279,15 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            fetch('api/margin-data/')
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('api/margin-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({})
+            })
                 .then(res => res.json())
                 .then(data => {
                     addDates(data.dates);
