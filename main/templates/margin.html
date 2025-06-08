@@ -185,8 +185,14 @@
             move(event) {
               const target = event.target;
               let { width, height } = event.rect;
+
+              // Обновляем размеры
               target.style.width = width + 'px';
               target.style.height = height + 'px';
+
+              // Сдвигаем позицию, если меняются левый или верхний края
+              target.style.left = (target.offsetLeft + event.deltaRect.left) + 'px';
+              target.style.top = (target.offsetTop + event.deltaRect.top) + 'px';
 
               myChart.resize();
             },
