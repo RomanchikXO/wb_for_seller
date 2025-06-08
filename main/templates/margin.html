@@ -53,10 +53,14 @@
     {# график #}
     <div style="height: 300px;">
         <div id="chart-container" class="draggable" style="width: 50%; height: 300px;">
-          <canvas id="myChart"></canvas>
+            <button id="toggleChartBtn"
+                    style="position: absolute; top: 5px; left: 5px; width: 30px; height: 30px; border: none; background: transparent; cursor: pointer; z-index: 10;"
+                    aria-label="Свернуть/Развернуть график">
+              &#x25B2; <!-- Стрелка вверх (исходно - показать свернутый) -->
+            </button>
+            <canvas id="myChart"></canvas>
         </div>
     </div>
-
     {##}
     <div class="table-responsive table-dragscroll" style="height: 100vh; overflow: auto; cursor: grab;">
         <table class="table table-bordered md-0">
@@ -118,6 +122,34 @@
 {% block extra_js %}
     <script>
         const ctx = document.getElementById('myChart');
+        const toggleBtn = document.getElementById('toggleChartBtn');
+        const chartContainer = document.getElementById('chart-container');
+
+        // Исходные размеры контейнера
+        const initialHeight = chartContainer.offsetHeight;
+        const initialWidth = chartContainer.offsetWidth;
+
+        const collapsedHeight = 120; //высота свернутого контейнера
+        const collapsedWidth = 150; //ширина свернутого контейнера
+
+        toggleBtn.addEventListener('click', () => {
+          if (chartContainer.style.height !== `${collapsedHeight}px`) {
+            // Свернуть
+            chartContainer.style.height = `${collapsedHeight}px`;
+            chartContainer.style.width = `${collapsedWidth}px`;
+            toggleBtn.innerHTML = '&#x25BC;';
+          } else {
+            // Развернуть
+            chartContainer.style.height = `${initialHeight}px`;
+            chartContainer.style.width = `${initialWidth}px`;
+            toggleBtn.innerHTML = '&#x25B2;';
+          }
+
+          // Обновляем график после анимации изменения размера
+          setTimeout(() => {
+            myChart.resize();
+          }, 300);
+        });
         const myChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -183,6 +215,7 @@
               isResizing = true;  // ресайз начался
             },
             move(event) {
+              toggleBtn.innerHTML = '&#x25B2;';
               const target = event.target;
               let { width, height } = event.rect;
 
