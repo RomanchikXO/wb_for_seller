@@ -60,7 +60,14 @@
                     <td></td>
                     <td>В деньгах</td>
                     <td>В процентах</td>
-                    <td></td>
+                    <td class="p-0">
+                        <div class="d-flex flex-column align-items-start w-100 h-100 px-2 py-1">
+                            <div class="w-100">План →</div>
+                            <hr class="w-100 my-1" />
+                            <div class="w-100">Факт →</div>
+                        </div>
+                    </td>
+
                 </tr>
                 <tr class="fw-bold table-light">
                     <td>Итого</td>
@@ -95,9 +102,25 @@
 
                 if (location === 'all_row') {
                     const tbodyRows = document.querySelectorAll('table tbody tr');
-                    tbodyRows.forEach(row => {
+                    tbodyRows.forEach((row, index) => {
                         const td = document.createElement('td');
-                        td.textContent = "";  // или любое значение, если нужно
+                        if (index === 0) {
+                            // Только для первой строки — особая разметка
+                            const plan = Math.floor(Math.random() * 10000);
+                            const fact = Math.floor(Math.random() * 10000);
+
+                            td.className = 'p-0';
+                            td.innerHTML = `
+                                <div class="d-flex flex-column align-items-start w-100 h-100 px-2 py-1">
+                                    <div class="w-100">${plan}</div>
+                                    <hr class="w-100 my-1" />
+                                    <div class="w-100">${fact}</div>
+                                </div>
+                            `;
+                        } else {
+                            // Для остальных строк — обычная заглушка
+                            td.textContent = "Какие то данные";
+                        }
                         row.appendChild(td);
                     });
                 }
