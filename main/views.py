@@ -812,7 +812,8 @@ def margin_view(request):
         'margin.html',
     )
 
-
+@require_POST
+@login_required_cust
 def get_margin_data(request):
     now_msk = datetime.now() + timedelta(hours=3)
     first_day = now_msk.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
