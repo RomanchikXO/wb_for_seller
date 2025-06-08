@@ -3,6 +3,8 @@
 {% block title %}Маржинальность{% endblock %}
 
 {% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <meta name="csrf-token" content="{{ csrf_token }}">
     <style>
         .collapse {
@@ -22,6 +24,14 @@
           background-color: #fff; /* или другой фон */
           z-index: 10;
         }
+        .draggable {
+            position: absolute;
+            cursor: move;
+            border: 1px solid #ccc;
+            background: white;
+            padding: 10px;
+            z-index: 999;
+          }
     </style>
 {% endblock %}
 
@@ -33,6 +43,13 @@
             Загрузить маржу
         </button>
     </div>
+    {# график #}
+    <div class="card">
+      <div class="card-body">
+        <canvas id="myChart" height="100"></canvas>
+      </div>
+    </div>
+    {##}
     <div class="table-responsive table-dragscroll" style="height: 100vh; overflow: auto; cursor: grab;">
         <table class="table table-bordered md-0">
             <thead>
@@ -91,6 +108,29 @@
 
 
 {% block extra_js %}
+    <script>
+      const ctx = document.getElementById('myChart');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'],
+          datasets: [
+              {
+                label: 'Выручка',
+                data: [12, 19, 3, 5, 2],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.3
+              },
+              {
+                label: 'План',
+                data: [10, 15, 5, 7, 3],
+                borderColor: 'rgba(255, 99, 132, 1)',
+                tension: 0.3
+              }
+          ]
+        }
+      });
+    </script>
     <script>
         function addDates(dates, location=null) {
             dates.forEach(date => {
