@@ -4,6 +4,8 @@
 
 {% block extra_head %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+
 
     <meta name="csrf-token" content="{{ csrf_token }}">
     <style>
@@ -25,13 +27,18 @@
           z-index: 10;
         }
         .draggable {
-            position: absolute;
+            position: fixed; {#заменить на absolute если надо будет график зафиксировать на месте#}
             cursor: move;
             border: 1px solid #ccc;
             background: white;
             padding: 10px;
             z-index: 999;
-          }
+        }
+        #chart-container canvas {
+          display: block;
+          width: 100%;
+          height: 100%;
+        }
     </style>
 {% endblock %}
 
@@ -44,11 +51,12 @@
         </button>
     </div>
     {# график #}
-    <div class="card">
-      <div class="card-body">
-        <canvas id="myChart" height="100"></canvas>
-      </div>
+    <div style="height: 300px;">
+        <div id="chart-container" class="draggable" style="width: 50%; height: 300px;">
+          <canvas id="myChart"></canvas>
+        </div>
     </div>
+
     {##}
     <div class="table-responsive table-dragscroll" style="height: 100vh; overflow: auto; cursor: grab;">
         <table class="table table-bordered md-0">
@@ -109,27 +117,84 @@
 
 {% block extra_js %}
     <script>
-      const ctx = document.getElementById('myChart');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'],
-          datasets: [
-              {
-                label: 'Выручка',
-                data: [12, 19, 3, 5, 2],
-                borderColor: 'rgba(75, 192, 192, 1)',
-                tension: 0.3
-              },
-              {
-                label: 'План',
-                data: [10, 15, 5, 7, 3],
-                borderColor: 'rgba(255, 99, 132, 1)',
-                tension: 0.3
-              }
-          ]
-        }
-      });
+        const ctx = document.getElementById('myChart');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт'],
+              datasets: [
+                  {
+                    label: 'Выручка',
+                    data: [12, 19, 3, 5, 2],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    tension: 0.3
+                  },
+                  {
+                    label: 'План',
+                    data: [10, 15, 5, 7, 3],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    tension: 0.3
+                  }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false
+            }
+        });
+
+        let isResizing = false;
+        const dragElement = (el) => {
+          let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+          el.onmousedown = dragMouseDown;
+
+          function dragMouseDown(e) {
+            if (isResizing) return;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+          }
+
+          function elementDrag(e) {
+            if (isResizing) return;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            el.style.top = (el.offsetTop - pos2) + "px";
+            el.style.left = (el.offsetLeft - pos1) + "px";
+          }
+
+          function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+          }
+        };
+
+        dragElement(document.getElementById("chart-container"));
+
+        interact('#chart-container').resizable({
+          edges: { left: true, right: true, bottom: true, top: true },
+          listeners: {
+            start (event) {
+              isResizing = true;  // ресайз начался
+            },
+            move(event) {
+              const target = event.target;
+              let { width, height } = event.rect;
+              target.style.width = width + 'px';
+              target.style.height = height + 'px';
+
+              myChart.resize();
+            },
+            end (event) {
+              isResizing = false; // ресайз закончен
+            }
+          }
+        });
     </script>
     <script>
         function addDates(dates, location=null) {
