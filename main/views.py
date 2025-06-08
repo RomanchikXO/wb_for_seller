@@ -324,8 +324,8 @@ def repricer_view(request):
     })
 
 
-@login_required_cust
 @require_POST
+@login_required_cust
 def repricer_save(request):
     payload = json.loads(request.body)
     items = payload.get('items', [])
@@ -646,8 +646,8 @@ def podsort_view(request):
     )
 
 
-@login_required_cust
 @require_POST
+@login_required_cust
 def export_excel(request):
     current_headers = {
         "nmid": "Артикул",
@@ -690,8 +690,8 @@ def export_excel(request):
         return response
 
 
-@login_required_cust
 @require_POST
+@login_required_cust
 def upload_excel(request):
     file = request.FILES.get('file')
     if not file:
@@ -718,8 +718,8 @@ def upload_excel(request):
     return JsonResponse({'status': 'ok'})
 
 
-@login_required_cust
 @require_POST
+@login_required_cust
 def export_excel_podsort(request):
     # Создаём книгу и активный лист
     wb = Workbook()
