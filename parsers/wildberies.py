@@ -961,7 +961,11 @@ async def get_stat_products():
                     f"Ошибка формирования отчета. Период {period_get}. Кабинет: {cab['name']}. Ответ: {response}")
                 raise
 
-            while True:
+            for attempt in range(4):
+                if attempt == 3:
+                    logger.error(
+                        f"‼️Ошибка получения данных в get_stat_products. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                    raise
                 await asyncio.sleep(10)
                 param = {
                     "type": "seller_analytics_report",
@@ -976,11 +980,14 @@ async def get_stat_products():
                     try:
                         text = response.decode('utf-8')
                         if "check correctness of download id or supplier id" in text:
-                            logger.error("Ошибка!!!: check correctness of download id or supplier id")
-                            raise
+                            await asyncio.sleep(55)
+                            logger.info(
+                                f"ВНИМАНИЕ!!!: check correctness of download id or supplier id. ПОПЫТКА: {attempt + 1}. Кабинет {cab['name']}. ID: {id_report}. Period: {period_get}")
+                            continue
                         text = json.loads(text)
                         if text.get("title"):
                             await asyncio.sleep(55)
+                            continue
                     except Exception as e:
                         break
             with zipfile.ZipFile(io.BytesIO(response)) as zip_file:
