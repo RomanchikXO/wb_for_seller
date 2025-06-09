@@ -384,7 +384,7 @@ def podsort_view(request):
 
     turnover_change = int(request.GET.get('turnover_change', 40))
 
-    warehouses = ["Казань", "Подольск", "Коледино", "Электросталь", "Екатеринбург - Испытателей 14г", "Тула",
+    warehouses = ["Казань", "Подольск", "Коледино", "Тула", "Екатеринбург - Испытателей 14г", "Электросталь",
                   "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
     # Создаём отображение для быстрого доступа к индексу
     warehouse_priority = {name: index for index, name in enumerate(warehouses)}
