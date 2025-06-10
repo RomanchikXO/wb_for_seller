@@ -595,7 +595,7 @@ def podsort_view(request):
 
                 for index, i in enumerate(items[key]["subitems"]):
                     items[key]["subitems"][index]["rec_delivery"] = int(
-                        (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * 25 - items[key]["subitems"][index]["stock"]
+                        (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * turnover_change - items[key]["subitems"][index]["stock"]
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
                     if items[key]["subitems"][index]["rec_delivery"] <= -100 or items[key]["subitems"][index]["rec_delivery"] >= 100:
