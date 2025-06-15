@@ -710,18 +710,21 @@ async def get_prices_from_lk(lk: dict):
         'sortOrder': 0,
     }
     url = "https://discounts-prices.wildberries.ru/ns/dp-api/discounts-prices/suppliers/api/v1/list/goods/filter"
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, cookies=cookies, json=json_data, timeout=60, proxy=f"http://{proxy}",
-                            ssl=False) as response:
-            response_text = await response.text()
-            try:
-                response.raise_for_status()
-                return json.loads(response_text)
-            except Exception as e:
-                logger.error(
-                    f"Ошибка в get_prices_from_lk: {e}.  Ответ: {response_text}"
-                )
-                return None
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, cookies=cookies, json=json_data, timeout=60, #proxy=f"http://{proxy}",
+                                ssl=False) as response:
+                response_text = await response.text()
+                try:
+                    response.raise_for_status()
+                    return json.loads(response_text)
+                except Exception as e:
+                    logger.error(
+                        f"Ошибка в get_prices_from_lk: {e}.  Ответ: {response_text}"
+                    )
+                    return None
+    except Exception as e:
+        raise Exception(e)
 
 
 async def get_qustions():
