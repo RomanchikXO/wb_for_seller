@@ -174,6 +174,7 @@ async def get_black_price_spp():
         ]
     except Exception as e:
         logger.error(f"Ошибка получения данных из myapp_wblk в get_black_price_spp. Запрос {request}. Error: {e}")
+        raise
     finally:
         await conn.close()
 
