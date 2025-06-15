@@ -177,8 +177,13 @@ async def get_black_price_spp():
     finally:
         await conn.close()
 
-    data = (get_prices_from_lk(lk) for lk in lks)
-    response = await asyncio.gather(*data)
+    data = None
+    try:
+        data = (get_prices_from_lk(lk) for lk in lks)
+        response = await asyncio.gather(*data)
+    except Exception as e:
+        logger.error(f"Ошибка получения данных из ЛК в get_black_price_spp. Ошибка {e}")
+        raise
 
     conn = await async_connect_to_database()
     if not conn:
@@ -212,7 +217,11 @@ async def get_black_price_spp():
         logger.error(f"Ошибка: {e}. Response: {response}")
         return
 
-    values = [(nmid, data["blackprice"], data["spp"], data["redprice"]) for nmid, data in updates.items()]
+    try:
+        values = [(nmid, data["blackprice"], data["spp"], data["redprice"]) for nmid, data in updates.items()]
+    except Exception as e:
+        logger.error(f"Ошибка преобразования данных для записи в БД в get_black_price_spp. Ошибка {e}")
+        raise
 
     conn = await async_connect_to_database()
     if not conn:
