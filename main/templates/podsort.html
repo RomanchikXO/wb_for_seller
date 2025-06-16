@@ -111,7 +111,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="me-2 w-60">
+                <div class="me-2 w-20">
                     <label for="warehouse-select" class="form-label">Фильтр по складу:</label>
                     <select id="warehouse-select" name="warehouse" class="form-select" multiple>
                         {% for warehouse in warehouses %}
@@ -236,25 +236,15 @@
             <nav>
                 <ul class="pagination mb-0">
                     {% with base_params="&per_page="|add:per_page|add:"&order="|add:order|add:"&sort_by="|add:sort_by %}
-                        {% for nmid in nmid_filter %}
-                            {% with base_params=base_params|add:"&nmid="|add:nmid|stringformat:"s" %}
-                            {% endwith %}
-                        {% endfor %}
-
-                        {% for wh in warehouse_filter %}
-                            {% with base_params=base_params|add:"&warehouse="|add:wh|stringformat:"s" %}
-                            {% endwith %}
-                        {% endfor %}
-
                         {% if items.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
                             </li>
                         {% endif %}
 
                         {% if items.number > 3 %}
                             <li class="page-item">
-                                <a class="page-link" href="?page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
                             </li>
                             {% if items.number > 4 %}
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -264,7 +254,7 @@
                         {% for num in paginator.page_range %}
                             {% if num >= items.number|add:"-2" and num <= items.number|add:"2" %}
                                 <li class="page-item {% if items.number == num %}active{% endif %}">
-                                    <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
+                                    <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -274,13 +264,13 @@
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
                             </li>
                         {% endif %}
 
                         {% if items.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
                             </li>
                         {% endif %}
                     {% endwith %}
