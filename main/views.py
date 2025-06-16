@@ -169,17 +169,16 @@ def abc_classification(data: dict):
     # Шаг 1: Сортируем по количеству заказов (убывание)
     sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
 
-    total_count = len(sorted_items)
-    a_cutoff = int(total_count * 0.2)
-    b_cutoff = int(total_count * 0.5)  # 20% + 30%
-
     # Шаг 2: Присваиваем категорию
     for i, (art, info) in enumerate(sorted_items):
-        if i < a_cutoff:
+        vendorcode = info["vendorcode"].lower()
+        if ("3240" in vendorcode or "3250" in vendorcode or "4240" in vendorcode or "4250" in vendorcode
+                or "11ww" in vendorcode or "33ww" in vendorcode or "55ww" in vendorcode or "66ww" in vendorcode):
             info["ABC"] = "A"
-        elif i < b_cutoff:
+        elif ("3260" in vendorcode or "4260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode
+              or "77ww" in vendorcode or "88ww" in vendorcode):
             info["ABC"] = "B"
-        else:
+        elif "3270" in vendorcode or "22ww" in vendorcode:
             info["ABC"] = "C"
 
     return dict(sorted_items)
