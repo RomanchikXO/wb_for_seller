@@ -399,9 +399,11 @@ def podsort_view(request):
     if warehouse_filter:
         warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
         warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
+        warehouse_su = " OR ".join(f"""su."warehouseName" LIKE '{wh.split()[0]}%%'""" for wh in warehouse_filter)
     else:
         warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
         warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
+        warehouse_su = " OR ".join(f"""su."warehouseName" LIKE '{wh.split()[0]}%%'""" for wh in warehouses)
 
     try:
         sql_query = f"""
@@ -446,15 +448,7 @@ def podsort_view(request):
                     WHERE
                         su."lastChangeDate" >= '{seven_days_ago}'
                         AND (
-                            su."warehouseName" LIKE 'Казань%%'   OR
-                            su."warehouseName" LIKE 'Подольск%%' OR
-                            su."warehouseName" LIKE 'Екатеринбург%%' OR
-                            su."warehouseName" LIKE 'Новосибирск%%' OR
-                            su."warehouseName" LIKE 'Краснодар%%' OR
-                            su."warehouseName" LIKE 'Коледино%%' OR
-                            su."warehouseName" LIKE 'Тула%%' OR
-                            su."warehouseName" LIKE 'Электросталь%%' OR
-                            su."warehouseName" LIKE 'Санкт-Петербург%%'
+                            {warehouse_su}
                         )
                     GROUP BY
                         su.nmid, su."warehouseName"
