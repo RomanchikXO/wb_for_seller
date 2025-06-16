@@ -360,6 +360,7 @@ def podsort_view(request):
 
     page_sizes = [5, 10, 20, 50, 100]
     nmid_filter = request.GET.getlist('nmid', "")
+    warehouse_filter = request.GET.getlist('warehouse', "")
     per_page = int(request.GET.get('per_page', 10))
     page_number = int(request.GET.get('page', 1))
 
@@ -395,6 +396,13 @@ def podsort_view(request):
     else:
         nmid_query = ""
 
+    if warehouse_filter:
+        warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
+        warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
+    else:
+        warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
+        warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
+
     try:
         sql_query = f"""
             WITH
@@ -407,15 +415,7 @@ def podsort_view(request):
                         SUM(s.quantity) AS total_quantity
                     FROM myapp_stocks s
                     WHERE
-                        s.warehousename LIKE 'Казань%%'   OR
-                        s.warehousename LIKE 'Подольск%%' OR
-                        s.warehousename LIKE 'Екатеринбург%%' OR
-                        s.warehousename LIKE 'Новосибирск%%' OR
-                        s.warehousename LIKE 'Краснодар%%' OR
-                        s.warehousename LIKE 'Коледино%%' OR
-                        s.warehousename LIKE 'Тула%%' OR
-                        s.warehousename LIKE 'Электросталь%%' OR
-                        s.warehousename LIKE 'Санкт-Петербург%%'
+                        {warehouse_s}
                     GROUP BY
                         s.nmid, s.warehousename, {name_column_available}
                 ),
@@ -430,15 +430,7 @@ def podsort_view(request):
                     WHERE
                         o.date >= %s
                         AND (
-                            o.warehousename LIKE 'Казань%%'   OR
-                            o.warehousename LIKE 'Подольск%%' OR
-                            o.warehousename LIKE 'Екатеринбург%%' OR
-                            o.warehousename LIKE 'Новосибирск%%' OR
-                            o.warehousename LIKE 'Краснодар%%' OR
-                            o.warehousename LIKE 'Коледино%%' OR
-                            o.warehousename LIKE 'Тула%%' OR
-                            o.warehousename LIKE 'Электросталь%%' OR
-                            o.warehousename LIKE 'Санкт-Петербург%%'
+                            {warehouse_o}
                         )
                     GROUP BY
                         o.nmid, o.warehousename
@@ -614,8 +606,10 @@ def podsort_view(request):
         else:
             items = sorted_by_current_nmids(items)
 
-
         items = list(items.values())
+
+        # чистим массив у которого пустые вложения по складам
+        items = [item for item in items if item["subitems"]]
 
         paginator = Paginator(items, per_page)
         page_obj = paginator.get_page(page_number)
@@ -628,6 +622,8 @@ def podsort_view(request):
         request,
         "podsort.html",
         {
+            "warehouses": warehouses,
+            "warehouse_filter": warehouse_filter,
             "nmids": combined_list,
             "nmid_filter": nmid_filter,
             "items": page_obj,
