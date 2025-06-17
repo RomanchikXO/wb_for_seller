@@ -919,3 +919,11 @@ def get_margin_data(request):
         'items': items,
         'dates': dates,
     })
+
+
+@login_required_cust
+def shipment_view(request):
+    return render(
+        request,
+        'shipment.html',
+    )
