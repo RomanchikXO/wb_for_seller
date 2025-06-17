@@ -1,5 +1,16 @@
 from django.contrib import admin
-from .models import WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions, ProductsStat, Supplies
+from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
+                     ProductsStat, Supplies, Shipments)
+
+
+class ShipmentsAdmin(admin.ModelAdmin):
+    list_display = ('get_lk_name', 'shipnum', 'status')
+    search_fields = ('shipnum',)
+    ordering = ('id',)
+    list_filter = ('lk', 'status')
+
+    def get_lk_name(self, obj):
+        return obj.lk.name
 
 
 class SuppliesAdmin(admin.ModelAdmin):
@@ -91,3 +102,4 @@ admin.site.register(Price, PriceAdmin)
 admin.site.register(Questions, QuestionsAdmin)
 admin.site.register(ProductsStat, ProductsStatAdmin)
 admin.site.register(Supplies, SuppliesAdmin)
+admin.site.register(Shipments, ShipmentsAdmin)

@@ -171,6 +171,15 @@ class Supplies(models.Model):
         unique_together = ['incomeId', 'nmid']
         verbose_name_plural = "Поставки WB"
 
+# для бронирования поставок
+class Shipments(models.Model):
+    shipnum = models.IntegerField() # номер поставки
+    status = models.BooleanField() # статус поисковика поставок
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
+
+    class Meta:
+        unique_together = ['shipnum', 'lk']
+        verbose_name_plural = "Бронирование поставок"
 
 class Stocks(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
