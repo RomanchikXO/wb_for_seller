@@ -152,38 +152,38 @@ async def set_prices_on_google():
         logger.error(f"Ошибка обновления листа 'Остатки': {e}")
         raise
 
-        # КлиентWB
-        conn = await async_connect_to_database()
-        if not conn:
-            logger.warning(f"Ошибка подключения к БД в set_prices_on_google")
-            return
+    # КлиентWB
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.warning(f"Ошибка подключения к БД в set_prices_on_google")
+        return
 
-        request = ("SELECT supplierarticle, SUM(inwaytoclient) AS total_inwaytoclient, SUM(inwayfromclient) AS total_inwayfromclient "
-                   "FROM myapp_stocks "
-                   "GROUP BY supplierarticle")
-        try:
-            all_fields = await conn.fetch(request)
-            result_dict = [
-                [row["supplierarticle"], int(row["total_inwaytoclient"]), int(row["total_inwayfromclient"])]
-                for row in all_fields
-            ]
-            for _ in range(50):
-                result_dict.append(["", ""])
-        except Exception as e:
-            logger.error(
-                f"Ошибка получения данных из myapp_stocks в set_prices_on_google. Запрос {request}. Error: {e}")
-            raise
-        finally:
-            await conn.close()
+    request = ("SELECT supplierarticle, SUM(inwaytoclient) AS total_inwaytoclient, SUM(inwayfromclient) AS total_inwayfromclient "
+               "FROM myapp_stocks "
+               "GROUP BY supplierarticle")
+    try:
+        all_fields = await conn.fetch(request)
+        result_dict = [
+            [row["supplierarticle"], int(row["total_inwaytoclient"]), int(row["total_inwayfromclient"])]
+            for row in all_fields
+        ]
+        for _ in range(50):
+            result_dict.append(["", ""])
+    except Exception as e:
+        logger.error(
+            f"Ошибка получения данных из myapp_stocks в set_prices_on_google. Запрос {request}. Error: {e}")
+        raise
+    finally:
+        await conn.close()
 
-        url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=742171447#gid=742171447"
-        try:
-            update_google_sheet_data(
-                url, "КлиентWB", f"A2:C{len(result_dict) + 1}", result_dict
-            )
-        except Exception as e:
-            logger.error(f"Ошибка обновления листа 'КлиентWB': {e}")
-            raise
+    url = "https://docs.google.com/spreadsheets/d/19hbmos6dX5WGa7ftRagZtbCVaY-bypjGNE2u0d9iltk/edit?gid=742171447#gid=742171447"
+    try:
+        update_google_sheet_data(
+            url, "КлиентWB", f"A2:C{len(result_dict) + 1}", result_dict
+        )
+    except Exception as e:
+        logger.error(f"Ошибка обновления листа 'КлиентWB': {e}")
+        raise
 
 
 async def get_black_price_spp():
