@@ -11,4 +11,5 @@ urlpatterns = [
     path('podsort/export_excel_podsort/', views.export_excel_podsort, name='export_excel_podsort'),
     path('margin/', views.margin_view, name='margin'),
     path('margin/api/margin-data/', views.get_margin_data, name='margin-data'),
+    path('shipments/', views.shipment_view, name='shipments'),
 ]
