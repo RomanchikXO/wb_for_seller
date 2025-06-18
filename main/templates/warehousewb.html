@@ -73,7 +73,12 @@
 
         function populateFormSelectors() {
             const ipSelect = document.getElementById("lk-select");
-            const warehouseSelect = document.getElementById("warehouse-select");
+            const warehouseOptions = document.getElementById("warehouse-options")
+
+            if (!ipSelect || !warehouseOptions) {
+                console.error("Form elements not found in DOM");
+                return;
+            }
 
             // Populate IPs
             lksNames.forEach(name => {
@@ -83,12 +88,11 @@
                 ipSelect.appendChild(option);
             });
 
-            // Populate Warehouses
             warehouses.forEach(name => {
                 const option = document.createElement("option");
                 option.value = name;
                 option.textContent = name;
-                warehouseSelect.appendChild(option);
+                warehouseOptions.appendChild(option);
             });
         }
 
@@ -148,22 +152,5 @@
                     addData(data.page_obj);
                 });
         });
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('api/add-data/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken,
-                },
-                body: JSON.stringify({})
-            })
-                .then(res => res.json())
-                .then(data => {
-                    addData(data.page_obj);
-                });
-        });
     </script>
-
 {% endblock %}
