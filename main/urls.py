@@ -12,4 +12,5 @@ urlpatterns = [
     path('margin/', views.margin_view, name='margin'),
     path('margin/api/margin-data/', views.get_margin_data, name='margin-data'),
     path('shipments/', views.shipment_view, name='shipments'),
+    path('warehousewb/', views.warehousewb_view, name='warehousewb'),
 ]
