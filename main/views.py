@@ -585,6 +585,9 @@ def podsort_view(request):
                         (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * turnover_change - items[key]["subitems"][index]["stock"]
                     ) if items[key]["subitems"][index]["time_available"] else 0
 
+                    if items[key]["subitems"][index]["time_available"] < 5:
+                        items[key]["subitems"][index]["rec_delivery"] = int(items[key]["subitems"][index]["rec_delivery"] / 2)
+
                     if items[key]["subitems"][index]["rec_delivery"] <= -100 or items[key]["subitems"][index]["rec_delivery"] >= 100:
                         items[key]["subitems"][index]["color"] = "red"
                         items[key]["color"] = "red"
