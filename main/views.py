@@ -7,6 +7,7 @@ import json
 from io import BytesIO
 from parsers.wildberies import get_uuid
 
+import csv
 from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
@@ -1042,3 +1043,28 @@ def get_warehousewb_add_data(request):
         'lks_names': lks_names,
         'warehouses': warehouses
     })
+
+@require_POST
+@login_required_cust
+def warehousewb_submit_supply(request):
+    incomeid = request.POST.get('incomeid')
+    warehousename = request.POST.get('warehousename')
+    lk_name = request.POST.get('lk_name')
+
+    logger.info(f"Получены данные поставки: incomeid={incomeid}, warehousename={warehousename}, lk_name={lk_name}")
+
+    csv_file = request.FILES.get('csv_file')
+    try:
+        # Читаем CSV как текст (предполагаем UTF-8, можно добавить обработку кодировок)
+        decoded_file = csv_file.read().decode('utf-8').splitlines()
+        reader = csv.reader(decoded_file)
+        rows = list(reader)
+
+        for i, row in enumerate(rows[:10]):  # Логируем первые 10 строк, чтобы не перегружать логи
+            logger.info(f"CSV строка {i + 1}: {row}")
+
+    except Exception as e:
+        logger.error(f"Ошибка чтения CSV файла: {e}")
+        return JsonResponse({'error': 'Ошибка при обработке CSV файла'}, status=400)
+
+    return JsonResponse({'status': 200,})

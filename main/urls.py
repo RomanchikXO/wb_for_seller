@@ -15,4 +15,5 @@ urlpatterns = [
     path('warehousewb/', views.warehousewb_view, name='warehousewb'),
     path('warehousewb/api/warehousewb-data/', views.get_warehousewb_data, name='warehousewb-data'),
     path('warehousewb/api/add-data/', views.get_warehousewb_add_data, name='warehousewb-add-data'),
+    path('warehousewb/api/submit-supply/', views.warehousewb_submit_supply, name='warehousewb-submit-supply'),
 ]

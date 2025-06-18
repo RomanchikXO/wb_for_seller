@@ -68,6 +68,84 @@
 
 {% block extra_js %}
     <script>
+        document.getElementById('supply-form').addEventListener('submit', async function(event) {
+            event.preventDefault(); // отключаем дефолтный submit
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            // Сбор данных из формы
+            const incomeId = document.getElementById('incomeid').value.trim();
+            const warehouse = document.getElementById('warehouse-input').value.trim();
+            const lkName = document.getElementById('lk-select').value.trim();
+            const csvFile = document.getElementById('csv-file').files[0];
+
+            if (!incomeId) {
+                alert('Введите номер поставки');
+                return;
+            }
+
+            if (!warehouse) {
+                alert('Введите или выберите склад');
+                return;
+            }
+
+            if (!lkName) {
+                alert('Выберите ИП');
+                return;
+            }
+
+            if (!csvFile) {
+                alert('Файл не загружен');
+                return;
+            }
+
+            // Создаём FormData, чтобы передать и файл, и остальные данные
+            const formData = new FormData();
+            formData.append('incomeid', incomeId);
+            formData.append('warehousename', warehouse);
+            formData.append('lk_name', lkName);
+            formData.append('csv_file', csvFile);
+
+            try {
+                const response = await fetch('api/submit-supply/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                        // НЕ ставим 'Content-Type': 'multipart/form-data', fetch сам выставит нужный boundary
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error('Ошибка сервера: ' + errorText);
+                }
+
+                const data = await response.json();
+                alert('Данные успешно отправлены');
+
+                this.reset();
+                fetch('api/warehousewb-data/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    addData(data.page_obj);  // Функция, которая рендерит таблицу
+                });
+
+            } catch (error) {
+                alert('Ошибка при отправке: ' + error.message);
+                console.error(error);
+            }
+        });
+    </script>
+
+    <script>
         let lksNames = [];
         let warehouses = [];
 
