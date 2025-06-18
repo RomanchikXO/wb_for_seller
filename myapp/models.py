@@ -179,6 +179,7 @@ class Betweenwarhouses(models.Model):
     incomeid = models.IntegerField() # номер поставки
     warehousename = models.CharField(max_length=255, null=True)  # Название склада
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+    quantity = models.IntegerField(null=True)
 
     class Meta:
         verbose_name_plural = "Склад -> WB"
