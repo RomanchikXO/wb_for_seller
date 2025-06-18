@@ -450,6 +450,7 @@ def podsort_view(request):
                         AND (
                             {warehouse_su}
                         )
+                        AND su.status = 'Принято'
                     GROUP BY
                         su.nmid, su."warehouseName"
                 ),
@@ -923,7 +924,30 @@ def get_margin_data(request):
 
 @login_required_cust
 def shipment_view(request):
+    page_sizes = [5, 10, 20, 50, 100]
+
+    try:
+        sql_query = """
+            SELECT * 
+            FROM myapp_shipments AS sh
+            JOIN myapp_wblk AS wblk
+            ON sh.lk_id = wblk.id
+        """
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, )
+            res_nmids = cursor.fetchall()
+
+        columns_nmids = [desc[0] for desc in cursor.description]
+        shipments = [dict(zip(columns_nmids, row)) for row in res_nmids]
+        logger.info(shipments)
+    except Exception as e:
+        logger.error(f"Ошибка получения поставок из БД в shipment_view. Ошибка: {e}")
+
     return render(
         request,
         'shipment.html',
+        {
+            "page_sizes": page_sizes,
+        }
     )
