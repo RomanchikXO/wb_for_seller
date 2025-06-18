@@ -3,11 +3,167 @@
 {% block title %}Склад -> WB{% endblock %}
 
 {% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
 {% endblock %}
 
 {% block main_content %}
+    <div class="container mt-4 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Добавить новую поставку</h5>
+            </div>
+            <div class="card-body">
+                <form id="supply-form">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="incomeid" class="form-label">Номер поставки</label>
+                            <input type="number" class="form-control" id="incomeid" name="incomeid" placeholder="Введите номер" required>
+                        </div>
 
+                        <div class="col-md-6">
+                            <label for="warehouse-input" class="form-label">Склад</label>
+                            <input class="form-control" list="warehouse-options" id="warehouse-input" name="warehousename" placeholder="Введите или выберите склад">
+                            <datalist id="warehouse-options">
+                                <!-- JS добавит сюда <option> по warehouses -->
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="lk-select" class="form-label">ИП</label>
+                            <select class="form-select" id="lk-select" name="lk_name">
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="csv-file" class="form-label">Загрузить CSV</label>
+                            <input type="file" class="form-control" id="csv-file" accept=".csv">
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">Отправить данные</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Номер поставки</th>
+                <th>Склад</th>
+                <th>ИП</th>
+                <th>В пути</th>
+                <th>Принято</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- JS вставит данные -->
+        </tbody>
+    </table>
 {% endblock %}
 
 {% block extra_js %}
+    <script>
+        let lksNames = [];
+        let warehouses = [];
+
+        function populateFormSelectors() {
+            const ipSelect = document.getElementById("lk-select");
+            const warehouseSelect = document.getElementById("warehouse-select");
+
+            // Populate IPs
+            lksNames.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                ipSelect.appendChild(option);
+            });
+
+            // Populate Warehouses
+            warehouses.forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                warehouseSelect.appendChild(option);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            fetch('api/add-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                lksNames = data.lks_names || [];
+                warehouses = data.warehouses || [];
+
+                populateFormSelectors();
+            });
+        });
+    </script>
+
+    <script>
+        function addData(dates) {
+            const tbody = document.querySelector("table.table-bordered tbody");
+            tbody.innerHTML = ""; // Очистить старые данные
+
+            dates.forEach(item => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${item.incomeid}</td>
+                    <td>${item.warehousename}</td>
+                    <td>${item.lk_name}</td>
+                    <td>${item.on_the_way}</td>
+                    <td>${item.accepted}</td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('api/warehousewb-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    addData(data.page_obj);
+                });
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('api/add-data/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    addData(data.page_obj);
+                });
+        });
+    </script>
+
 {% endblock %}

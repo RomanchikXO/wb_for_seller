@@ -13,4 +13,6 @@ urlpatterns = [
     path('margin/api/margin-data/', views.get_margin_data, name='margin-data'),
     path('shipments/', views.shipment_view, name='shipments'),
     path('warehousewb/', views.warehousewb_view, name='warehousewb'),
+    path('warehousewb/api/warehousewb-data/', views.get_warehousewb_data, name='warehousewb-data'),
+    path('warehousewb/api/add-data/', views.get_warehousewb_add_data, name='warehousewb-add-data'),
 ]

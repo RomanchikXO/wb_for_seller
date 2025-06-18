@@ -954,15 +954,44 @@ def shipment_view(request):
 
 @login_required_cust
 def warehousewb_view(request):
-    page_sizes = [5, 10, 20, 50, 100]
+    return render(
+        request,
+        'warehousewb.html',
+    )
 
+
+@require_POST
+@login_required_cust
+def get_warehousewb_data(request):
     try:
         sql_query = """
-                SELECT * 
-                FROM myapp_shipments AS sh
-                JOIN myapp_wblk AS wblk
-                ON sh.lk_id = wblk.id
-            """
+            SELECT 
+                bw_agg.incomeid,
+                bw_agg.warehousename,
+                bw_agg.on_the_way,
+                sp_agg.accepted,
+                bw_agg.lk_name
+            FROM (
+                SELECT 
+                    bw.incomeid,
+                    bw.warehousename,
+                    SUM(bw.quantity) AS on_the_way,
+                    lk.name AS lk_name
+                FROM myapp_betweenwarhouses AS bw
+                JOIN myapp_wblk AS lk
+                    ON bw.lk_id = lk.id
+                GROUP BY bw.incomeid, bw.warehousename, lk.name
+            ) AS bw_agg
+            LEFT JOIN (
+                SELECT 
+                    sp."incomeId" AS incomeid,
+                    SUM(sp.quantity) AS accepted
+                FROM myapp_supplies AS sp
+                GROUP BY sp."incomeId"
+            ) AS sp_agg
+            ON bw_agg.incomeid = sp_agg.incomeid
+        """
+
         conn = connect_to_database()
         with conn.cursor() as cursor:
             cursor.execute(sql_query, )
@@ -970,14 +999,46 @@ def warehousewb_view(request):
 
         columns_nmids = [desc[0] for desc in cursor.description]
         shipments = [dict(zip(columns_nmids, row)) for row in res_nmids]
-        logger.info(shipments)
+        # logger.info(shipments)
     except Exception as e:
-        logger.error(f"Ошибка получения поставок из БД в shipment_view. Ошибка: {e}")
+        logger.error(f"Ошибка получения поставок из БД в warehousewb_view. Ошибка: {e}")
 
-    return render(
-        request,
-        'warehousewb.html',
-        {
-            "page_sizes": page_sizes,
-        }
-    )
+    return JsonResponse({
+        'page_obj': shipments,
+    })
+
+
+@require_POST
+@login_required_cust
+def get_warehousewb_add_data(request):
+    try:
+        try:
+            sql_query = """
+                SELECT DISTINCT name FROM myapp_wblk
+            """
+            conn = connect_to_database()
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query, )
+                res_nmids = cursor.fetchall()
+            lks_names = [row[0] for row in res_nmids]
+        except Exception as e:
+            raise Exception(f"Ошибка получения ИП из БД в get_warehousewb_add_data: {e}")
+
+        try:
+            sql_query = """
+                SELECT DISTINCT "warehouseName" FROM myapp_supplies
+            """
+            conn = connect_to_database()
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query, )
+                warehouses_data = cursor.fetchall()
+            warehouses = [row[0] for row in warehouses_data]
+        except Exception as e:
+            raise Exception(f"Ошибка получения складов из БД в get_warehousewb_add_data: {e}")
+    except Exception as e:
+        logger.error(e)
+
+    return JsonResponse({
+        'lks_names': lks_names,
+        'warehouses': warehouses
+    })
