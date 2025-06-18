@@ -171,6 +171,19 @@ class Supplies(models.Model):
         unique_together = ['incomeId', 'nmid']
         verbose_name_plural = "Поставки WB"
 
+
+# для отправленных поставок на WB
+class Betweenwarhouses(models.Model):
+    nmid = models.IntegerField()
+    vendorcode = models.CharField(max_length=255)  # Артикул продавца
+    incomeid = models.IntegerField() # номер поставки
+    warehousename = models.CharField(max_length=255, null=True)  # Название склада
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+
+    class Meta:
+        verbose_name_plural = "Склад -> WB"
+
+
 # для бронирования поставок
 class Shipments(models.Model):
     shipnum = models.IntegerField() # номер поставки

@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
-                     ProductsStat, Supplies, Shipments)
+                     ProductsStat, Supplies, Shipments, Betweenwarhouses)
+
+
+class BetweenwarhousesAdmin(admin.ModelAdmin):
+    list_display = ('nmid', 'incomeid', 'warehousename')
 
 
 class ShipmentsAdmin(admin.ModelAdmin):
@@ -103,3 +107,4 @@ admin.site.register(Questions, QuestionsAdmin)
 admin.site.register(ProductsStat, ProductsStatAdmin)
 admin.site.register(Supplies, SuppliesAdmin)
 admin.site.register(Shipments, ShipmentsAdmin)
+admin.site.register(Betweenwarhouses, BetweenwarhousesAdmin)
