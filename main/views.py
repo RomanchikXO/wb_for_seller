@@ -454,8 +454,7 @@ def podsort_view(request):
                     w.warehousename,
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
                     COALESCE(sa.available, 0)      AS available, 
-                    COALESCE(oa.total_orders,   0) AS total_orders,
-                    pr.spp   AS spp
+                    COALESCE(oa.total_orders,   0) AS total_orders
                 FROM
                     myapp_nmids p
                 LEFT JOIN all_wh w
@@ -463,10 +462,6 @@ def podsort_view(request):
                 LEFT JOIN stocks_agg sa
                     ON p.nmid = sa.nmid
                    AND w.warehousename = sa.warehousename
-                LEFT JOIN myapp_price pr
-                    ON p.nmid = pr.nmid
-                LEFT JOIN myapp_repricer rp
-                    ON p.nmid = rp.nmid
                 LEFT JOIN orders_agg oa
                     ON p.nmid = oa.nmid
                    AND w.warehousename = oa.warehousename {nmid_query}
@@ -523,9 +518,6 @@ def podsort_view(request):
                     "stock": row["total_quantity"],
                     "ABC": "формула",
                     "turnover_total": 0,
-                    "spp": row["spp"],
-                    "stock_on_produce": 0,
-                    "move_to_rf": "пока пусто",
                     "subitems": []
                 }
             if row["warehousename"]:
@@ -692,7 +684,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая", "spp", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
+        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
@@ -718,9 +710,6 @@ def export_excel_podsort(request):
         ws.cell(row=row_num, column=4, value=item["stock"])
         ws.cell(row=row_num, column=5, value=item["ABC"])
         ws.cell(row=row_num, column=6, value=item["turnover_total"])
-        ws.cell(row=row_num, column=7, value=item["spp"])
-        ws.cell(row=row_num, column=8, value=item["stock_on_produce"])
-        ws.cell(row=row_num, column=9, value=item["move_to_rf"])
 
         # Вложенные subitems
         if item.get("subitems"):

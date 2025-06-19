@@ -153,9 +153,6 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th>SPP</th>
-                        <th>Остатки на производстве (метр)</th>
-                        <th>В дороге до РФ (дата)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -189,9 +186,6 @@
                             <td>{{ item.stock }}</td>
                             <td>{{ item.ABC }}</td>
                             <td>{{ item.turnover_total }}</td>
-                            <td>{{ item.spp|default:0 }}</td>
-                            <td>{{ item.stock_on_produce }}</td>
-                            <td>{{ item.move_to_rf }}</td>
                         </tr>
                         <tr class="collapse" id="subitems-{{ item.id }}">
                             <td colspan="8">
@@ -350,9 +344,6 @@
                 stock: parseInt(cells[3]?.textContent.trim()) || 0,
                 ABC: cells[4]?.textContent.trim() || '',
                 turnover_total: parseFloat(cells[5]?.textContent.trim()) || 0,
-                spp: parseInt(cells[6]?.textContent.trim()) || 0,
-                stock_on_produce: parseInt(cells[7]?.textContent.trim()) || 0,
-                move_to_rf: cells[8]?.textContent.trim() || '',
                 subitems: []
               };
 
