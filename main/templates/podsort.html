@@ -335,9 +335,6 @@
             if (!row.classList.contains('collapse')) {
               const cells = row.querySelectorAll('td');
 
-              {#2 строки снизу тк disabled#}
-              const chk = row.querySelector('input[type="checkbox"]');
-
               const item = {
                 article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
                 vendorcode: cells[1]?.textContent.trim() || '',
