@@ -208,7 +208,6 @@
                                             <th>Оборачиваемость</th>
                                             <th>Рек. поставка</th>
                                             <th>Дни в наличии</th>
-                                            <th>Принято на ВБ за 7 дней, шт</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -220,7 +219,6 @@
                                                 <td>{{ subitem.turnover }}</td>
                                                 <td>{{ subitem.rec_delivery }}</td>
                                                 <td>{{ subitem.time_available }}</td>
-                                                <td>{{ subitem.be_shipped }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -382,7 +380,6 @@
                     turnover: parseFloat(subCells[3]?.textContent.trim()) || 0,
                     rec_delivery: parseInt(subCells[4]?.textContent.trim()) || 0,
                     time_available: parseInt(subCells[5]?.textContent.trim()) || 0,
-                    be_shipped:  parseInt(subCells[6]?.textContent.trim()) || 0,
                   };
                   item.subitems.push(subitem);
                 });

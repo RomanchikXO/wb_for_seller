@@ -439,33 +439,14 @@ def podsort_view(request):
                         o.nmid, o.warehousename
                 ),
                 
-                -- 3) Унион всех складов, где есть поставки
-                supplies_agg AS (
-                    SELECT
-                        su.nmid,
-                        su."warehouseName",
-                        SUM(su.quantity) AS total_supplies
-                    FROM myapp_supplies su
-                    WHERE
-                        su."lastChangeDate" >= '{seven_days_ago}'
-                        AND (
-                            {warehouse_su}
-                        )
-                        AND su.status = 'Принято'
-                    GROUP BY
-                        su.nmid, su."warehouseName"
-                ),
-                
-                -- 4) Унион всех складов, где были либо остатки, либо заказы
+                -- 3) Унион всех складов, где были либо остатки, либо заказы
                 all_wh AS (
                     SELECT nmid, warehousename FROM stocks_agg
                     UNION
                     SELECT nmid, warehousename FROM orders_agg
-                    UNION
-                    SELECT nmid, "warehouseName" FROM supplies_agg
                 )
                 
-                -- 5) Основной запрос: все товары + все склады из uni­on-а + подтягиваем агрегаты
+                -- 4) Основной запрос: все товары + все склады из uni­on-а + подтягиваем агрегаты
                 SELECT
                     p.id          AS id,
                     p.nmid        AS nmid,
@@ -474,7 +455,6 @@ def podsort_view(request):
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
                     COALESCE(sa.available, 0)      AS available, 
                     COALESCE(oa.total_orders,   0) AS total_orders,
-                    COALESCE(su.total_supplies,   0) AS total_supplies,
                     pr.redprice   AS redprice,
                     pr.spp   AS spp,
                     rp.keep_price AS keep_price,
@@ -486,9 +466,6 @@ def podsort_view(request):
                 LEFT JOIN stocks_agg sa
                     ON p.nmid = sa.nmid
                    AND w.warehousename = sa.warehousename
-                LEFT JOIN supplies_agg su
-                    ON p.nmid = su.nmid
-                   AND w.warehousename = su."warehouseName"
                 LEFT JOIN myapp_price pr
                     ON p.nmid = pr.nmid
                 LEFT JOIN myapp_repricer rp
@@ -567,7 +544,6 @@ def podsort_view(request):
                             "total_orders"] else row["total_quantity"],
                         "rec_delivery": 0,
                         "time_available": row["available"],
-                        "be_shipped": row["total_supplies"]
                     }
                 )
 
@@ -724,7 +700,7 @@ def export_excel_podsort(request):
     headers = [
         "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
     ]
-    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии", "Принято на ВБ за 7 дней, шт"]
+    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -772,7 +748,6 @@ def export_excel_podsort(request):
                 ws.cell(row=row_num, column=5, value=subitem["turnover"])
                 ws.cell(row=row_num, column=6, value=subitem["rec_delivery"])
                 ws.cell(row=row_num, column=7, value=subitem["time_available"])
-                ws.cell(row=row_num, column=8, value=subitem["be_shipped"])
 
     # Автоширина колонок
     for col in ws.columns:
