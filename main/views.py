@@ -446,7 +446,7 @@ def podsort_view(request):
                     SELECT nmid, warehousename FROM orders_agg
                 )
                 
-                -- 4) Основной запрос: все товары + все склады из uni­on-а + подтягиваем агрегаты
+                -- 4) Основной запрос: все товары + все склады из union-а + подтягиваем агрегаты
                 SELECT
                     p.id          AS id,
                     p.nmid        AS nmid,
@@ -455,10 +455,7 @@ def podsort_view(request):
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
                     COALESCE(sa.available, 0)      AS available, 
                     COALESCE(oa.total_orders,   0) AS total_orders,
-                    pr.redprice   AS redprice,
-                    pr.spp   AS spp,
-                    rp.keep_price AS keep_price,
-                    rp.is_active AS is_active
+                    pr.spp   AS spp
                 FROM
                     myapp_nmids p
                 LEFT JOIN all_wh w
@@ -526,10 +523,7 @@ def podsort_view(request):
                     "stock": row["total_quantity"],
                     "ABC": "формула",
                     "turnover_total": 0,
-                    "redprice": row["redprice"],
                     "spp": row["spp"],
-                    "keep_price": row["keep_price"],
-                    "is_active": row["is_active"],
                     "stock_on_produce": 0,
                     "move_to_rf": "пока пусто",
                     "subitems": []
@@ -698,7 +692,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая", "Красная цена", "spp", "Маржа", "Статус", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
+        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая", "spp", "Остатки на производстве (метр)", "В дороге до РФ (дата)"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
@@ -724,12 +718,9 @@ def export_excel_podsort(request):
         ws.cell(row=row_num, column=4, value=item["stock"])
         ws.cell(row=row_num, column=5, value=item["ABC"])
         ws.cell(row=row_num, column=6, value=item["turnover_total"])
-        ws.cell(row=row_num, column=7, value=item["redprice"])
-        ws.cell(row=row_num, column=8, value=item["spp"])
-        ws.cell(row=row_num, column=9, value=item["keep_price"])
-        ws.cell(row=row_num, column=10, value="Да" if item["is_active"] else "Нет")
-        ws.cell(row=row_num, column=11, value=item["stock_on_produce"])
-        ws.cell(row=row_num, column=12, value=item["move_to_rf"])
+        ws.cell(row=row_num, column=7, value=item["spp"])
+        ws.cell(row=row_num, column=8, value=item["stock_on_produce"])
+        ws.cell(row=row_num, column=9, value=item["move_to_rf"])
 
         # Вложенные subitems
         if item.get("subitems"):
