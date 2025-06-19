@@ -574,7 +574,7 @@ def podsort_view(request):
         for key, value in items.items():
             items[key]["turnover_total"] = int(items[key]["stock"] / (items[key]["orders"] / period_ord)) \
                 if items[key]["orders"] else items[key]["stock"]
-            items[key]["color"] = "green"
+            items[key]["color"] = "green" if items[key]["turnover_total"] < 25 else "white"
             if items[key]["subitems"]:
                 items[key]["subitems"].sort(
                     key=lambda x: warehouse_priority.get(x["warehouse"], len(warehouse_priority))
