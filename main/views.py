@@ -590,7 +590,7 @@ def podsort_view(request):
 
                     if items[key]["subitems"][index]["rec_delivery"] <= -100 or items[key]["subitems"][index]["rec_delivery"] >= 100:
                         items[key]["subitems"][index]["color"] = "red"
-                        items[key]["color"] = "red"
+                        items[key]["color"] = "red" if items[key]["turnover_total"] < 25 else "white"
                     elif 40 <= items[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= items[key]["subitems"][index]["rec_delivery"] > -100:
                         items[key]["subitems"][index]["color"] = "yellow"
                     elif 0 < items[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= items[key]["subitems"][index]["rec_delivery"] > -40:
