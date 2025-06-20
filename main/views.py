@@ -173,13 +173,13 @@ def abc_classification(data: dict):
     # Шаг 2: Присваиваем категорию
     for i, (art, info) in enumerate(sorted_items):
         vendorcode = info["vendorcode"].lower()
-        if ("3240" in vendorcode or "3250" in vendorcode or "4240" in vendorcode or "4250" in vendorcode
-                or "11ww" in vendorcode or "33ww" in vendorcode or "55ww" in vendorcode or "66ww" in vendorcode):
+        if ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
+                or "55ww" in vendorcode or "66ww" in vendorcode):
             info["ABC"] = "A"
-        elif ("3260" in vendorcode or "4260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode
-              or "77ww" in vendorcode or "88ww" in vendorcode):
+        elif ("260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode or "77ww" in vendorcode
+              or "88ww" in vendorcode):
             info["ABC"] = "B"
-        elif "3270" in vendorcode or "22ww" in vendorcode:
+        elif "3270" in vendorcode or "2270" in vendorcode or "22ww" in vendorcode:
             info["ABC"] = "C"
 
     return dict(sorted_items)
