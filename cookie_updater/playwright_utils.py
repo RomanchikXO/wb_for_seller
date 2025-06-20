@@ -114,10 +114,7 @@ async def get_and_store_cookies(page):
     except Exception as e:
         logger.error(f"❌ Кнопка не нажалась: {e}")
 
-    try:
-        await page.hover("button:has-text('ИП Элларян А. А.')")
-    except Exception as e:
-        await page.hover("button:has-text('Pear Home')")
+    await page.hover("button:has-text('Pear Home')")
     await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
 
     cookies_need = [
