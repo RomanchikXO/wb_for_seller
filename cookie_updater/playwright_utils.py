@@ -140,6 +140,7 @@ async def get_and_store_cookies(page):
     for inn in inns: # тут inns это массив с инн с БД
         authorizev3 = None
         async def log_request(request):
+            nonlocal authorizev3
             if "/banner-homepage/suppliers-home-page/api/v2/banners" in request.url and "authorizev3" in request.headers:
                 authorizev3 = request.headers["authorizev3"]
 
