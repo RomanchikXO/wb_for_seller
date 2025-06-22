@@ -138,6 +138,12 @@ async def get_and_store_cookies(page):
     finally:
         await conn.close()
     for inn in inns: # тут inns это массив с инн с БД
+        authorizev3 = None
+        async def log_request(request):
+            if "/banner-homepage/suppliers-home-page/api/v2/banners" in request.url and "authorizev3" in request.headers:
+                authorizev3 = request.headers["authorizev3"]
+
+        page.on("request", log_request)
 
         target_text = f"ИНН {inn['inn']}"
         supplier_radio_label = page.locator(
@@ -154,9 +160,6 @@ async def get_and_store_cookies(page):
         time.sleep(5)
         cookies = await page.context.cookies()
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
-        authorizev3 = {cookie['name']:cookie['value'] for cookie in cookies if cookie.get("name", "") == "WBTokenV3"}
-        authorizev3 = authorizev3["WBTokenV3"]
-        logger.info(f"Получили новые кукки для {inn['id']}")
 
         conn = await async_connect_to_database()
         if not conn:
@@ -175,6 +178,8 @@ async def get_and_store_cookies(page):
             logger.error(f"Ошибка обновления кукков в лк. Error: {e}")
         finally:
             await conn.close()
+        await page.hover("button:has-text('Pear Home')")
+        await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
     await asyncio.sleep(300)
     await page.reload()
     await get_and_store_cookies(page)
