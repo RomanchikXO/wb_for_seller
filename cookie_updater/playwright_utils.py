@@ -115,7 +115,7 @@ async def get_and_store_cookies(page):
         logger.error(f"❌ Кнопка не нажалась: {e}")
 
     await page.hover("button:has-text('Pear Home')")
-    await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
+    await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU", timeout=10000)
 
     cookies_need = [
         "wbx-validation-key",
@@ -152,8 +152,9 @@ async def get_and_store_cookies(page):
                 f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
             )
         except:
+            await page.wait_for_selector("button:has-text('Pear Home')", timeout=10000)
             await page.hover("button:has-text('Pear Home')")
-            await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
+            await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU", timeout=10000)
             supplier_radio_label = page.locator(
                 f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
             )
@@ -161,12 +162,7 @@ async def get_and_store_cookies(page):
         await supplier_radio_label.wait_for(state="visible", timeout=5000)
         await supplier_radio_label.click()
 
-        # try:
-        #     async with page.expect_navigation(timeout=30000):
-        #         await supplier_radio_label.click() # Таймаут 30 секунд, можно увеличить, если нужно
-        # except Exception as e:
-        #     logger.error(f"Это логгер. Не дождлались определённого изменения на странице. {e}")
-        time.sleep(5)
+        await asyncio.sleep(5)
         cookies = await page.context.cookies()
         cookies_str = ";".join(f"{cookie['name']}={cookie['value']}" for cookie in cookies if cookie.get("name", "") in cookies_need)
 
