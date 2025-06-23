@@ -147,9 +147,17 @@ async def get_and_store_cookies(page):
         page.on("request", log_request)
 
         target_text = f"ИНН {inn['inn']}"
-        supplier_radio_label = page.locator(
-            f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
-        )
+        try:
+            supplier_radio_label = page.locator(
+                f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
+            )
+        except:
+            await page.hover("button:has-text('Pear Home')")
+            await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
+            supplier_radio_label = page.locator(
+                f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
+            )
+
         await supplier_radio_label.wait_for(state="visible", timeout=5000)
         await supplier_radio_label.click()
 
