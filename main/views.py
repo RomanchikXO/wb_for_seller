@@ -404,16 +404,22 @@ def podsort_view(request):
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
+    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order', 'page']
+    for key in session_keys:
+        value = request.GET.getlist(key) if key in ['nmid', 'warehouse'] else request.GET.get(key)
+        if value:
+            request.session[key] = value
+
     page_sizes = [5, 10, 20, 50, 100]
-    nmid_filter = request.GET.getlist('nmid', "")
-    warehouse_filter = request.GET.getlist('warehouse', "")
-    per_page = int(request.GET.get('per_page', 10))
-    page_number = int(request.GET.get('page', 1))
+    nmid_filter = request.session.get('nmid', request.GET.getlist('nmid', ""))
+    warehouse_filter = request.session.get('warehouse', request.GET.getlist('warehouse', ""))
+    per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
+    page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
 
-    sort_by = request.GET.get("sort_by", "")  # значение по умолчанию
-    order = request.GET.get("order", "")  # asc / desc
+    sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
+    order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
 
-    period_ord = int(request.GET.get('period_ord', 14))
+    period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
     if period_ord == 3:
         period = tree_days_ago
         name_column_available = "s.days_in_stock_last_3"
@@ -428,7 +434,7 @@ def podsort_view(request):
         name_column_available = "s.days_in_stock_last_30"
     params = [period]
 
-    turnover_change = int(request.GET.get('turnover_change', 40))
+    turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
     warehouses = ["Казань", "Подольск", "Коледино", "Тула", "Екатеринбург - Испытателей 14г", "Электросталь",
                   "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
