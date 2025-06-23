@@ -1,3 +1,60 @@
 {% extends "base_with_sidebar.html" %}
 
 {% block title %}Главная{% endblock %}
+
+{% block extra_head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
+{% block main_content %}
+    <div class="container mt-5">
+        <h3>Статус контейнеров</h3>
+        <table class="table table-bordered" id="containers-table">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>ID</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for datum in data %}
+                    <tr>
+                        <td>{{ datum.name }}</td>
+                        <td>{{ datum.id }}</td>
+                        <td>
+                            {% if datum.status == 'running' %}
+                                <span class="badge bg-success">Запущен</span>
+                            {% elif datum.status == 'exited' %}
+                                <span class="badge bg-danger">Остановлен</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ datum.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <form method="post" action="{% url 'restart-container' datum.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-primary btn-sm" data-container="{{ datum.id }}" title="Перезапустить">
+                                        <i class="bi bi-recycle"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'stop-container' datum.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-danger btn-sm" data-container="{{ datum.id }}" title="Остановить">
+                                        <i class="bi bi-stop-circle-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}

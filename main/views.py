@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
@@ -12,6 +12,7 @@ from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 from database.DataBase import connect_to_database
 from datetime import datetime, timedelta
 
@@ -21,6 +22,7 @@ from collections import defaultdict
 import logging
 from context_logger import ContextLogger
 from myapp.models import CustomUser
+import docker
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
@@ -187,7 +189,50 @@ def abc_classification(data: dict):
 
 @login_required_cust
 def main_view(request):
-    return render(request, 'main.html')
+    data = []
+
+    client = docker.from_env()
+    containers = client.containers.list(all=True)
+
+    for container in containers:
+        data.append({
+            'name': container.name,
+            'id': container.short_id,
+            'status': container.status,
+        })
+    return render(
+        request,
+        'main.html',
+        {'data': data}
+    )
+
+
+@require_POST
+@login_required_cust
+def restart_container_view(request, container_id):
+    if request.method == "POST":
+        try:
+            client = docker.from_env()
+            container = client.containers.get(container_id)
+            container.restart()
+            logger.info(f"Контейнер {container_id} перезапущен пользователем {request.user}")
+        except Exception as e:
+            logger.error(f"Ошибка при перезапуске контейнера {container_id}: {str(e)}")
+    return HttpResponseRedirect(reverse('main'))
+
+
+@require_POST
+@login_required_cust
+def stop_container_view(request, container_id):
+    if request.method == "POST":
+        try:
+            client = docker.from_env()
+            container = client.containers.get(container_id)
+            container.stop()
+            logger.info(f"Контейнер {container_id} остановлен пользователем {request.user}")
+        except Exception as e:
+            logger.error(f"Ошибка при остановке контейнера {container_id}: {str(e)}")
+    return HttpResponseRedirect(reverse('main'))
 
 
 @login_required_cust
