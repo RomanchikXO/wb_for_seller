@@ -179,8 +179,6 @@ async def get_and_store_cookies(page):
             logger.error(f"Ошибка обновления кукков в лк. Error: {e}")
         finally:
             await conn.close()
-        await page.hover("button:has-text('Pear Home')")
-        await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU")
     await asyncio.sleep(300)
     await page.reload()
     await get_and_store_cookies(page)
