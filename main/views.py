@@ -181,9 +181,9 @@ def abc_classification(data: dict):
     # Шаг 2: Присваиваем категорию
     for i, (art, info) in enumerate(sorted_items):
         vendorcode = info["vendorcode"].lower()
-        if ("ТВ" in vendorcode or "МРК" in vendorcode or "ТМ2270" in vendorcode or "ТМ3270" in vendorcode or "ТМ4270" in vendorcode
-                or "МР3250" in vendorcode  or "МР3260" in vendorcode or "МР3270" in vendorcode or "МР4270" in vendorcode
-                or "БЛ3250" in vendorcode  or "БЛ3260" in vendorcode or "БЛ3270" in vendorcode or "БЛ4270" in vendorcode):
+        if ("тв" in vendorcode or "мрк" in vendorcode or "тм2270" in vendorcode or "тм3270" in vendorcode or "тм4270" in vendorcode
+                or "мр3250" in vendorcode or "мр3260" in vendorcode or "мр3270" in vendorcode or "мр4270" in vendorcode
+                or "бл3250" in vendorcode or "бл3260" in vendorcode or "бл3270" in vendorcode or "бл4270" in vendorcode):
             info["ABC"] = "Новинки"
         elif ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
                 or "55ww" in vendorcode or "66ww" in vendorcode):
