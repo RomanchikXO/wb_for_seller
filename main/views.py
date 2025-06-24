@@ -164,7 +164,6 @@ def get_filter_by_articles(add_info: bool = False):
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
     data = dict_rows[0]["result"]
-    logger.info(data)
 
     if add_info:
         data = sorted(
@@ -983,7 +982,6 @@ def shipment_view(request):
 
         columns_nmids = [desc[0] for desc in cursor.description]
         shipments = [dict(zip(columns_nmids, row)) for row in res_nmids]
-        logger.info(shipments)
     except Exception as e:
         logger.error(f"Ошибка получения поставок из БД в shipment_view. Ошибка: {e}")
 
