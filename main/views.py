@@ -78,6 +78,12 @@ def get_group_nmids(nmids):
     return tail_filter_options
 
 
+def filter_by(items: dict, filter_param: str):
+    filter_items = dict(
+        filter(lambda item: item[1]["ABC"] == filter_param, items.items())
+    )
+    return filter_items
+
 def sorted_by_current_nmids(items):
     sorted_items = {}
     for item_id in current_ids:
@@ -175,7 +181,11 @@ def abc_classification(data: dict):
     # Шаг 2: Присваиваем категорию
     for i, (art, info) in enumerate(sorted_items):
         vendorcode = info["vendorcode"].lower()
-        if ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
+        if ("ТВ" in vendorcode or "МРК" in vendorcode or "ТМ2270" in vendorcode or "ТМ3270" in vendorcode or "ТМ4270" in vendorcode
+                or "МР3250" in vendorcode  or "МР3260" in vendorcode or "МР3270" in vendorcode or "МР4270" in vendorcode
+                or "БЛ3250" in vendorcode  or "БЛ3260" in vendorcode or "БЛ3270" in vendorcode or "БЛ4270" in vendorcode):
+            info["ABC"] = "Новинки"
+        elif ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
                 or "55ww" in vendorcode or "66ww" in vendorcode):
             info["ABC"] = "A"
         elif ("260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode or "77ww" in vendorcode
@@ -404,13 +414,14 @@ def podsort_view(request):
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
-    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order', 'page']
+    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order', 'page', 'abc_filter']
     for key in session_keys:
         value = request.GET.getlist(key) if key in ['nmid', 'warehouse'] else request.GET.get(key)
         if value:
             request.session[key] = value
 
     page_sizes = [5, 10, 20, 50, 100]
+    abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
     nmid_filter = request.session.get('nmid', request.GET.getlist('nmid', ""))
     warehouse_filter = request.session.get('warehouse', request.GET.getlist('warehouse', ""))
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
@@ -418,6 +429,7 @@ def podsort_view(request):
 
     sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
     order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
+    abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
 
     period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
     if period_ord == 3:
@@ -618,6 +630,9 @@ def podsort_view(request):
         else:
             items = sorted_by_current_nmids(items)
 
+        if abc_filter and abc_filter != "Все товары":
+            items = filter_by(items, abc_filter)
+
         items = list(items.values())
 
         # чистим массив у которого пустые вложения по складам
@@ -647,6 +662,8 @@ def podsort_view(request):
             "page_sizes": page_sizes,
             "per_page": per_page,
             "sort_by": sort_by,
+            "abc_filter": abc_filter,
+            "abc_vars": abc_vars,
             "order": order,
             "tail_filter_options": tail_filter_options,
         }
