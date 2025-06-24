@@ -423,7 +423,7 @@ def podsort_view(request):
     page_sizes = [5, 10, 20, 50, 100]
     abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
     nmid_filter = request.GET.getlist('nmid', "")
-    warehouse_filter = request.session.get('warehouse', request.GET.getlist('warehouse', ""))
+    warehouse_filter = request.GET.getlist('warehouse', "")
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
     page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
 
