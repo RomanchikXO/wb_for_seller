@@ -2,6 +2,15 @@ from django.db import models
 from django.contrib.auth.hashers import make_password
 
 
+# Модаль для хранения данных о скорости доставки со складов в ообласти
+class AreaWarehouses(models.Model):
+    area = models.CharField(max_length=255, unique=True)
+    warehouses = models.JSONField()
+
+    class Meta:
+        verbose_name_plural = "Области и склады"
+
+
 # Модель для таблицы group
 class Groups(models.Model):
     name = models.CharField(max_length=255)

@@ -3,6 +3,12 @@ from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, 
                      ProductsStat, Supplies, Shipments, Betweenwarhouses)
 
 
+class AreaWarehousesAdmin(admin.ModelAdmin):
+    list_display = ('area', 'warehouses')
+    search_fields = ('area',)
+    ordering = ('area',)
+
+
 class BetweenwarhousesAdmin(admin.ModelAdmin):
     list_display = ('nmid', 'incomeid', 'warehousename')
 
