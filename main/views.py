@@ -116,7 +116,7 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     return sorted_items
 
 
-def get_filter_by_articles():
+def get_filter_by_articles(add_info: bool = False):
     sql_query = """
         WITH base AS (
           SELECT
@@ -164,13 +164,26 @@ def get_filter_by_articles():
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
     data = dict_rows[0]["result"]
+    logger.info(data)
 
-    data = sorted(
-        [
-            {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
-        ],
-        key=lambda x: x['tail'].lower()
-    )
+    if add_info:
+        data = sorted(
+            [
+                {
+                    'tail': tail,
+                    'nmids': sum(colors.values(), [])  # объединяем все списки артикулов в один
+                }
+                for tail, colors in data.items()
+            ],
+            key=lambda x: x['tail'].lower()
+        )
+    else:
+        data = sorted(
+            [
+                {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
+            ],
+            key=lambda x: x['tail'].lower()
+        )
     return data
 
 
@@ -565,6 +578,8 @@ def podsort_view(request):
     ]
     # tail_filter_options = get_group_nmids(combined_list)
     tail_filter_options = get_filter_by_articles()
+    filter_options_without_color = get_filter_by_articles(add_info=True)
+
 
     try:
         items = {}
@@ -666,6 +681,7 @@ def podsort_view(request):
             "abc_vars": abc_vars,
             "order": order,
             "tail_filter_options": tail_filter_options,
+            "filter_options_without_color": filter_options_without_color,
         }
     )
 

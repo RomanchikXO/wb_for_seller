@@ -116,6 +116,17 @@
                     </select>
                 </div>
                 <div class="me-2 w-20">
+                    <label for="group-without-color" class="form-label">Ткань:</label>
+                    <select id="group-without-color" class="form-select">
+                        <option value="" selected>-- выбрать ткань --</option>
+                        {% for group in filter_options_without_color %}
+                            <option value="{{ group.nmids|join:',' }}">
+                                {{ group.tail }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="me-2 w-20">
                     <label for="warehouse-select" class="form-label">Фильтр по складу:</label>
                     <select id="warehouse-select" name="warehouse" class="form-select" multiple>
                         {% for warehouse in warehouses %}
@@ -337,8 +348,29 @@
                 allowClear: true,
                 width: '100%'
             });
+            // Для ткани
+            $('#group-without-color').select2({
+                placeholder: 'Выберите ткань',
+                allowClear: true,
+                width: '100%'
+            });
             // Обработчик выбора группы
             $('#group-select').on('change', function () {
+                const selected = $(this).val();
+                const selectedIds = selected ? selected.split(',') : [];
+                const $nmidSelect = $('#nmid-select');
+
+                // Установим флаг selected
+                $nmidSelect.find('option').each(function () {
+                    const isSelected = selectedIds.includes(this.value);
+                    this.selected = isSelected;
+                });
+
+                // Обновим Select2
+                $nmidSelect.trigger('change');
+            });
+            // Обработчик выбора ткани
+            $('#group-without-color').on('change', function () {
                 const selected = $(this).val();
                 const selectedIds = selected ? selected.split(',') : [];
                 const $nmidSelect = $('#nmid-select');
