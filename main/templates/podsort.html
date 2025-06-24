@@ -142,18 +142,18 @@
                 <thead>
                     <tr>
                         <th>Артикул</th>
-                        <th>Внутренний артикул</th>
-                        <th>Заказы</th>
-                        <th>Остатки</th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=ABC&order={% if sort_by == "ABC" and order == "asc" %}desc{% else %}asc{% endif %}">
-                                АВС по размерам
-                                {% if sort_by == "ABC" %}
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=vendorcode&order={% if sort_by == "vendorcode" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Внутренний артикул
+                                {% if sort_by == "vendorcode" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
                                 {% endif %}
                             </a>
                         </th>
+                        <th>Заказы</th>
+                        <th>Остатки</th>
+                        <th>АВС по размерам</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
