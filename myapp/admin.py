@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
-                     ProductsStat, Supplies, Shipments, Betweenwarhouses)
+                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses)
 
 
 class AreaWarehousesAdmin(admin.ModelAdmin):
@@ -114,3 +114,4 @@ admin.site.register(ProductsStat, ProductsStatAdmin)
 admin.site.register(Supplies, SuppliesAdmin)
 admin.site.register(Shipments, ShipmentsAdmin)
 admin.site.register(Betweenwarhouses, BetweenwarhousesAdmin)
+admin.site.register(AreaWarehouses, AreaWarehousesAdmin)
