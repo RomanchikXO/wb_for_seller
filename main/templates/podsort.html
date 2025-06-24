@@ -151,8 +151,24 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th>Заказы</th>
-                        <th>Остатки</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Заказы
+                                {% if sort_by == "orders" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=stock&order={% if sort_by == "stock" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Остатки
+                                {% if sort_by == "stock" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>АВС по размерам</th>
                         <th>
                             <a style="color: black"
