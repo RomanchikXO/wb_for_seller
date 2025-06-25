@@ -166,7 +166,15 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th>Ткань</th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=vendorcode&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Ткань
+                                {% if sort_by == "cloth" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">

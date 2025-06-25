@@ -645,7 +645,7 @@ def podsort_view(request):
                         items[key]["subitems"][index]["color"] = "white"
         items = abc_classification(items)
 
-        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock"):
+        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth"):
             descending = False if order == "asc" else True
             items = sorted_by(items, sort_by, descending)
         else:
