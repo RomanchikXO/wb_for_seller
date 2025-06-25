@@ -529,7 +529,13 @@ def podsort_view(request):
                     w.warehousename,
                     COALESCE(sa.total_quantity, 0) AS total_quantity,
                     COALESCE(sa.available, 0)      AS available, 
-                    COALESCE(oa.total_orders,   0) AS total_orders
+                    COALESCE(oa.total_orders,   0) AS total_orders,
+                    (
+                        SELECT (elem->'value')->>0 AS value
+                        FROM jsonb_array_elements(p.characteristics) AS elem
+                        WHERE (elem->>'id')::int = 12
+                        LIMIT 1
+                    ) AS cloth
                 FROM
                     myapp_nmids p
                 LEFT JOIN all_wh w
@@ -591,6 +597,7 @@ def podsort_view(request):
                     "id": row["id"],
                     "article": row["nmid"],
                     "vendorcode": row["vendorcode"],
+                    "cloth": row["cloth"],
                     "orders": row["total_orders"],
                     "stock": row["total_quantity"],
                     "ABC": "формула",
@@ -767,7 +774,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
+        "Артикул", "Внутренний артикул", "Ткань", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
@@ -789,10 +796,11 @@ def export_excel_podsort(request):
 
         ws.cell(row=row_num, column=1, value=item["article"])
         ws.cell(row=row_num, column=2, value=item["vendorcode"])
-        ws.cell(row=row_num, column=3, value=item["orders"])
-        ws.cell(row=row_num, column=4, value=item["stock"])
-        ws.cell(row=row_num, column=5, value=item["ABC"])
-        ws.cell(row=row_num, column=6, value=item["turnover_total"])
+        ws.cell(row=row_num, column=3, value=item["cloth"])
+        ws.cell(row=row_num, column=4, value=item["orders"])
+        ws.cell(row=row_num, column=5, value=item["stock"])
+        ws.cell(row=row_num, column=6, value=item["ABC"])
+        ws.cell(row=row_num, column=7, value=item["turnover_total"])
 
         # Вложенные subitems
         if item.get("subitems"):

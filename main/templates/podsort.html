@@ -166,6 +166,7 @@
                                 {% endif %}
                             </a>
                         </th>
+                        <th>Ткань</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -223,6 +224,7 @@
                             </td>
 
                             <td>{{ item.vendorcode }}</td>
+                            <td>{{ item.cloth }}</td>
                             <td>{{ item.orders }}</td>
                             <td>{{ item.stock }}</td>
                             <td>{{ item.ABC }}</td>
@@ -402,10 +404,11 @@
               const item = {
                 article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
                 vendorcode: cells[1]?.textContent.trim() || '',
-                orders: parseInt(cells[2]?.textContent.trim()) || 0,
-                stock: parseInt(cells[3]?.textContent.trim()) || 0,
-                ABC: cells[4]?.textContent.trim() || '',
-                turnover_total: parseFloat(cells[5]?.textContent.trim()) || 0,
+                cloth: cells[2]?.textContent.trim() || '',
+                orders: parseInt(cells[3]?.textContent.trim()) || 0,
+                stock: parseInt(cells[4]?.textContent.trim()) || 0,
+                ABC: cells[5]?.textContent.trim() || '',
+                turnover_total: parseFloat(cells[6]?.textContent.trim()) || 0,
                 subitems: []
               };
 
