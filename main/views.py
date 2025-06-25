@@ -762,6 +762,12 @@ def podsort_view(request):
                     items[row["nmid"]]["i_size"] = "6260"
                 elif "6270" in low_vendor:
                     items[row["nmid"]]["i_size"] = "6270"
+
+                if "ww" in low_vendor:
+                    items[row["nmid"]]["i_color"] = low_vendor.split("ww")[-1]
+                else:
+                    match = re.search(r'\d', low_vendor)
+                    items[row["nmid"]]["i_color"] = low_vendor[match.start() + 1:]
             if row["warehousename"]:
                 items[row["nmid"]]["subitems"].append(
                     {
@@ -803,7 +809,7 @@ def podsort_view(request):
                         items[key]["subitems"][index]["color"] = "white"
         items = abc_classification(items)
 
-        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size"):
+        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size", "i_color"):
             descending = False if order == "asc" else True
             items = sorted_by(items, sort_by, descending)
         else:
@@ -933,7 +939,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Ткань", "Размер", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
+        "Артикул", "Ткань", "Размер", "Цвет", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
@@ -954,9 +960,9 @@ def export_excel_podsort(request):
         row_num += 1
 
         ws.cell(row=row_num, column=1, value=item["article"])
-        ws.cell(row=row_num, column=2, value=item["vendorcode"])
-        ws.cell(row=row_num, column=3, value=item["cloth"])
-        ws.cell(row=row_num, column=4, value=item["i_size"])
+        ws.cell(row=row_num, column=2, value=item["cloth"])
+        ws.cell(row=row_num, column=3, value=item["i_size"])
+        ws.cell(row=row_num, column=4, value=item["i_color"])
         ws.cell(row=row_num, column=5, value=item["orders"])
         ws.cell(row=row_num, column=6, value=item["stock"])
         ws.cell(row=row_num, column=7, value=item["ABC"])

@@ -171,18 +171,10 @@
                         <th></th>
                         <th></th>
                         <th></th>
+                        <th></th>
                     </tr>
                     <tr>
                         <th>Артикул</th>
-                        <th>
-                            <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=vendorcode&order={% if sort_by == "vendorcode" and order == "asc" %}desc{% else %}asc{% endif %}">
-                                Внутренний артикул
-                                {% if sort_by == "vendorcode" %}
-                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
-                                {% endif %}
-                            </a>
-                        </th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -197,6 +189,15 @@
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_size&order={% if sort_by == "i_size" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Размер
                                 {% if sort_by == "i_size" %}
+                                    {% if order == "asc" %}▲{% else %}▼{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a style="color: black"
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_color&order={% if sort_by == "i_color" and order == "asc" %}desc{% else %}asc{% endif %}">
+                                Цвет
+                                {% if sort_by == "i_color" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
                                 {% endif %}
                             </a>
@@ -257,9 +258,9 @@
                                 </div>
                             </td>
 
-                            <td>{{ item.vendorcode }}</td>
                             <td>{{ item.cloth }}</td>
                             <td>{{ item.i_size }}</td>
+                            <td>{{ item.i_color }}</td>
                             <td>{{ item.orders }}</td>
                             <td>{{ item.stock }}</td>
                             <td>{{ item.ABC }}</td>
@@ -429,9 +430,9 @@
 
               const item = {
                 article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
-                vendorcode: cells[1]?.textContent.trim() || '',
-                cloth: cells[2]?.textContent.trim() || '',
-                i_size: cells[3]?.textContent.trim() || '',
+                cloth: cells[1]?.textContent.trim() || '',
+                i_size: cells[2]?.textContent.trim() || '',
+                i_color: cells[3]?.textContent.trim() || '',
                 orders: parseInt(cells[4]?.textContent.trim()) || 0,
                 stock: parseInt(cells[5]?.textContent.trim()) || 0,
                 ABC: cells[6]?.textContent.trim() || '',
