@@ -116,7 +116,7 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     return sorted_items
 
 
-def get_filter_by_articles(clothes: bool = False, sizes: bool = False):
+def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_color: bool = False):
     sql_query = """
         WITH base AS (
           SELECT
@@ -236,16 +236,17 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False):
             for key, value in dictionary.items()
         ]
         response["sizes"] = sorted(changed_sizes, key=lambda x: int(x['tail']))
-    response["size_color"] = sorted(
-        [
-            {
-                'tail': f"{tail}-{color}",
-                'nmids': ids
-            }
-            for tail, colors in data.items() for color, ids in colors.items()
-        ],
-        key=lambda x: x['tail'].lower()
-    )
+    if size_color:
+        response["size_color"] = sorted(
+            [
+                {
+                    'tail': f"{tail}-{color}",
+                    'nmids': ids
+                }
+                for tail, colors in data.items() for color, ids in colors.items()
+            ],
+            key=lambda x: x['tail'].lower()
+        )
     return response
 
 
@@ -384,7 +385,7 @@ def repricer_view(request):
             for item in nmids
         ]
         # tail_filter_options = get_group_nmids(combined_list)
-        tail_filter_options = get_filter_by_articles()["size_color"]
+        tail_filter_options = get_filter_by_articles(size_color=True)["size_color"]
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -645,7 +646,6 @@ def podsort_view(request):
         for item in nmids
     ]
     filter_response = get_filter_by_articles(clothes=True, sizes=True)
-    tail_filter_options = filter_response["size_color"]
     filter_options_without_color = filter_response["cloth"]
     filter_options_sizes = filter_response["sizes"]
 
@@ -749,7 +749,6 @@ def podsort_view(request):
             "abc_filter": abc_filter,
             "abc_vars": abc_vars,
             "order": order,
-            "tail_filter_options": tail_filter_options,
             "filter_options_without_color": filter_options_without_color,
             "filter_options_sizes": filter_options_sizes,
         }

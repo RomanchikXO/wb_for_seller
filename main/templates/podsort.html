@@ -102,17 +102,6 @@
                     </select>
                 </div>
                 <div class="me-2 w-20">
-                    <label for="group-select" class="form-label">Фильтр по группам:</label>
-                    <select id="group-select" class="form-select">
-                        <option value="" selected>-- выбрать группу --</option>
-                        {% for group in tail_filter_options %}
-                            <option value="{{ group.nmids|join:',' }}">
-                                {{ group.tail }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
                     <label for="group-without-color" class="form-label">Ткань:</label>
                     <select id="group-without-color" class="form-select">
                         <option value="" selected>-- выбрать ткань --</option>
@@ -360,12 +349,6 @@
                 allowClear: true,
                 width: '100%'
             });
-            // Для групп
-            $('#group-select').select2({
-                placeholder: 'Выберите группу',
-                allowClear: true,
-                width: '100%'
-            });
             // Для ткани
             $('#group-without-color').select2({
                 placeholder: 'Выберите ткань',
@@ -390,7 +373,7 @@
                 $nmidSelect.trigger('change');
             }
 
-            $('#group-select, #group-without-color, #filter-sizes').on('change', function () {
+            $('#group-without-color, #filter-sizes').on('change', function () {
                 handleGroupSelectChange(this);
             });
         });
