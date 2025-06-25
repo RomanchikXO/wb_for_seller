@@ -176,24 +176,20 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
                     array_agg(nmid) AS nmid_list
                 FROM (
                     SELECT
-                        nmid,
-                        CASE
-                            -- Если есть 'ww', берем всё после него
-                            WHEN vendorcode ~* 'ww' THEN
-                                regexp_replace(lower(vendorcode), '.*?ww', '', 'g')
-                            
-                            -- Если нет 'ww', ищем первое число и берем всё после него
-                            WHEN vendorcode ~* '\d' THEN
-                                regexp_replace(lower(vendorcode), '.*?\d+', '', 'g')
-                            
-                            ELSE NULL
-                        END AS color_key
-                    FROM myapp_nmids
+                        p.nmid,
+                        (
+                            SELECT (elem->'value')->>0
+                            FROM jsonb_array_elements(p.characteristics) AS elem
+                            WHERE (elem->>'id')::int = 14177449
+                            LIMIT 1
+                        ) AS color_key
+                    FROM myapp_nmids p
                 ) AS extracted
                 WHERE color_key IS NOT NULL AND color_key <> ''
                 GROUP BY color_key
             ) AS grouped;
         """
+
         conn = connect_to_database()
         with conn.cursor() as cursor:
             cursor.execute(sql_query, )
@@ -652,7 +648,13 @@ def podsort_view(request):
                         FROM jsonb_array_elements(p.characteristics) AS elem
                         WHERE (elem->>'id')::int = 12
                         LIMIT 1
-                    ) AS cloth
+                    ) AS cloth,
+                    (
+                        SELECT (elem->'value')->>0 AS value
+                        FROM jsonb_array_elements(p.characteristics) AS elem
+                        WHERE (elem->>'id')::int = 14177449
+                        LIMIT 1
+                    ) AS i_color
                 FROM
                     myapp_nmids p
                 LEFT JOIN all_wh w
@@ -715,6 +717,7 @@ def podsort_view(request):
                     "article": row["nmid"],
                     "vendorcode": row["vendorcode"],
                     "cloth": row["cloth"],
+                    "i_color": row["i_color"],
                     "orders": row["total_orders"],
                     "stock": row["total_quantity"],
                     "ABC": "формула",
@@ -763,11 +766,6 @@ def podsort_view(request):
                 elif "6270" in low_vendor:
                     items[row["nmid"]]["i_size"] = "6270"
 
-                if "ww" in low_vendor:
-                    items[row["nmid"]]["i_color"] = low_vendor.split("ww")[-1]
-                else:
-                    match = re.search(r'\d', low_vendor)
-                    items[row["nmid"]]["i_color"] = low_vendor[match.start() + 1:]
             if row["warehousename"]:
                 items[row["nmid"]]["subitems"].append(
                     {
