@@ -137,7 +137,7 @@ async def get_and_store_cookies(page):
         logger.error(f"Ошибка получения данных из myapp_wblk. Запрос {request}. Error: {e}")
     finally:
         await conn.close()
-    for inn in inns: # тут inns это массив с инн с БД
+    for index, inn in enumerate(inns): # тут inns это массив с инн с БД
         authorizev3 = None
         async def log_request(request):
             nonlocal authorizev3
@@ -147,11 +147,12 @@ async def get_and_store_cookies(page):
         page.on("request", log_request)
 
         target_text = f"ИНН {inn['inn']}"
-        try:
+
+        if index == 0:
             supplier_radio_label = page.locator(
                 f"li.suppliers-list_SuppliersList__item__GPkdU:has-text('{target_text}') label[data-testid='supplier-checkbox-checkbox']"
             )
-        except:
+        else:
             await page.wait_for_selector("button:has-text('Pear Home')", timeout=10000)
             await page.hover("button:has-text('Pear Home')")
             await page.wait_for_selector("li.suppliers-list_SuppliersList__item__GPkdU", timeout=10000)
