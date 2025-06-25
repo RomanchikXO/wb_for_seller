@@ -89,90 +89,75 @@
             </div>
     </div>
     <div class="card mt-4 p-4">
-            <div class="d-flex align-items-end w-100">
-                <!-- селектор занимает всю доступную ширину -->
-                <div class="me-2 w-20">
-                    <label for="nmid-select" class="form-label">Фильтр по артикулу:</label>
-                    <select id="nmid-select" name="nmid" class="form-select" multiple>
-                        {% for nmid in nmids %}
-                            <option value="{{ nmid.nmid }}" {% if nmid.nmid|stringformat:"s" in nmid_filter %}selected{% endif %}>
-                                {{ nmid.nmid }}-{{ nmid.vendorcode }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
-                    <label for="group-without-color" class="form-label">Ткань:</label>
-                    <select id="group-without-color" class="form-select">
-                        <option value="" selected>-- выбрать ткань --</option>
-                        {% for group in filter_options_without_color %}
-                            <option value="{{ group.nmids|join:',' }}">
-                                {{ group.tail }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
-                    <label for="filter-sizes" class="form-label">Размер:</label>
-                    <select id="filter-sizes" class="form-select">
-                        <option value="" selected>-- выбрать размер --</option>
-                        {% for size in filter_options_sizes %}
-                            <option value="{{ size.nmids|join:',' }}">
-                                {{ size.tail }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
-                    <label for="filter-colors" class="form-label">Цвет:</label>
-                    <select id="filter-colors" class="form-select">
-                        <option value="" selected>-- выбрать цвет --</option>
-                        {% for color in filter_options_colors %}
-                            <option value="{{ color.nmids|join:',' }}">
-                                {{ color.tail }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
-                    <label for="warehouse-select" class="form-label">Фильтр по складу:</label>
-                    <select id="warehouse-select" name="warehouse" class="form-select" multiple>
-                        {% for warehouse in warehouses %}
-                            <option value="{{ warehouse }}" {% if warehouse|stringformat:"s" in warehouse_filter %}selected{% endif %}>
-                                {{ warehouse }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="me-2 w-20">
-                    <label for="abc_filter-select" class="form-label">Фильтр по ABC:</label>
-                    <select id="abc_filter-select" name="abc_filter" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                        {% for abc in abc_vars %}
-                            <option value="{{ abc }}" {% if abc == abc_filter %}selected{% endif %}>
-                                {{ abc }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <!-- кнопки справа от селектора -->
-                <div class="btn-group align-self-end">
-                    <button type="submit" class="btn btn-primary">Фильтровать</button>
-                </div>
-            </div>
-        </form>
         <div class="table-responsive">
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>
+                            <select id="nmid-select" name="nmid" class="form-select" multiple>
+                                {% for nmid in nmids %}
+                                    <option value="{{ nmid.nmid }}" {% if nmid.nmid|stringformat:"s" in nmid_filter %}selected{% endif %}>
+                                        {{ nmid.nmid }}-{{ nmid.vendorcode }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
+                            <select id="group-without-color" class="form-select">
+                                <option value="" selected>-- выбрать ткань --</option>
+                                {% for group in filter_options_without_color %}
+                                    <option value="{{ group.nmids|join:',' }}">
+                                        {{ group.tail }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
+                            <select id="filter-sizes" class="form-select">
+                                <option value="" selected>-- выбрать размер --</option>
+                                {% for size in filter_options_sizes %}
+                                    <option value="{{ size.nmids|join:',' }}">
+                                        {{ size.tail }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
+                            <select id="filter-colors" class="form-select">
+                                <option value="" selected>-- выбрать цвет --</option>
+                                {% for color in filter_options_colors %}
+                                    <option value="{{ color.nmids|join:',' }}">
+                                        {{ color.tail }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
                         <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th>
+                            <select id="warehouse-select" name="warehouse" class="form-select" multiple>
+                                {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse }}" {% if warehouse|stringformat:"s" in warehouse_filter %}selected{% endif %}>
+                                        {{ warehouse }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
+                            <select id="abc_filter-select" name="abc_filter" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                                {% for abc in abc_vars %}
+                                    <option value="{{ abc }}" {% if abc == abc_filter %}selected{% endif %}>
+                                        {{ abc }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
+                            <div class="btn-group align-self-end">
+                                <button type="submit" class="btn btn-primary">Фильтровать</button>
+                            </div>
+                        </th>
                     </tr>
+                    </form>
                     <tr>
                         <th>Артикул</th>
                         <th>
