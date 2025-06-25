@@ -26,6 +26,14 @@ import docker
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
+exclude_ids = [
+    77457436, 84407319, 62999163, 247412115, 220238675, 220238678, 77455104, 84407199, 70497719, 220243421,
+    220243424, 90486203, 247412311, 220239930, 220239933, 90443535, 247412376, 220243010, 90439859, 90440354,
+    247412508, 220244163, 220244166, 90438135, 90438108, 247412666, 220247504, 220248073, 90436156, 90436755,
+    90437125, 90433762, 247412895, 220248437, 90435092, 247412942, 220249049, 90435065, 90435588, 242670046,
+    242712769, 242697062, 242697066, 244783689, 242698302, 244783690, 242700114
+]
+
 current_ids = [62999164, 90443540, 90439842, 70497720, 70498242, 90443538, 90439841, 70497721,
                62999167, 90443539, 90439861, 70497722, 207602382, 207603641, 207604857, 207607422,
                62999160, 90443522, 90439860, 70497717, 62999162, 90486202, 90440346, 70497718,
@@ -117,7 +125,7 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
 
 
 def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_color: bool = False, colors: bool = False):
-    sql_query = """
+    sql_query = f"""
         WITH base AS (
           SELECT
             m.nmid,
@@ -136,7 +144,7 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
             WHERE (item->>'id')::int = 14177449
             LIMIT 1
           ) AS цвет ON TRUE
-          WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL
+          WHERE рисунок.value IS NOT NULL AND цвет.value IS NOT NULL AND m.nmid NOT IN ({', '.join(map(str, exclude_ids))})
         )
         SELECT jsonb_object_agg(main_group, colors) AS result
         FROM (
@@ -156,10 +164,13 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
     """
 
     # Выполнение SQL запроса и получение данных
-    conn = connect_to_database()
-    with conn.cursor() as cursor:
-        cursor.execute(sql_query, )
-        rows = cursor.fetchall()
+    try:
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, )
+            rows = cursor.fetchall()
+    except Exception as e:
+        logging.error(f"Ошибка при запросе в get_filter_by_articles без условия {e}")
 
     columns = [desc[0] for desc in cursor.description]
     dict_rows = [dict(zip(columns, row)) for row in rows]
@@ -168,7 +179,7 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
     response = {}
 
     if colors:
-        sql_query = """
+        sql_query = f"""
             SELECT json_agg(json_build_object(color_key, nmid_list)) AS result
             FROM (
                 SELECT
@@ -184,16 +195,20 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
                             LIMIT 1
                         ) AS color_key
                     FROM myapp_nmids p
+                    WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))})
                 ) AS extracted
                 WHERE color_key IS NOT NULL AND color_key <> ''
                 GROUP BY color_key
             ) AS grouped;
         """
 
-        conn = connect_to_database()
-        with conn.cursor() as cursor:
-            cursor.execute(sql_query, )
-            rows = cursor.fetchall()
+        try:
+            conn = connect_to_database()
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query, )
+                rows = cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Ошибка при запросе в get_filter_by_articles при условии colors {e}")
 
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
@@ -221,7 +236,7 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
         )
         response["cloth"] = cloth
     if sizes:
-        sql_query = """
+        sql_query = f"""
             SELECT json_agg(json_build_object(lower_code, nmid_list)) AS result
             FROM (
                 SELECT
@@ -262,15 +277,19 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
                             ELSE NULL
                         END AS lower_code
                     FROM myapp_nmids
+                    WHERE nmid NOT IN ({', '.join(map(str, exclude_ids))})
                 ) AS filtered
                 WHERE lower_code IS NOT NULL
                 GROUP BY lower_code
             ) AS grouped;
         """
-        conn = connect_to_database()
-        with conn.cursor() as cursor:
-            cursor.execute(sql_query, )
-            rows = cursor.fetchall()
+        try:
+            conn = connect_to_database()
+            with conn.cursor() as cursor:
+                cursor.execute(sql_query, )
+                rows = cursor.fetchall()
+        except Exception as e:
+            logging.error(f"Ошибка при запросе в get_filter_by_articles при условии sizes {e}")
 
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
@@ -580,10 +599,10 @@ def podsort_view(request):
 
     if nmid_filter:
         placeholders = ', '.join(['%s'] * len(nmid_filter))
-        nmid_query = f"WHERE p.nmid IN ({placeholders})"
+        nmid_query = f"WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))}) AND p.nmid IN ({placeholders})"
         params.extend(nmid_filter)
     else:
-        nmid_query = ""
+        nmid_query = f"WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))})"
 
     if warehouse_filter:
         warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
@@ -668,7 +687,6 @@ def podsort_view(request):
                 ORDER BY
                     p.nmid,
                     w.warehousename;
-
         """
         conn = connect_to_database()
         with conn.cursor() as cursor:
@@ -685,11 +703,15 @@ def podsort_view(request):
     sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
                 "FROM myapp_price p "
                 "JOIN myapp_wblk wblk "
-                "ON p.lk_id = wblk.id")
+                "ON p.lk_id = wblk.id "
+                f"WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))})")
     conn = connect_to_database()
-    with conn.cursor() as cursor:
-        cursor.execute(sql_nmid, )
-        res_nmids = cursor.fetchall()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql_nmid, )
+            res_nmids = cursor.fetchall()
+    except Exception as e:
+        logger.error(f"Ошибка при запросе артикулов и vendorcode {e}")
 
     columns_nmids = [desc[0] for desc in cursor.description]
     nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
