@@ -203,8 +203,6 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
         dict_rows = [dict(zip(columns, row)) for row in rows]
         colors = dict_rows[0]["result"]
 
-        logger.info(colors)
-
         changed_colors = [
             {
                 'tail': key,
@@ -723,6 +721,47 @@ def podsort_view(request):
                     "turnover_total": 0,
                     "subitems": []
                 }
+                low_vendor = row["vendorcode"].lower()
+                if "11ww" in low_vendor or "3240" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "3240"
+                elif "22ww" in low_vendor or "3270" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "3270"
+                elif "33ww" in low_vendor or "3250" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "3250"
+                elif "44ww" in low_vendor or "3260" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "3260"
+                elif "55ww" in low_vendor or "4240" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "4240"
+                elif "66ww" in low_vendor or "4250" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "4250"
+                elif "77ww" in low_vendor or "4260" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "4260"
+                elif "88ww" in low_vendor or "4270" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "4270"
+                elif "2240" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "2240"
+                elif "2250" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "2250"
+                elif "2260" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "2260"
+                elif "2270" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "2270"
+                elif "5240" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "5240"
+                elif "5250" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "5250"
+                elif "5260" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "5260"
+                elif "5270" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "5270"
+                elif "6240" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "6240"
+                elif "6250" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "6250"
+                elif "6260" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "6260"
+                elif "6270" in low_vendor:
+                    items[row["nmid"]]["i_size"] = "6270"
             if row["warehousename"]:
                 items[row["nmid"]]["subitems"].append(
                     {
@@ -764,7 +803,7 @@ def podsort_view(request):
                         items[key]["subitems"][index]["color"] = "white"
         items = abc_classification(items)
 
-        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth"):
+        if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size"):
             descending = False if order == "asc" else True
             items = sorted_by(items, sort_by, descending)
         else:
@@ -894,7 +933,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Внутренний артикул", "Ткань", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
+        "Артикул", "Внутренний артикул", "Ткань", "Размер", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
 
@@ -917,10 +956,11 @@ def export_excel_podsort(request):
         ws.cell(row=row_num, column=1, value=item["article"])
         ws.cell(row=row_num, column=2, value=item["vendorcode"])
         ws.cell(row=row_num, column=3, value=item["cloth"])
-        ws.cell(row=row_num, column=4, value=item["orders"])
-        ws.cell(row=row_num, column=5, value=item["stock"])
-        ws.cell(row=row_num, column=6, value=item["ABC"])
-        ws.cell(row=row_num, column=7, value=item["turnover_total"])
+        ws.cell(row=row_num, column=4, value=item["i_size"])
+        ws.cell(row=row_num, column=5, value=item["orders"])
+        ws.cell(row=row_num, column=6, value=item["stock"])
+        ws.cell(row=row_num, column=7, value=item["ABC"])
+        ws.cell(row=row_num, column=8, value=item["turnover_total"])
 
         # Вложенные subitems
         if item.get("subitems"):
