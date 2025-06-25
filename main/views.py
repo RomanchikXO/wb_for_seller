@@ -210,6 +210,14 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
                             WHEN lower(vendorcode) LIKE '%4250%' THEN '4250'
                             WHEN lower(vendorcode) LIKE '%4260%' THEN '4260'
                             WHEN lower(vendorcode) LIKE '%4270%' THEN '4270'
+                            WHEN lower(vendorcode) LIKE '%5240%' THEN '5240'
+                            WHEN lower(vendorcode) LIKE '%5250%' THEN '5250'
+                            WHEN lower(vendorcode) LIKE '%5260%' THEN '5260'
+                            WHEN lower(vendorcode) LIKE '%5270%' THEN '5270'
+                            WHEN lower(vendorcode) LIKE '%6240%' THEN '6240'
+                            WHEN lower(vendorcode) LIKE '%6250%' THEN '6250'
+                            WHEN lower(vendorcode) LIKE '%6260%' THEN '6260'
+                            WHEN lower(vendorcode) LIKE '%6270%' THEN '6270'
                             ELSE NULL
                         END AS lower_code
                     FROM myapp_nmids
