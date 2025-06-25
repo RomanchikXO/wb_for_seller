@@ -116,7 +116,7 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     return sorted_items
 
 
-def get_filter_by_articles(add_info: bool = False):
+def get_filter_by_articles(clothes: bool = False, sizes: bool = False):
     sql_query = """
         WITH base AS (
           SELECT
@@ -165,8 +165,10 @@ def get_filter_by_articles(add_info: bool = False):
     dict_rows = [dict(zip(columns, row)) for row in rows]
     data = dict_rows[0]["result"]
 
-    if add_info:
-        data = sorted(
+    response = {}
+
+    if clothes:
+        cloth = sorted(
             [
                 {
                     'tail': tail,
@@ -176,14 +178,75 @@ def get_filter_by_articles(add_info: bool = False):
             ],
             key=lambda x: x['tail'].lower()
         )
-    else:
-        data = sorted(
-            [
-                {'tail': f"{tail}-{color}", 'nmids': ids} for tail, colors in data.items() for color, ids in colors.items()
-            ],
-            key=lambda x: x['tail'].lower()
-        )
-    return data
+        response["cloth"] = cloth
+    if sizes:
+        sql_query = """
+            SELECT json_agg(json_build_object(lower_code, nmid_list)) AS result
+            FROM (
+                SELECT
+                    lower_code,
+                    array_agg(nmid) AS nmid_list
+                FROM (
+                    SELECT
+                        nmid,
+                        CASE
+                            WHEN lower(vendorcode) LIKE '%11ww%' THEN '3240'
+                            WHEN lower(vendorcode) LIKE '%22ww%' THEN '3270'
+                            WHEN lower(vendorcode) LIKE '%33ww%' THEN '3250'
+                            WHEN lower(vendorcode) LIKE '%44ww%' THEN '3260'
+                            WHEN lower(vendorcode) LIKE '%55ww%' THEN '4240'
+                            WHEN lower(vendorcode) LIKE '%66ww%' THEN '4250'
+                            WHEN lower(vendorcode) LIKE '%77ww%' THEN '4260'
+                            WHEN lower(vendorcode) LIKE '%88ww%' THEN '4270'
+                            WHEN lower(vendorcode) LIKE '%2240%' THEN '2240'
+                            WHEN lower(vendorcode) LIKE '%2250%' THEN '2250'
+                            WHEN lower(vendorcode) LIKE '%2260%' THEN '2260'
+                            WHEN lower(vendorcode) LIKE '%2270%' THEN '2270'
+                            WHEN lower(vendorcode) LIKE '%3240%' THEN '3240'
+                            WHEN lower(vendorcode) LIKE '%3250%' THEN '3250'
+                            WHEN lower(vendorcode) LIKE '%3260%' THEN '3260'
+                            WHEN lower(vendorcode) LIKE '%3270%' THEN '3270'
+                            WHEN lower(vendorcode) LIKE '%4240%' THEN '4240'
+                            WHEN lower(vendorcode) LIKE '%4250%' THEN '4250'
+                            WHEN lower(vendorcode) LIKE '%4260%' THEN '4260'
+                            WHEN lower(vendorcode) LIKE '%4270%' THEN '4270'
+                            ELSE NULL
+                        END AS lower_code
+                    FROM myapp_nmids
+                ) AS filtered
+                WHERE lower_code IS NOT NULL
+                GROUP BY lower_code
+            ) AS grouped;
+        """
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, )
+            rows = cursor.fetchall()
+
+        columns = [desc[0] for desc in cursor.description]
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+        sizes = dict_rows[0]["result"]
+
+        changed_sizes = [
+            {
+                'tail': key,
+                "nmids": value
+            }
+            for dictionary in sizes
+            for key, value in dictionary.items()
+        ]
+        response["sizes"] = sorted(changed_sizes, key=lambda x: int(x['tail']))
+    response["size_color"] = sorted(
+        [
+            {
+                'tail': f"{tail}-{color}",
+                'nmids': ids
+            }
+            for tail, colors in data.items() for color, ids in colors.items()
+        ],
+        key=lambda x: x['tail'].lower()
+    )
+    return response
 
 
 def abc_classification(data: dict):
@@ -321,7 +384,7 @@ def repricer_view(request):
             for item in nmids
         ]
         # tail_filter_options = get_group_nmids(combined_list)
-        tail_filter_options = get_filter_by_articles()
+        tail_filter_options = get_filter_by_articles()["size_color"]
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -581,10 +644,10 @@ def podsort_view(request):
         }
         for item in nmids
     ]
-    # tail_filter_options = get_group_nmids(combined_list)
-    tail_filter_options = get_filter_by_articles()
-    filter_options_without_color = get_filter_by_articles(add_info=True)
-
+    filter_response = get_filter_by_articles(clothes=True, sizes=True)
+    tail_filter_options = filter_response["size_color"]
+    filter_options_without_color = filter_response["cloth"]
+    filter_options_sizes = filter_response["sizes"]
 
     try:
         items = {}
@@ -688,6 +751,7 @@ def podsort_view(request):
             "order": order,
             "tail_filter_options": tail_filter_options,
             "filter_options_without_color": filter_options_without_color,
+            "filter_options_sizes": filter_options_sizes,
         }
     )
 

@@ -35,9 +35,6 @@
         .row-yellow td {
             background-color: #faee26 !important; /* Bootstrap danger background */
         }
-        .w-40 {
-            width: 40%;
-        }
         .w-20 {
             width: 20%;
         }
@@ -94,7 +91,7 @@
     <div class="card mt-4 p-4">
             <div class="d-flex align-items-end w-100">
                 <!-- селектор занимает всю доступную ширину -->
-                <div class="me-2 w-40">
+                <div class="me-2 w-20">
                     <label for="nmid-select" class="form-label">Фильтр по артикулу:</label>
                     <select id="nmid-select" name="nmid" class="form-select" multiple>
                         {% for nmid in nmids %}
@@ -122,6 +119,17 @@
                         {% for group in filter_options_without_color %}
                             <option value="{{ group.nmids|join:',' }}">
                                 {{ group.tail }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="me-2 w-20">
+                    <label for="filter-sizes" class="form-label">Размер:</label>
+                    <select id="filter-sizes" class="form-select">
+                        <option value="" selected>-- выбрать размер --</option>
+                        {% for size in filter_options_sizes %}
+                            <option value="{{ size.nmids|join:',' }}">
+                                {{ size.tail }}
                             </option>
                         {% endfor %}
                     </select>
@@ -364,35 +372,26 @@
                 allowClear: true,
                 width: '100%'
             });
-            // Обработчик выбора группы
-            $('#group-select').on('change', function () {
-                const selected = $(this).val();
-                const selectedIds = selected ? selected.split(',') : [];
-                const $nmidSelect = $('#nmid-select');
-
-                // Установим флаг selected
-                $nmidSelect.find('option').each(function () {
-                    const isSelected = selectedIds.includes(this.value);
-                    this.selected = isSelected;
-                });
-
-                // Обновим Select2
-                $nmidSelect.trigger('change');
+            // Для размера
+            $('#filter-sizes').select2({
+                placeholder: 'Выберите размер',
+                allowClear: true,
+                width: '100%'
             });
-            // Обработчик выбора ткани
-            $('#group-without-color').on('change', function () {
-                const selected = $(this).val();
+            function handleGroupSelectChange(selector) {
+                const selected = $(selector).val();
                 const selectedIds = selected ? selected.split(',') : [];
                 const $nmidSelect = $('#nmid-select');
 
-                // Установим флаг selected
                 $nmidSelect.find('option').each(function () {
-                    const isSelected = selectedIds.includes(this.value);
-                    this.selected = isSelected;
+                    this.selected = selectedIds.includes(this.value);
                 });
 
-                // Обновим Select2
                 $nmidSelect.trigger('change');
+            }
+
+            $('#group-select, #group-without-color, #filter-sizes').on('change', function () {
+                handleGroupSelectChange(this);
             });
         });
     </script>
