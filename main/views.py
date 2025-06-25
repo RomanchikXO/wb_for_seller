@@ -116,7 +116,7 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     return sorted_items
 
 
-def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_color: bool = False):
+def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_color: bool = False, colors: bool = False):
     sql_query = """
         WITH base AS (
           SELECT
@@ -167,6 +167,53 @@ def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_colo
 
     response = {}
 
+    if colors:
+        sql_query = """
+            SELECT json_agg(json_build_object(color_key, nmid_list)) AS result
+            FROM (
+                SELECT
+                    color_key,
+                    array_agg(nmid) AS nmid_list
+                FROM (
+                    SELECT
+                        nmid,
+                        CASE
+                            -- Если есть 'ww', берем всё после него
+                            WHEN vendorcode ~* 'ww' THEN
+                                regexp_replace(lower(vendorcode), '.*?ww', '', 'g')
+                            
+                            -- Если нет 'ww', ищем первое число и берем всё после него
+                            WHEN vendorcode ~* '\d' THEN
+                                regexp_replace(lower(vendorcode), '.*?\d+', '', 'g')
+                            
+                            ELSE NULL
+                        END AS color_key
+                    FROM myapp_nmids
+                ) AS extracted
+                WHERE color_key IS NOT NULL AND color_key <> ''
+                GROUP BY color_key
+            ) AS grouped;
+        """
+        conn = connect_to_database()
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, )
+            rows = cursor.fetchall()
+
+        columns = [desc[0] for desc in cursor.description]
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+        colors = dict_rows[0]["result"]
+
+        logger.info(colors)
+
+        changed_colors = [
+            {
+                'tail': key,
+                "nmids": value
+            }
+            for dictionary in colors
+            for key, value in dictionary.items()
+        ]
+        response["colors"] = sorted(changed_colors, key=lambda x: x['tail'])
     if clothes:
         cloth = sorted(
             [
@@ -653,9 +700,10 @@ def podsort_view(request):
         }
         for item in nmids
     ]
-    filter_response = get_filter_by_articles(clothes=True, sizes=True)
+    filter_response = get_filter_by_articles(clothes=True, sizes=True, colors=True)
     filter_options_without_color = filter_response["cloth"]
     filter_options_sizes = filter_response["sizes"]
+    filter_options_colors = filter_response["colors"]
 
     try:
         items = {}
@@ -759,6 +807,7 @@ def podsort_view(request):
             "order": order,
             "filter_options_without_color": filter_options_without_color,
             "filter_options_sizes": filter_options_sizes,
+            "filter_options_colors": filter_options_colors,
         }
     )
 

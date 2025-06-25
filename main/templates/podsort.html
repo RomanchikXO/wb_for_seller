@@ -124,6 +124,17 @@
                     </select>
                 </div>
                 <div class="me-2 w-20">
+                    <label for="filter-colors" class="form-label">Цвет:</label>
+                    <select id="filter-colors" class="form-select">
+                        <option value="" selected>-- выбрать цвет --</option>
+                        {% for color in filter_options_colors %}
+                            <option value="{{ color.nmids|join:',' }}">
+                                {{ color.tail }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="me-2 w-20">
                     <label for="warehouse-select" class="form-label">Фильтр по складу:</label>
                     <select id="warehouse-select" name="warehouse" class="form-select" multiple>
                         {% for warehouse in warehouses %}
@@ -152,6 +163,15 @@
         <div class="table-responsive">
             <table class="table table-bordered">
                 <thead>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
                     <tr>
                         <th>Артикул</th>
                         <th>
@@ -361,6 +381,12 @@
                 allowClear: true,
                 width: '100%'
             });
+            // Для цвета
+            $('#filter-colors').select2({
+                placeholder: 'Выберите цвет',
+                allowClear: true,
+                width: '100%'
+            });
             function handleGroupSelectChange(selector) {
                 const selected = $(selector).val();
                 const selectedIds = selected ? selected.split(',') : [];
@@ -373,7 +399,7 @@
                 $nmidSelect.trigger('change');
             }
 
-            $('#group-without-color, #filter-sizes').on('change', function () {
+            $('#group-without-color, #filter-sizes, #filter-colors').on('change', function () {
                 handleGroupSelectChange(this);
             });
         });
