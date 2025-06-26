@@ -566,7 +566,17 @@ def podsort_view(request):
 
     page_sizes = [5, 10, 20, 50, 100]
     abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
-    nmid_filter = request.GET.getlist('nmid', "")
+    nmid_filter = request.GET.getlist('nmid', [])
+
+    without_color_filter = res if (res:=request.GET.getlist('wc_filter', [])) and res[0] else []
+    wc_filter = without_color_filter[0].split(',') if without_color_filter else []
+
+    sizes_filter = res if (res:=request.GET.getlist('sz_filter', [])) and res[0] else []
+    sz_filter = sizes_filter[0].split(',') if sizes_filter else []
+
+    colors_filter = res if (res:=request.GET.getlist('cl_filter', [])) and res[0] else []
+    cl_filter = colors_filter[0].split(',') if colors_filter else []
+
     warehouse_filter = request.GET.getlist('warehouse', "")
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
     page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
@@ -597,21 +607,22 @@ def podsort_view(request):
     # Создаём отображение для быстрого доступа к индексу
     warehouse_priority = {name: index for index, name in enumerate(warehouses)}
 
-    if nmid_filter:
-        placeholders = ', '.join(['%s'] * len(nmid_filter))
+    all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
+
+    if all_filters:
+        all_filters = list(set.intersection(*all_filters))
+        placeholders = ', '.join(['%s'] * len(all_filters))
         nmid_query = f"WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))}) AND p.nmid IN ({placeholders})"
-        params.extend(nmid_filter)
+        params.extend(all_filters)
     else:
         nmid_query = f"WHERE p.nmid NOT IN ({', '.join(map(str, exclude_ids))})"
 
     if warehouse_filter:
         warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
         warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
-        warehouse_su = " OR ".join(f"""su."warehouseName" LIKE '{wh.split()[0]}%%'""" for wh in warehouse_filter)
     else:
         warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
         warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
-        warehouse_su = " OR ".join(f"""su."warehouseName" LIKE '{wh.split()[0]}%%'""" for wh in warehouses)
 
     try:
         sql_query = f"""
@@ -858,6 +869,9 @@ def podsort_view(request):
             "warehouse_filter": warehouse_filter,
             "nmids": combined_list,
             "nmid_filter": nmid_filter,
+            "without_color_filter": without_color_filter,
+            "sizes_filter": sizes_filter,
+            "colors_filter": colors_filter,
             "items": page_obj,
             "paginator": paginator,
             "turnover_periods": turnover_periods,

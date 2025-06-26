@@ -103,30 +103,33 @@
                             </select>
                         </th>
                         <th>
-                            <select id="group-without-color" class="form-select">
-                                <option value="" selected>-- выбрать ткань --</option>
+                            <select id="group-without-color" name="wc_filter" class="form-select">
+                                <option value="" {% if not without_color_filter %}selected{% endif %}>-- выбрать ткань --</option>
                                 {% for group in filter_options_without_color %}
-                                    <option value="{{ group.nmids|join:',' }}">
+                                    <option value="{{ group.nmids|join:',' }}"
+                                        {% if group.nmids|join:',' in without_color_filter %}selected{% endif %}>
                                         {{ group.tail }}
                                     </option>
                                 {% endfor %}
                             </select>
                         </th>
                         <th>
-                            <select id="filter-sizes" class="form-select">
-                                <option value="" selected>-- выбрать размер --</option>
+                            <select id="filter-sizes" name="sz_filter" class="form-select">
+                                <option value="" {% if not sizes_filter %}selected{% endif %}>-- выбрать размер --</option>
                                 {% for size in filter_options_sizes %}
-                                    <option value="{{ size.nmids|join:',' }}">
+                                    <option value="{{ size.nmids|join:',' }}"
+                                        {% if size.nmids|join:',' in sizes_filter %}selected{% endif %}>
                                         {{ size.tail }}
                                     </option>
                                 {% endfor %}
                             </select>
                         </th>
                         <th>
-                            <select id="filter-colors" class="form-select">
-                                <option value="" selected>-- выбрать цвет --</option>
+                            <select id="filter-colors" name="cl_filter" class="form-select">
+                                <option value="" {% if not colors_filter %}selected{% endif %}>-- выбрать цвет --</option>
                                 {% for color in filter_options_colors %}
-                                    <option value="{{ color.nmids|join:',' }}">
+                                    <option value="{{ color.nmids|join:',' }}"
+                                        {% if color.nmids|join:',' in colors_filter %}selected{% endif %}>
                                         {{ color.tail }}
                                     </option>
                                 {% endfor %}
@@ -162,7 +165,7 @@
                         <th>Артикул</th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Ткань
                                 {% if sort_by == "cloth" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -171,7 +174,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_size&order={% if sort_by == "i_size" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_size&order={% if sort_by == "i_size" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Размер
                                 {% if sort_by == "i_size" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -180,7 +183,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_color&order={% if sort_by == "i_color" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_color&order={% if sort_by == "i_color" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Цвет
                                 {% if sort_by == "i_color" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -189,7 +192,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Заказы
                                 {% if sort_by == "orders" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -198,7 +201,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=stock&order={% if sort_by == "stock" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=stock&order={% if sort_by == "stock" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Остатки
                                 {% if sort_by == "stock" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -208,7 +211,7 @@
                         <th>АВС по размерам</th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Оборачиваемость общая
                                 {% if sort_by == "turnover_total" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -290,13 +293,13 @@
                     {% with base_params="&per_page="|add:per_page|add:"&order="|add:order|add:"&sort_by="|add:sort_by %}
                         {% if items.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
                             </li>
                         {% endif %}
 
                         {% if items.number > 3 %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
                             </li>
                             {% if items.number > 4 %}
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -306,7 +309,7 @@
                         {% for num in paginator.page_range %}
                             {% if num >= items.number|add:"-2" and num <= items.number|add:"2" %}
                                 <li class="page-item {% if items.number == num %}active{% endif %}">
-                                    <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
+                                    <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -316,13 +319,13 @@
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
                             </li>
                         {% endif %}
 
                         {% if items.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}wc_filter={{ without_color_filter }}&sz_filter={{ sizes_filter }}&cl_filter={{ colors_filter }}&{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
                             </li>
                         {% endif %}
                     {% endwith %}
@@ -382,21 +385,6 @@
                 placeholder: 'Выберите цвет',
                 allowClear: true,
                 width: '100%'
-            });
-            function handleGroupSelectChange(selector) {
-                const selected = $(selector).val();
-                const selectedIds = selected ? selected.split(',') : [];
-                const $nmidSelect = $('#nmid-select');
-
-                $nmidSelect.find('option').each(function () {
-                    this.selected = selectedIds.includes(this.value);
-                });
-
-                $nmidSelect.trigger('change');
-            }
-
-            $('#group-without-color, #filter-sizes, #filter-colors').on('change', function () {
-                handleGroupSelectChange(this);
             });
         });
     </script>
