@@ -545,13 +545,11 @@ def podsort_view(request):
     nmid_filter = request.GET.getlist('nmid', [])
 
     without_color_filter = request.GET.getlist('wc_filter', "")
-    logger.info(without_color_filter)
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
         else []
     )
-    logger.info(wc_filter)
 
     sizes_filter = request.GET.getlist('sz_filter', [])
     sz_filter = (
@@ -599,7 +597,6 @@ def podsort_view(request):
     all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
 
     if all_filters:
-        logger.info(all_filters)
         all_filters = list(set.intersection(*all_filters))
         all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
         placeholders = ', '.join(['%s'] * len(all_current_ids))
