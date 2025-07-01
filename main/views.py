@@ -575,22 +575,38 @@ def podsort_view(request):
     period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
     if period_ord == 3:
         period = tree_days_ago
-        name_column_available = "s.days_in_stock_last_3"
+        name_column_available = "days_in_stock_last_3"
     elif period_ord == 7:
         period = seven_days_ago
-        name_column_available = "s.days_in_stock_last_7"
+        name_column_available = "days_in_stock_last_7"
     elif period_ord == 14:
         period = two_weeks_ago
-        name_column_available = "s.days_in_stock_last_14"
+        name_column_available = "days_in_stock_last_14"
     elif period_ord == 30:
         period = thirty_days_ago
-        name_column_available = "s.days_in_stock_last_30"
+        name_column_available = "days_in_stock_last_30"
     params = [period]
 
     turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
-    warehouses = ["Казань", "Подольск", "Коледино", "Тула", "Екатеринбург - Испытателей 14г", "Электросталь",
-                  "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
+    # получаем все склады
+    sql_query = """
+        SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
+        FROM myapp_areawarehouses;
+    """
+
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query,)
+            rows = cursor.fetchall()
+        except Exception as e:
+            logger.exception(f"Ошибка получаения складов в podsort_view: {e}")
+        warehouses = [row[0] for row in rows]
+
+
+    # warehouses = ["Казань", "Подольск", "Коледино", "Тула", "Екатеринбург - Испытателей 14г", "Электросталь",
+    #               "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
     # Создаём отображение для быстрого доступа к индексу
     warehouse_priority = {name: index for index, name in enumerate(warehouses)}
 
@@ -599,105 +615,264 @@ def podsort_view(request):
     if all_filters:
         all_filters = list(set.intersection(*all_filters))
         all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
-        placeholders = ', '.join(['%s'] * len(all_current_ids))
-        nmid_query = f"WHERE p.nmid IN ({placeholders})"
-        params.extend(all_current_ids)
+        nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
+        nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
     else:
-        nmid_query = f"WHERE p.nmid IN ({', '.join(map(str, current_ids))})"
+        nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
+        nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
+
+
+    # заказы для каждого склада
+    sql_query = f"""
+        WITH region_warehouse_min AS (
+            SELECT
+                area,
+                (SELECT key
+                 FROM jsonb_each_text(warehouses)
+                 ORDER BY (value)::int
+                 LIMIT 1) AS min_warehouse
+            FROM myapp_areawarehouses
+        ),
+        orders_with_warehouse AS (
+            SELECT
+                o.nmid,
+                rwm.min_warehouse
+            FROM myapp_orders o
+            JOIN region_warehouse_min rwm
+                ON o.regionname = rwm.area
+            WHERE
+                o.date >= '{period}'
+            AND {nmid_query_filter}
+        )
+        SELECT
+            nmid,
+            min_warehouse AS warehouse_with_min_value,
+            COUNT(*) AS order_count
+        FROM orders_with_warehouse
+        GROUP BY nmid, min_warehouse
+        ORDER BY order_count DESC;
+    """
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query, )
+            rows = cursor.fetchall()
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+        columns = [desc[0] for desc in cursor.description]
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+
+        result = defaultdict(dict)
+        for entry in dict_rows:
+            nmid = entry['nmid']
+            warehouse = entry['warehouse_with_min_value']
+            count = entry['order_count']
+            result[nmid][warehouse] = count
+
+        all_orders = dict(result)
 
     if warehouse_filter:
-        warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
-        warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouse_filter)
-    else:
-        warehouse_s = " OR ".join(f"s.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
-        warehouse_o = " OR ".join(f"o.warehousename LIKE '{wh.split()[0]}%%'" for wh in warehouses)
-
-    try:
         sql_query = f"""
-            WITH
-                -- 1) Сумма остатков по складам
-                stocks_agg AS (
-                    SELECT
-                        s.nmid,
-                        s.warehousename,
-                        {name_column_available} AS available,
-                        SUM(s.quantity) AS total_quantity
-                    FROM myapp_stocks s
-                    WHERE
-                        {warehouse_s}
-                    GROUP BY
-                        s.nmid, s.warehousename, {name_column_available}
-                ),
-                
-                -- 2) Количество заказов по складам (за 2 недели)
-                orders_agg AS (
-                    SELECT
-                        o.nmid,
-                        o.warehousename,
-                        COUNT(o.id) AS total_orders
-                    FROM myapp_orders o
-                    WHERE
-                        o.date >= %s
-                        AND (
-                            {warehouse_o}
-                        )
-                    GROUP BY
-                        o.nmid, o.warehousename
-                ),
-                
-                -- 3) Унион всех складов, где были либо остатки, либо заказы
-                all_wh AS (
-                    SELECT nmid, warehousename FROM stocks_agg
-                    UNION
-                    SELECT nmid, warehousename FROM orders_agg
-                )
-                
-                -- 4) Основной запрос: все товары + все склады из union-а + подтягиваем агрегаты
+            WITH region_warehouse_min AS (
                 SELECT
-                    p.id          AS id,
-                    p.nmid        AS nmid,
-                    p.vendorcode  AS vendorcode,
-                    w.warehousename,
-                    COALESCE(sa.total_quantity, 0) AS total_quantity,
-                    COALESCE(sa.available, 0)      AS available, 
-                    COALESCE(oa.total_orders,   0) AS total_orders,
-                    (
-                        SELECT (elem->'value')->>0 AS value
-                        FROM jsonb_array_elements(p.characteristics) AS elem
-                        WHERE (elem->>'id')::int = 12
-                        LIMIT 1
-                    ) AS cloth,
-                    (
-                        SELECT (elem->'value')->>0 AS value
-                        FROM jsonb_array_elements(p.characteristics) AS elem
-                        WHERE (elem->>'id')::int = 14177449
-                        LIMIT 1
-                    ) AS i_color
-                FROM
-                    myapp_nmids p
-                LEFT JOIN all_wh w
-                    ON p.nmid = w.nmid
-                LEFT JOIN stocks_agg sa
-                    ON p.nmid = sa.nmid
-                   AND w.warehousename = sa.warehousename
-                LEFT JOIN orders_agg oa
-                    ON p.nmid = oa.nmid
-                   AND w.warehousename = oa.warehousename {nmid_query}
-                ORDER BY
-                    p.nmid,
-                    w.warehousename;
+                    area,
+                    (SELECT key
+                     FROM jsonb_each_text(warehouses)
+                     WHERE key = ANY(%s)
+                     ORDER BY (value)::int
+                     LIMIT 1) AS min_warehouse
+                FROM myapp_areawarehouses
+            ),
+            orders_with_warehouse AS (
+                SELECT
+                    o.nmid,
+                    rwm.min_warehouse
+                FROM myapp_orders o
+                JOIN region_warehouse_min rwm
+                    ON o.regionname = rwm.area
+                WHERE
+                    o.date >= %s
+                AND {nmid_query_filter}
+            )
+            SELECT
+                nmid,
+                COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
+                COUNT(*) AS order_count
+            FROM orders_with_warehouse
+            GROUP BY nmid, min_warehouse
+            ORDER BY order_count DESC;
         """
         conn = connect_to_database()
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, params)
+                cursor.execute(sql_query, (warehouse_filter, period))
                 rows = cursor.fetchall()
             except Exception as e:
                 logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
             columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
+
+            result = defaultdict(dict)
+            for entry in dict_rows:
+                nmid = entry['nmid']
+                warehouse = entry['warehouse_with_min_value']
+                count = entry['order_count']
+                result[nmid][warehouse] = count
+
+            orders_with_filter = dict(result)
+
+    # остатки и кол-во дней в наличии
+    sql_query = f"""
+        SELECT
+            nmid,
+            warehousename,
+            {name_column_available} AS available,
+            SUM(quantity) AS total_quantity
+        FROM myapp_stocks
+        WHERE {nmid_query}
+        GROUP BY
+            nmid, warehousename, {name_column_available}
+    """
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query, params)
+            rows = cursor.fetchall()
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+        columns = [desc[0] for desc in cursor.description]
+        dict_rows = [dict(zip(columns, row)) for row in rows]
+
+        result = defaultdict(dict)
+        for entry in dict_rows:
+            nmid = entry['nmid']
+            warehouse = entry['warehousename']
+            available = entry.get('available', 0)
+            total_quantity = entry.get('total_quantity', 0)
+            result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
+
+        warh_stock = dict(result)
+
+    # артикул, id, ткань и цвет
+    sql_query = f"""
+        SELECT 
+        nmid,
+        id,
+        (
+            SELECT (elem->'value')->>0 AS value
+            FROM jsonb_array_elements(characteristics) AS elem
+            WHERE (elem->>'id')::int = 12
+            LIMIT 1
+        ) AS cloth,
+        (
+            SELECT (elem->'value')->>0 AS value
+            FROM jsonb_array_elements(characteristics) AS elem
+            WHERE (elem->>'id')::int = 14177449
+            LIMIT 1
+        ) AS i_color,
+        vendorcode
+        FROM myapp_nmids
+        WHERE {nmid_query}
+    """
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query, params)
+            rows = cursor.fetchall()
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+        articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4]} for row in rows}
+
+    all_response = {}
+    try:
+        for art, index in articles.items():
+            if not all_response.get(art):
+                all_response[art] = {}
+            all_response[art]["id"] = index["id"]
+            all_response[art]["article"] = art
+            all_response[art]["cloth"] = index["cloth"]
+            all_response[art]["i_color"] = index["i_color"]
+            all_response[art]["vendorcode"] = index["vendorcode"]
+
+            low_vendor = index["vendorcode"].lower()
+            if "11ww" in low_vendor or "3240" in low_vendor:
+                all_response[art]["i_size"] = "3240"
+            elif "22ww" in low_vendor or "3270" in low_vendor:
+                all_response[art]["i_size"] = "3270"
+            elif "33ww" in low_vendor or "3250" in low_vendor:
+                all_response[art]["i_size"] = "3250"
+            elif "44ww" in low_vendor or "3260" in low_vendor:
+                all_response[art]["i_size"] = "3260"
+            elif "55ww" in low_vendor or "4240" in low_vendor:
+                all_response[art]["i_size"] = "4240"
+            elif "66ww" in low_vendor or "4250" in low_vendor:
+                all_response[art]["i_size"] = "4250"
+            elif "77ww" in low_vendor or "4260" in low_vendor:
+                all_response[art]["i_size"] = "4260"
+            elif "88ww" in low_vendor or "4270" in low_vendor:
+                all_response[art]["i_size"] = "4270"
+            elif "2240" in low_vendor:
+                all_response[art]["i_size"] = "2240"
+            elif "2250" in low_vendor:
+                all_response[art]["i_size"] = "2250"
+            elif "2260" in low_vendor:
+                all_response[art]["i_size"] = "2260"
+            elif "2270" in low_vendor:
+                all_response[art]["i_size"] = "2270"
+            elif "5240" in low_vendor:
+                all_response[art]["i_size"] = "5240"
+            elif "5250" in low_vendor:
+                all_response[art]["i_size"] = "5250"
+            elif "5260" in low_vendor:
+                all_response[art]["i_size"] = "5260"
+            elif "5270" in low_vendor:
+                all_response[art]["i_size"] = "5270"
+            elif "6240" in low_vendor:
+                all_response[art]["i_size"] = "6240"
+            elif "6250" in low_vendor:
+                all_response[art]["i_size"] = "6250"
+            elif "6260" in low_vendor:
+                all_response[art]["i_size"] = "6260"
+            elif "6270" in low_vendor:
+                all_response[art]["i_size"] = "6270"
+
+            all_response[art]["ABC"] = "формула"
+            all_response[art]["turnover_total"] = 0
+
+            all_response[art]["subitems"] = []
+            all_response[art]["orders"] = 0
+            all_response[art]["stock"] = 0
+            if all_orders.get(art):
+                for warh, order in all_orders[art].items():
+                    all_response[art]["orders"] += order
+                    all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
+                    all_response[art]["subitems"].append(
+                        {
+                            "warehouse": warh,
+                            "order": order,
+                            "stock": warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
+                            "time_available": warh_stock[art][warh].get("available") or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
+                            "turnover": 0,
+                            "rec_delivery": 0,
+                            "order_for_change_war": 0,
+                        }
+                    )
+                    if warehouse_filter and orders_with_filter[art].get(warh):
+                        all_response[art]["subitems"][-1]["order_for_change_war"] = orders_with_filter[art][warh]
+                if warehouse_filter and (order_for_change_war := orders_with_filter[art].get("Неопределено")):
+                    all_response[art]["subitems"].append(
+                        {
+                            "warehouse": "Неопределено",
+                            "order": order_for_change_war,
+                            "stock": 0,
+                            "time_available": 0,
+                            "turnover": 0,
+                            "rec_delivery": 0,
+                        }
+                    )
     except Exception as e:
-        logger.error(f"Чтото с запросом в podsort_view: {e}")
+        logger.error(f"Ошибка в обработке итоговых данных {e}")
+
 
     sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
                 "FROM myapp_price p "
@@ -727,106 +902,42 @@ def podsort_view(request):
     filter_options_colors = filter_response["colors"]
 
     try:
-        items = {}
-        for row in dict_rows:
-            if items.get(row["nmid"]):
-                items[row["nmid"]]["orders"] += row["total_orders"]
-                items[row["nmid"]]["stock"] += row["total_quantity"]
-            else:
-                items[row["nmid"]] = {
-                    "id": row["id"],
-                    "article": row["nmid"],
-                    "vendorcode": row["vendorcode"],
-                    "cloth": row["cloth"],
-                    "i_color": row["i_color"],
-                    "orders": row["total_orders"],
-                    "stock": row["total_quantity"],
-                    "ABC": "формула",
-                    "turnover_total": 0,
-                    "subitems": []
-                }
-                low_vendor = row["vendorcode"].lower()
-                if "11ww" in low_vendor or "3240" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "3240"
-                elif "22ww" in low_vendor or "3270" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "3270"
-                elif "33ww" in low_vendor or "3250" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "3250"
-                elif "44ww" in low_vendor or "3260" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "3260"
-                elif "55ww" in low_vendor or "4240" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "4240"
-                elif "66ww" in low_vendor or "4250" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "4250"
-                elif "77ww" in low_vendor or "4260" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "4260"
-                elif "88ww" in low_vendor or "4270" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "4270"
-                elif "2240" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "2240"
-                elif "2250" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "2250"
-                elif "2260" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "2260"
-                elif "2270" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "2270"
-                elif "5240" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "5240"
-                elif "5250" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "5250"
-                elif "5260" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "5260"
-                elif "5270" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "5270"
-                elif "6240" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "6240"
-                elif "6250" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "6250"
-                elif "6260" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "6260"
-                elif "6270" in low_vendor:
-                    items[row["nmid"]]["i_size"] = "6270"
 
-            if row["warehousename"]:
-                items[row["nmid"]]["subitems"].append(
-                    {
-                        "warehouse": row["warehousename"],
-                        "order": row["total_orders"],
-                        "stock": row["total_quantity"],
-                        "turnover": int(row["total_quantity"] / (row["total_orders"] / period_ord)) if row[
-                            "total_orders"] else row["total_quantity"],
-                        "rec_delivery": 0,
-                        "time_available": row["available"],
-                    }
+        for key, value in all_response.items():
+            all_response[key]["turnover_total"] = int(all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
+                if all_response[key]["orders"] else all_response[key]["stock"]
+            all_response[key]["color"] = "green"
+            if all_response[key]["subitems"]:
+                all_response[key]["subitems"].sort(
+                    key=lambda x: x["order"],
+                    reverse=True
                 )
 
-        for key, value in items.items():
-            items[key]["turnover_total"] = int(items[key]["stock"] / (items[key]["orders"] / period_ord)) \
-                if items[key]["orders"] else items[key]["stock"]
-            items[key]["color"] = "green"
-            if items[key]["subitems"]:
-                items[key]["subitems"].sort(
-                    key=lambda x: warehouse_priority.get(x["warehouse"], len(warehouse_priority))
-                )
-
-                for index, i in enumerate(items[key]["subitems"]):
-                    items[key]["subitems"][index]["rec_delivery"] = int(
-                        (items[key]["subitems"][index]["order"] / items[key]["subitems"][index]["time_available"]) * turnover_change - items[key]["subitems"][index]["stock"]
-                    ) if items[key]["subitems"][index]["time_available"] else 0
-
-                    if items[key]["subitems"][index]["time_available"] < 5:
-                        items[key]["subitems"][index]["rec_delivery"] = int(items[key]["subitems"][index]["rec_delivery"] / 2)
-
-                    if items[key]["subitems"][index]["rec_delivery"] <= -100 or items[key]["subitems"][index]["rec_delivery"] >= 100:
-                        items[key]["subitems"][index]["color"] = "red"
-                        items[key]["color"] = "red" if items[key]["turnover_total"] < 25 else "white"
-                    elif 40 <= items[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= items[key]["subitems"][index]["rec_delivery"] > -100:
-                        items[key]["subitems"][index]["color"] = "yellow"
-                    elif 0 < items[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= items[key]["subitems"][index]["rec_delivery"] > -40:
-                        items[key]["subitems"][index]["color"] = "green"
-                    else:
-                        items[key]["subitems"][index]["color"] = "white"
-        items = abc_classification(items)
+                for index, i in enumerate(all_response[key]["subitems"]):
+                    if i.get("warehouse") == "Неопределено": continue
+                    try:
+                        if not warehouse_filter:
+                            all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                all_response[key]["subitems"][index][
+                                    "order"] / period_ord * turnover_change -
+                                all_response[key]["subitems"][index]["stock"]
+                            )
+                        else:
+                            all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
+                            ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
+                        if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or all_response[key]["subitems"][index]["rec_delivery"] >= 100:
+                            all_response[key]["subitems"][index]["color"] = "red"
+                            all_response[key]["color"] = "red" if all_response[key]["turnover_total"] < 25 else "white"
+                        elif 40 <= all_response[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= all_response[key]["subitems"][index]["rec_delivery"] > -100:
+                            all_response[key]["subitems"][index]["color"] = "yellow"
+                        elif 0 < all_response[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= all_response[key]["subitems"][index]["rec_delivery"] > -40:
+                            all_response[key]["subitems"][index]["color"] = "green"
+                        else:
+                            all_response[key]["subitems"][index]["color"] = "white"
+                    except Exception:
+                        raise Exception(all_response[key]["subitems"])
+        items = abc_classification(all_response)
 
         if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size", "i_color"):
             descending = False if order == "asc" else True
@@ -961,7 +1072,7 @@ def export_excel_podsort(request):
     headers = [
         "Артикул", "Ткань", "Размер", "Цвет", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
-    subheaders = ["Склад", "Заказы", "Остатки", "Оборачиваемость", "Рек. поставка", "Дни в наличии"]
+    subheaders = ["Склад", "Заказы", "Рек. поставка"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -1001,10 +1112,7 @@ def export_excel_podsort(request):
                 row_num += 1
                 ws.cell(row=row_num, column=2, value=subitem["warehouse"])
                 ws.cell(row=row_num, column=3, value=subitem["order"])
-                ws.cell(row=row_num, column=4, value=subitem["stock"])
-                ws.cell(row=row_num, column=5, value=subitem["turnover"])
-                ws.cell(row=row_num, column=6, value=subitem["rec_delivery"])
-                ws.cell(row=row_num, column=7, value=subitem["time_available"])
+                ws.cell(row=row_num, column=4, value=subitem["rec_delivery"])
 
     # Автоширина колонок
     for col in ws.columns:

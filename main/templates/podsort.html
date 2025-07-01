@@ -261,10 +261,7 @@
                                         <tr>
                                             <th>Склад</th>
                                             <th>Заказы</th>
-                                            <th>Остатки</th>
-                                            <th>Оборачиваемость</th>
                                             <th>Рек. поставка</th>
-                                            <th>Дни в наличии</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -272,10 +269,7 @@
                                             <tr {% if subitem.color == "red" %} class="row-red" {% elif subitem.color == "green" %} class="row-green" {% elif subitem.color == "yellow" %} class="row-yellow" {% endif %}>
                                                 <td>{{ subitem.warehouse }}</td>
                                                 <td>{{ subitem.order }}</td>
-                                                <td>{{ subitem.stock }}</td>
-                                                <td>{{ subitem.turnover }}</td>
                                                 <td>{{ subitem.rec_delivery }}</td>
-                                                <td>{{ subitem.time_available }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -422,10 +416,7 @@
                   const subitem = {
                     warehouse: subCells[0]?.textContent.trim() || '',
                     order: parseInt(subCells[1]?.textContent.trim()) || 0,
-                    stock: parseInt(subCells[2]?.textContent.trim()) || 0,
-                    turnover: parseFloat(subCells[3]?.textContent.trim()) || 0,
-                    rec_delivery: parseInt(subCells[4]?.textContent.trim()) || 0,
-                    time_available: parseInt(subCells[5]?.textContent.trim()) || 0,
+                    rec_delivery: parseInt(subCells[2]?.textContent.trim()) || 0,
                   };
                   item.subitems.push(subitem);
                 });
