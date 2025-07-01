@@ -1072,7 +1072,7 @@ def export_excel_podsort(request):
     headers = [
         "Артикул", "Ткань", "Размер", "Цвет", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
-    subheaders = ["Склад", "Заказы", "Рек. поставка"]
+    subheaders = ["Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -1113,6 +1113,8 @@ def export_excel_podsort(request):
                 ws.cell(row=row_num, column=2, value=subitem["warehouse"])
                 ws.cell(row=row_num, column=3, value=subitem["order"])
                 ws.cell(row=row_num, column=4, value=subitem["rec_delivery"])
+                ws.cell(row=row_num, column=5, value=subitem["stock"])
+                ws.cell(row=row_num, column=6, value=subitem["time_available"])
 
     # Автоширина колонок
     for col in ws.columns:

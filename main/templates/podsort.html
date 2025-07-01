@@ -262,6 +262,8 @@
                                             <th>Склад</th>
                                             <th>Заказы</th>
                                             <th>Рек. поставка</th>
+                                            <th>Остатки</th>
+                                            <th>Дни в наличии</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -270,6 +272,8 @@
                                                 <td>{{ subitem.warehouse }}</td>
                                                 <td>{{ subitem.order }}</td>
                                                 <td>{{ subitem.rec_delivery }}</td>
+                                                <td>{{ subitem.stock }}</td>
+                                                <td>{{ subitem.time_available }}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -417,6 +421,8 @@
                     warehouse: subCells[0]?.textContent.trim() || '',
                     order: parseInt(subCells[1]?.textContent.trim()) || 0,
                     rec_delivery: parseInt(subCells[2]?.textContent.trim()) || 0,
+                    stock: parseInt(subCells[3]?.textContent.trim()) || 0,
+                    time_available: parseInt(subCells[4]?.textContent.trim()) || 0,
                   };
                   item.subitems.push(subitem);
                 });
