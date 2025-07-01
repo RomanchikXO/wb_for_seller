@@ -101,7 +101,7 @@ async def set_prices_on_google():
     try:
         all_fields = await conn.fetch(request, seven_days_ago)
         data = [
-            [row["supplierarticle"], round(row["total_orders"] / 7, 2)]
+            [row["supplierarticle"].rstrip(), round(row["total_orders"] / 7, 2)]
             for row in all_fields
         ]
         for _ in range(50):
@@ -132,7 +132,7 @@ async def set_prices_on_google():
     try:
         all_fields = await conn.fetch(request)
         result_dict = [
-            [row["supplierarticle"], int(row["total_quantity"])]
+            [row["supplierarticle"].rstrip(), int(row["total_quantity"])]
             for row in all_fields
         ]
         for _ in range(50):
