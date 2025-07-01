@@ -843,13 +843,13 @@ def podsort_view(request):
             all_response[art]["orders"] = 0
             all_response[art]["stock"] = 0
             if all_orders.get(art):
-                for warh, order in all_orders[art].items():
-                    all_response[art]["orders"] += order
+                for warh, i_order in all_orders[art].items():
+                    all_response[art]["orders"] += i_order
                     all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
                     all_response[art]["subitems"].append(
                         {
                             "warehouse": warh,
-                            "order": order,
+                            "order": i_order,
                             "stock": warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
                             "time_available": warh_stock[art][warh].get("available") or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
                             "turnover": 0,
