@@ -177,14 +177,14 @@ async def set_price_on_wb_from_repricer():
 
     request = {}
 
-    # try:
-    #     async with aiohttp.ClientSession() as session:
-    #         for seller in param:
-    #             request[seller["API_KEY"]] = wb_api(session, seller)
-    #         await asyncio.gather(*request.values())
-    # except Exception as e:
-    #     logger.error(f"Цены не установлены. Ошибка: {e}")
-    #     return
+    try:
+        async with aiohttp.ClientSession() as session:
+            for seller in param:
+                request[seller["API_KEY"]] = wb_api(session, seller)
+            await asyncio.gather(*request.values())
+    except Exception as e:
+        logger.error(f"Цены не установлены. Ошибка: {e}")
+        return
 
     conn = await async_connect_to_database()
     if not conn:
