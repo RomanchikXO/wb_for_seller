@@ -108,7 +108,7 @@ async def get_and_store_cookies(page):
     except:
         time.sleep(10)
     try:
-        close_button = page.locator('button[class*="s__2G0W7HmatG"]')
+        close_button = page.locator('button[class*="s__EAAx6f2l1v"]')
         await close_button.wait_for(state="visible", timeout=10000)
         await close_button.click(timeout=5000)
     except Exception as e:
