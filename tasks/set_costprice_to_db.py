@@ -33,7 +33,7 @@ async def get_cost_price_from_google():
                 FROM (VALUES 
                     {values_clause}
                     ) AS v(vendorcode, cost_price)
-                WHERE LOWER(v.vendorcode) = LOWER(p.vendorcode) OR LOWER(v.vendorcode) in LOWER(p.vendorcode) OR LOWER(p.vendorcode) in LOWER(v.vendorcode)
+                WHERE LOWER(TRIM(v.vendorcode)) = LOWER(TRIM(p.vendorcode))
             """
         await conn.execute(request)
     except Exception as e:
