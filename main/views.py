@@ -1070,7 +1070,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Ткань", "Размер", "Цвет", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
+        "Артикул", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"]
 
@@ -1092,8 +1092,8 @@ def export_excel_podsort(request):
 
         ws.cell(row=row_num, column=1, value=item["article"])
         ws.cell(row=row_num, column=2, value=item["cloth"])
-        ws.cell(row=row_num, column=3, value=item["i_size"])
-        ws.cell(row=row_num, column=4, value=item["i_color"])
+        ws.cell(row=row_num, column=3, value=item["i_color"])
+        ws.cell(row=row_num, column=4, value=item["i_size"])
         ws.cell(row=row_num, column=5, value=item["orders"])
         ws.cell(row=row_num, column=6, value=item["stock"])
         ws.cell(row=row_num, column=7, value=item["ABC"])
