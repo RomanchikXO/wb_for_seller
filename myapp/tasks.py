@@ -91,7 +91,7 @@ def some_task():
 @shared_task
 @with_task_context("prices_table")
 def prices_table():
-    url_prices = "https://docs.google.com/spreadsheets/d/1gXt5v1ZR5v5nGAWF9oIAjOY3yQmqU860/edit?gid=1086770212#gid=1086770212"
+    url_prices = "https://docs.google.com/spreadsheets/d/1u9_qNqq0pS0xpsiqEVBaC-u6HJCJ7PtDPtoBHZIxQBU/edit?gid=1956871347#gid=1956871347"
     logger.info("🟢 Обновляем гугл таблицу с ценами конкурентов и доходом")
     process_data(url_prices)
     logger.info("Гугл таблица с ценами конкурентов и доходом обновлена ")
