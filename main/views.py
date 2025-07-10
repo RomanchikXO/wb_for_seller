@@ -746,7 +746,7 @@ def podsort_view(request):
         result = defaultdict(dict)
         for entry in dict_rows:
             nmid = entry['nmid']
-            warehouse = entry['warehousename']
+            warehouse = entry['warehousename'] if entry['warehousename'] != "Тула" else "Алексин"
             available = entry.get('available', 0)
             total_quantity = entry.get('total_quantity', 0)
             result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
