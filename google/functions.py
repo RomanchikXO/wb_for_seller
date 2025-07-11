@@ -302,32 +302,26 @@ def update_google_prices_data_with_format(
                         })
                 else:
                     if ind_2 == 8:
-                        try:
-                            if cell == "0":
-                                val = "stringValue"
-                            else:
-                                val = "numberValue"
-                            row_data["values"].append({
-                                "userEnteredValue": {val: cleare_num(cell)},
-                                "userEnteredFormat": {
-                                    "backgroundColor": colors["light_yellow"]
-                                }
-                            })
-                        except Exception as e:
-                            raise Exception(f"Ошибка в параметрах {cell} где ind_2 == 8. Ошибка: {e}")
+                        if cell == "0":
+                            val = "stringValue"
+                        else:
+                            val = "numberValue"
+                        row_data["values"].append({
+                            "userEnteredValue": {val: cleare_num(cell)},
+                            "userEnteredFormat": {
+                                "backgroundColor": colors["light_yellow"]
+                            }
+                        })
                     else:
-                        try:
-                            numberValue = cleare_num(cell)
-                            if numberValue and numberValue != 0:
-                                row_data["values"].append({
-                                    "userEnteredValue": {"numberValue": numberValue},
-                                })
-                            else:
-                                row_data["values"].append({
-                                    "userEnteredValue": {"stringValue": str(cell)},
-                                })
-                        except Exception as e:
-                            raise Exception(f"Ошибка в параметрах cell: {cell}, numberValue: {numberValue}. Ошибка: {e}")
+                        numberValue = cleare_num(cell)
+                        if numberValue and numberValue != 0:
+                            row_data["values"].append({
+                                "userEnteredValue": {"numberValue": numberValue},
+                            })
+                        else:
+                            row_data["values"].append({
+                                "userEnteredValue": {"stringValue": str(cell)},
+                            })
             rows.append(row_data)
     except Exception as e:
         logger.error(f"Ошибка обработки данных для гугл таблицы: {e}. Функция: update_google_sheet_data_with_format")
@@ -358,7 +352,7 @@ def update_google_prices_data_with_format(
             body=request_body
         ).execute()
     except Exception as e:
-        logger.error(f"Ошибка обновления данных в гугл таблице: {e}. Функция: update_google_prices_data_with_format")
+        logger.error(f"Ошибка обновления данных в гугл таблице: {e}. Функция: update_google_prices_data_with_format. Данные: {rows}")
 
 
 def fetch_google_sheet_data(spreadsheet_url, sheet_identifier: Union[int, str, None], data_range=None):
