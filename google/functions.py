@@ -303,8 +303,7 @@ def update_google_prices_data_with_format(
                 else:
                     if ind_2 == 8:
                         if cell == "0":
-                            val = "stringValue"
-                            cell = str(cell)
+                            val = "numberValue"
                         else:
                             val = "numberValue"
                         row_data["values"].append({
