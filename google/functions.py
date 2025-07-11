@@ -302,16 +302,19 @@ def update_google_prices_data_with_format(
                         })
                 else:
                     if ind_2 == 8:
-                        if cell == "0":
-                            val = "stringValue"
-                        else:
-                            val = "numberValue"
-                        row_data["values"].append({
-                            "userEnteredValue": {val: cleare_num(cell)},
-                            "userEnteredFormat": {
-                                "backgroundColor": colors["light_yellow"]
-                            }
-                        })
+                        try:
+                            if cell == "0":
+                                val = "stringValue"
+                            else:
+                                val = "numberValue"
+                            row_data["values"].append({
+                                "userEnteredValue": {val: cleare_num(cell)},
+                                "userEnteredFormat": {
+                                    "backgroundColor": colors["light_yellow"]
+                                }
+                            })
+                        except Exception as e:
+                            raise Exception(f"Ошибка в параметрах {cell} где ind_2 == 8. Ошибка: {e}")
                     else:
                         numberValue = cleare_num(cell)
                         if numberValue and numberValue != 0:
