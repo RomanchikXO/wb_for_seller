@@ -316,15 +316,18 @@ def update_google_prices_data_with_format(
                         except Exception as e:
                             raise Exception(f"Ошибка в параметрах {cell} где ind_2 == 8. Ошибка: {e}")
                     else:
-                        numberValue = cleare_num(cell)
-                        if numberValue and numberValue != 0:
-                            row_data["values"].append({
-                                "userEnteredValue": {"numberValue": numberValue},
-                            })
-                        else:
-                            row_data["values"].append({
-                                "userEnteredValue": {"stringValue": str(cell)},
-                            })
+                        try:
+                            numberValue = cleare_num(cell)
+                            if numberValue and numberValue != 0:
+                                row_data["values"].append({
+                                    "userEnteredValue": {"numberValue": numberValue},
+                                })
+                            else:
+                                row_data["values"].append({
+                                    "userEnteredValue": {"stringValue": str(cell)},
+                                })
+                        except Exception as e:
+                            raise Exception(f"Ошибка в параметрах cell: {cell}, numberValue: {numberValue}. Ошибка: {e}")
             rows.append(row_data)
     except Exception as e:
         logger.error(f"Ошибка обработки данных для гугл таблицы: {e}. Функция: update_google_sheet_data_with_format")
