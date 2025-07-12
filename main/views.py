@@ -12,6 +12,7 @@ from myapp.models import Price, Stocks, Repricer, WbLk
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from database.DataBase import connect_to_database
 from datetime import datetime, timedelta
@@ -1416,3 +1417,12 @@ def warehousewb_submit_supply(request):
         return JsonResponse({'error': 'Ошибка при обработке CSV файла'}, status=400)
 
     return JsonResponse({'status': 200,})
+
+
+@csrf_exempt
+def google_webhook_view(request):
+    try:
+        data = json.loads(request.body)
+        logger.info(data)
+    except Exception as e:
+        logger.error(f"Ошибка {e}")
