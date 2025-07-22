@@ -659,7 +659,7 @@ def podsort_view(request):
             cursor.execute(sql_query, )
             rows = cursor.fetchall()
         except Exception as e:
-            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+            logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
 
@@ -709,7 +709,7 @@ def podsort_view(request):
                 cursor.execute(sql_query, (warehouse_filter, period))
                 rows = cursor.fetchall()
             except Exception as e:
-                logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+                logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
             columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
 
@@ -740,7 +740,7 @@ def podsort_view(request):
             cursor.execute(sql_query, params)
             rows = cursor.fetchall()
         except Exception as e:
-            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+            logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
         columns = [desc[0] for desc in cursor.description]
         dict_rows = [dict(zip(columns, row)) for row in rows]
 
@@ -781,7 +781,7 @@ def podsort_view(request):
             cursor.execute(sql_query, params)
             rows = cursor.fetchall()
         except Exception as e:
-            logger.exception(f"Сбой при выполнении podsort_view. Error: {e}")
+            logger.exception(f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
         articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4]} for row in rows}
 
     all_response = {}
