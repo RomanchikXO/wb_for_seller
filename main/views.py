@@ -570,9 +570,9 @@ def podsort_view(request):
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
-    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order', 'page', 'abc_filter']
+    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order', 'page', 'abc_filter']
     for key in session_keys:
-        value = request.GET.getlist(key) if key in ['nmid', 'warehouse'] else request.GET.get(key)
+        value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
         if value:
             request.session[key] = value
 
@@ -601,6 +601,7 @@ def podsort_view(request):
     )
 
     warehouse_filter = request.GET.getlist('warehouse', "")
+    alltags_filter = request.GET.getlist('alltagstb', "")
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
     page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
 
@@ -834,6 +835,11 @@ def podsort_view(request):
         for art, index in articles.items():
             if not all_response.get(art):
                 all_response[art] = {}
+            if alltags_filter:
+                if not set(index["tag_ids"]) & set(alltags_filter): # если два массива не имеют хотя бы одну строку общую
+                    if art in all_response:
+                        all_response.pop(art)
+                    continue
             all_response[art]["id"] = index["id"]
             all_response[art]["article"] = art
             all_response[art]["cloth"] = index["cloth"]
@@ -953,7 +959,6 @@ def podsort_view(request):
     filter_options_colors = filter_response["colors"]
 
     try:
-
         for key, value in all_response.items():
             all_response[key]["turnover_total"] = int(all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
                 if all_response[key]["orders"] else all_response[key]["stock"]
@@ -1024,6 +1029,7 @@ def podsort_view(request):
         {
             "warehouses": warehouses,
             "warehouse_filter": warehouse_filter,
+            "alltags_filter": alltags_filter,
             "nmids": combined_list,
             "nmid_filter": nmid_filter,
             "without_color_filter": without_color_filter,
@@ -1444,7 +1450,6 @@ def get_warehousewb_data(request):
 
         columns_nmids = [desc[0] for desc in cursor.description]
         shipments = [dict(zip(columns_nmids, row)) for row in res_nmids]
-        # logger.info(shipments)
     except Exception as e:
         logger.error(f"Ошибка получения поставок из БД в warehousewb_view. Ошибка: {e}")
 
@@ -1518,6 +1523,5 @@ def warehousewb_submit_supply(request):
 def google_webhook_view(request):
     try:
         data = json.loads(request.body)
-        # logger.info(data)
     except Exception as e:
         logger.error(f"Ошибка {e}")
