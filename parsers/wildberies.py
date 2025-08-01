@@ -91,7 +91,7 @@ def calculate_card_price(price: Union[int, float]) -> int:
 def parse_link(
     link: Union[int, str], type
 ):
-    api_url = "https://card.wb.ru/cards/detail"
+    api_url = "https://card.wb.ru/cards/v4/detail"
     params = {
         "spp": "0",
         "reg": "0",
@@ -102,11 +102,11 @@ def parse_link(
     }
     data = get_data("get", api_url, "json", headers=headers, params=params)
 
-    if not data or not data["data"]["products"]:
+    if not data or not data["products"][0]:
         logger.info(f"Fail {link}. Функция: parse_link. Data: {data}")
         return 0
 
-    sku = data["data"]["products"][0]
+    sku = data["products"][0]
 
     price = sku.get("priceU", 0) / 100
     promo_price = sku.get("salePriceU", 0) / 100
@@ -125,7 +125,7 @@ def parse_link(
             return promo_price
     card_price = calculate_card_price(promo_price) if promo_price else calculate_card_price(price)
     return card_price
-
+# parse_link(230574114, None)
 def safe_parse_link(link, type):
     try:
         data = parse_link(link, type)
@@ -534,6 +534,7 @@ async def get_nmids():
                                 dimensions=json.dumps(resp["dimensions"]),
                                 characteristics=json.dumps(resp["characteristics"]),
                                 sizes=json.dumps(resp["sizes"]),
+                                tag_ids = json.dumps([]),
                                 created_at=parse_datetime(resp["createdAt"]),
                                 updated_at=parse_datetime(resp["updatedAt"]),
                                 added_db=datetime.now() + timedelta(hours=3)

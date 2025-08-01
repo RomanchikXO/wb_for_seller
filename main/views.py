@@ -6,9 +6,10 @@ from openpyxl.styles import Font
 import json
 from io import BytesIO
 from parsers.wildberies import get_uuid
+from tasks.set_price_on_wb_from_repricer import get_marg, get_price_with_all_disc
 
 import csv
-from myapp.models import Price, Stocks, Repricer, WbLk
+from myapp.models import Price, Stocks, Repricer, WbLk, Tags, nmids as nmids_db
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
@@ -397,11 +398,14 @@ def repricer_view(request):
                 p.vendorcode as vendorcode,
                 COALESCE(p.redprice, 0) as redprice,
                 r.keep_price as keep_price,
+                r.price_plan as price_plan,
+                r.marg_or_price as marg_or_price,
                 p.spp as spp,
                 COALESCE(r.is_active, FALSE) AS is_active,
                 COALESCE(s.total_quantity, 0) AS quantity
             FROM
                 myapp_price p
+            LEFT JOIN myapp_repricer r ON p.lk_id = r.lk_id AND p.nmid = r.nmid
             LEFT JOIN (
                 SELECT
                     lk_id,
@@ -412,7 +416,6 @@ def repricer_view(request):
                 GROUP BY
                     lk_id, nmid
             ) s ON p.lk_id = s.lk_id AND p.nmid = s.nmid
-            LEFT JOIN myapp_repricer r ON p.lk_id = r.lk_id AND p.nmid = r.nmid
         """
 
         sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
@@ -478,8 +481,6 @@ def repricer_view(request):
         paginator = Paginator(dict_rows, per_page)
         page_obj = paginator.get_page(page_number)
 
-        # logger.info(f"123123 {page_obj.object_list}")
-
 
     except Exception as e:
         logger.error(f"Error in repricer_view: {e}")
@@ -504,23 +505,57 @@ def repricer_view(request):
 @login_required_cust
 def repricer_save(request):
     payload = json.loads(request.body)
-    items = payload.get('items', [])
+    item = payload.get('item', [])
+
     try:
-        for item in items:
-            if not item["keep_price"].isdigit(): item["keep_price"] = 0
-            lk_instance = WbLk.objects.get(id=item['lk_id'])
-            Repricer.objects.update_or_create(
-                lk=lk_instance,
-                nmid=item['nmid'],
-                defaults={
-                    'keep_price': item['keep_price'],
-                    'is_active': item['is_active']
-                }
-            )
+        if not item["keep_price"].isdigit(): item["keep_price"] = 0
+        if not item["price_plan"].isdigit(): item["price_plan"] = 0
+        lk_instance = WbLk.objects.get(id=item['lk_id'])
+        Repricer.objects.update_or_create(
+            lk=lk_instance,
+            nmid=item['nmid'],
+            defaults={
+                'keep_price': item['keep_price'],
+                'price_plan': item['price_plan'],
+                'marg_or_price': item['marg_or_price'],
+                'is_active': item['is_active']
+            }
+        )
     except Exception as e:
         logger.error(f"Error in repricer_save: {e}")
 
-    return JsonResponse({'status': 'ok', 'received': len(items)})
+    return JsonResponse({'status': 'ok', 'received': len(item)})
+
+
+@require_POST
+@login_required_cust
+def get_marg_api(request):
+    payload = json.loads(request.body)
+    price = payload.get('price')
+    nmid = payload.get('nmid')
+
+    sql_query = f"""
+        SELECT * FROM myapp_price WHERE nmid = {int(nmid)}
+    """
+    conn = connect_to_database()
+    with conn.cursor() as cursor:
+        cursor.execute(sql_query, )
+        res_nmids = cursor.fetchall()
+
+    columns_nmids = [desc[0] for desc in cursor.description]
+    nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
+    nmids = nmids[0]
+
+    try:
+        price_with_disc, black_price = get_price_with_all_disc(price, nmids["spp"], nmids["discount"],
+                                                               nmids["wallet_discount"])
+        response = get_marg(price_with_disc, nmids["discount"], nmids["cost_price"], nmids["reject"],
+                            nmids["commission"], nmids["acquiring"], nmids["nds"], nmids["usn"], nmids["drr"])
+    except Exception as e:
+        logger.error(f"Error in get_marg_api: {e}")
+        return JsonResponse({'status': 'error', 'message': 'Ошибка в данных'})
+
+    return JsonResponse({'status': 'ok', 'received': response})
 
 
 @login_required_cust
@@ -771,7 +806,16 @@ def podsort_view(request):
             WHERE (elem->>'id')::int = 14177449
             LIMIT 1
         ) AS i_color,
-        vendorcode
+        vendorcode,
+        (
+           SELECT COALESCE(json_agg(t.tag), '[]'::json)
+           FROM myapp_tags t
+           WHERE t.id = ANY(
+               SELECT jsonb_array_elements_text(tag_ids)::int
+               FROM myapp_nmids n2
+               WHERE n2.id = myapp_nmids.id
+           )
+        ) AS tag_ids
         FROM myapp_nmids
         WHERE {nmid_query}
     """
@@ -782,7 +826,8 @@ def podsort_view(request):
             rows = cursor.fetchall()
         except Exception as e:
             logger.exception(f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
-        articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4]} for row in rows}
+        articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4], "tag_ids": row[5]}
+                    for row in rows}
 
     all_response = {}
     try:
@@ -794,6 +839,7 @@ def podsort_view(request):
             all_response[art]["cloth"] = index["cloth"]
             all_response[art]["i_color"] = index["i_color"]
             all_response[art]["vendorcode"] = index["vendorcode"]
+            all_response[art]["tags"] = index["tag_ids"]
 
             low_vendor = index["vendorcode"].lower()
             if "11ww" in low_vendor or "3240" in low_vendor:
@@ -963,6 +1009,15 @@ def podsort_view(request):
         page_obj = []
         paginator = None
 
+    sql_query = """SELECT DISTINCT tag FROM myapp_tags"""
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, params)
+            rows = cursor.fetchall()
+            alltags = [row[0] for row in rows] if rows else []
+    except Exception as e:
+        logger.exception(f"Сбой при получении всех тегов. Error: {e}")
+
     return render(
         request,
         "podsort.html",
@@ -989,8 +1044,44 @@ def podsort_view(request):
             "filter_options_without_color": filter_options_without_color,
             "filter_options_sizes": filter_options_sizes,
             "filter_options_colors": filter_options_colors,
+            "alltags": alltags
         }
     )
+
+
+@require_POST
+@login_required_cust
+def set_tags(request):
+    """
+        обновляем теги у товара
+    """
+    try:
+        data = json.loads(request.body)
+        for nmid, tags in data.items():
+            if tags:
+                tag_ids = list(Tags.objects.filter(tag__in=tags).values_list('id', flat=True))
+            else:
+                tag_ids = []
+            nmids_db.objects.filter(nmid=nmid).update(tag_ids=tag_ids)
+    except Exception as e:
+        logger.error(f"Ошибка добавления тегов к артикулу: {e}")
+        return JsonResponse({"error": str(e)})
+    return JsonResponse({'status': 'ok'})
+
+
+@require_POST
+@login_required_cust
+def add_tag(request):
+    try:
+        data = json.loads(request.body)
+        """
+        тут должны добавляться новые теги в базу с тегами 
+        """
+        Tags.objects.create(tag=data)
+    except Exception as e:
+        logger.error(f"Ошибка добавления тега в БД с тегами: {e}")
+        return JsonResponse({"error": str(e)})
+    return JsonResponse({'status': 'ok'})
 
 
 @require_POST
@@ -1001,8 +1092,10 @@ def export_excel(request):
         "vendorcode": "Артикул продавца",
         "redprice": "Красная цена",
         "quantity": "Остаток",
-        "keep_price": "Поддерживать цену",
         "spp": "spp",
+        "keep_price": "Поддерживать маржу",
+        "price_plan": "Поддерживать цену",
+        "marg_or_price": "Маржа или Цена",
         "is_active": "Статус",
 
     }
@@ -1021,7 +1114,7 @@ def export_excel(request):
             ws.append(current_headers)
 
             for item in items:
-                row = [item.get(col, "") for col in headers]
+                row = [item.get(col, "") if col != "marg_or_price" else ("Маржа" if item.get(col, "") else "Цена") for col in headers]
                 ws.append(row)
 
         # Сохраняем файл в память
@@ -1075,7 +1168,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Оборачиваемость общая"
+        "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Теги", "Оборачиваемость общая"
     ]
     subheaders = ["Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"]
 
@@ -1096,13 +1189,15 @@ def export_excel_podsort(request):
         row_num += 1
 
         ws.cell(row=row_num, column=1, value=item["article"])
-        ws.cell(row=row_num, column=2, value=item["cloth"])
-        ws.cell(row=row_num, column=3, value=item["i_color"])
-        ws.cell(row=row_num, column=4, value=item["i_size"])
-        ws.cell(row=row_num, column=5, value=item["orders"])
-        ws.cell(row=row_num, column=6, value=item["stock"])
-        ws.cell(row=row_num, column=7, value=item["ABC"])
-        ws.cell(row=row_num, column=8, value=item["turnover_total"])
+        ws.cell(row=row_num, column=2, value=item["vendorcode"])
+        ws.cell(row=row_num, column=3, value=item["cloth"])
+        ws.cell(row=row_num, column=4, value=item["i_color"])
+        ws.cell(row=row_num, column=5, value=item["i_size"])
+        ws.cell(row=row_num, column=6, value=item["orders"])
+        ws.cell(row=row_num, column=7, value=item["stock"])
+        ws.cell(row=row_num, column=8, value=item["ABC"])
+        ws.cell(row=row_num, column=9, value=item["tags"])
+        ws.cell(row=row_num, column=10, value=item["turnover_total"])
 
         # Вложенные subitems
         if item.get("subitems"):
@@ -1423,6 +1518,6 @@ def warehousewb_submit_supply(request):
 def google_webhook_view(request):
     try:
         data = json.loads(request.body)
-        logger.info(data)
+        # logger.info(data)
     except Exception as e:
         logger.error(f"Ошибка {e}")

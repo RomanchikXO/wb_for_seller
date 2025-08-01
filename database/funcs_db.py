@@ -112,7 +112,8 @@ async def add_set_data_from_db(
 
         # Строим update-часть для ON CONFLICT
         update_str = ", ".join(
-            f"{col} = EXCLUDED.{col}" for col in columns if col not in conflict_fields
+            f"{col} = EXCLUDED.{col}" for col in columns
+            if col not in conflict_fields and col != 'tag_ids'
         )
 
         # Формируем запрос

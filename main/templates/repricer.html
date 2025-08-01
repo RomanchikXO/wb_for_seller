@@ -20,7 +20,6 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h3>Репрайсер</h3>
-            <p class="mb-1">Это страница репрайсера.</p>
             <p class="mb-0">Обновление происходит каждый час в 2, 7, 12, 17, ... минут (раз в 5 минут).</p>
         </div>
         <form id="download-form" method="post" action="{% url 'export_excel' %}">
@@ -29,13 +28,13 @@
                 <i class="bi bi-file-earmark-arrow-up me-1"></i>
                 Выгрузить в Excel
             </button>
-            <div id="upload-container" class="mt-2">
-                <label for="excel-upload" class="btn btn-outline-primary d-flex align-items-center" style="position: relative; overflow: hidden;">
-                    <i class="bi bi-file-earmark-arrow-down me-2"></i>
-                    <span id="upload-text">Загрузить Excel</span>
-                    <input type="file" id="excel-upload" accept=".xlsx" hidden>
-                </label>
-            </div>
+{#            <div id="upload-container" class="mt-2">#}
+{#                <label for="excel-upload" class="btn btn-outline-primary d-flex align-items-center" style="position: relative; overflow: hidden;">#}
+{#                    <i class="bi bi-file-earmark-arrow-down me-2"></i>#}
+{#                    <span id="upload-text">Загрузить Excel</span>#}
+{#                    <input type="file" id="excel-upload" accept=".xlsx" hidden>#}
+{#                </label>#}
+{#            </div>#}
         </form>
 
     </div>
@@ -79,7 +78,6 @@
                 <!-- кнопки справа от селектора -->
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary">Фильтровать</button>
-                    <button type="button" id="save-btn" class="btn btn-secondary">Сохранить</button>
                 </div>
             </div>
         </form>
@@ -110,7 +108,6 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th>Маржа</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=spp&order={% if sort_by == "spp" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -120,6 +117,8 @@
                                 {% endif %}
                             </a>
                         </th>
+                        <th>Показатель</th>
+                        <th>Красная цена <-> Маржа</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}per_page={{ per_page }}&sort_by=status&order={% if sort_by == "status" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -129,6 +128,7 @@
                                 {% endif %}
                             </a>
                         </th>
+                    <th>Действие</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,14 +150,32 @@
                             <td>{{ item.vendorcode }}</td>
                             <td>{{ item.redprice }}</td>
                             <td>{{ item.quantity|default:0 }}</td>
+                            <td>{{ item.spp }}</td>
                             <td>
                                 <input type="number" name="keep_price" value="{{ item.keep_price }}"
-                                       class="form-control form-control-sm" style="width: 100px;">
+                                       class="form-control form-control-sm keep-price-field"
+                                       style="width: 100px; {% if not item.marg_or_price %}display: none;{% endif %}">
+                                <input type="number" name="price_plan" value="{{ item.price_plan }}"
+                                       class="form-control form-control-sm price-plan-field"
+                                       style="width: 100px; {% if item.marg_or_price %}display: none;{% endif %}">
+                                <div class="margin-info text-muted small mt-1" style="display: none;">
+                                    Марж-сть: <span class="margin-value">-</span>%
+                                </div>
                             </td>
-                            <td>{{ item.spp }}</td>
+                            <td class="text-center">
+                               <div class="form-check form-switch d-inline-block">
+                                   <input class="form-check-input toggle-switch" type="checkbox" role="switch"
+                                          {% if item.marg_or_price %}checked{% endif %}>
+                               </div>
+                            </td>
                             <td>
                                 <input type="checkbox" class="form-check-input"
                                        {% if item.is_active %}checked{% endif %}>
+                            </td>
+                            <td>
+                                <button type="button" id="save-btn" class="btn btn-success btn-sm px-2">
+                                    <i class="bi bi-floppy me-1"></i>Сохранить
+                                </button>
                             </td>
                         </tr>
                     {% empty %}
@@ -262,6 +280,89 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const switches = document.querySelectorAll('.toggle-switch');
+
+            switches.forEach(function(switchEl) {
+                switchEl.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    const keepPriceField = row.querySelector('.keep-price-field');
+                    const pricePlanField = row.querySelector('.price-plan-field');
+                    const marginInfo = row.querySelector('.margin-info');
+
+                    if (this.checked) {
+                        keepPriceField.style.display = 'block';
+                        pricePlanField.style.display = 'none';
+                        marginInfo.style.display = 'none';
+                    } else {
+                        keepPriceField.style.display = 'none';
+                        pricePlanField.style.display = 'block';
+
+                        if (pricePlanField.value) {
+                            const nmid = row.children[1].querySelector('div').firstChild.textContent.trim();
+                            const price = parseFloat(pricePlanField.value);
+
+                            // Вызываем API для восстановления маржинальности
+                            callMargApi(price, nmid, row);
+                        }
+                    }
+                });
+            });
+
+            // Новый код - обработчик для поля price_plan
+            const pricePlanFields = document.querySelectorAll('.price-plan-field');
+
+            pricePlanFields.forEach(function(field) {
+                field.addEventListener('input', function() {
+                    const row = this.closest('tr');
+                    const toggleSwitch = row.querySelector('.toggle-switch');
+
+                    // Проверяем, что тумблер выключен (не checked)
+                    if (!toggleSwitch.checked && this.value) {
+                        const nmid = row.children[1].querySelector('div').firstChild.textContent.trim();
+                        const price = parseFloat(this.value);
+
+                        // Вызываем API
+                        window.currentEvent = event;
+                        callMargApi(price, nmid);
+                    } else {
+                        // Скрываем маржинальность если поле пустое
+                        const marginInfo = row.querySelector('.margin-info');
+                        marginInfo.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        function callMargApi(price, nmid, targetRow = null) {
+            const row = targetRow || window.currentEvent.target.closest('tr');
+            const marginInfo = row.querySelector('.margin-info');
+            const marginValue = row.querySelector('.margin-value');
+
+            fetch("{% url 'get_marg_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    price: price,
+                    nmid: nmid
+                })
+            })
+            .then(resp => {
+                if (!resp.ok) throw new Error('Network response was not OK');
+                return resp.json();
+            })
+            .then(data => {
+                marginValue.textContent = data.received;
+                marginInfo.style.display = 'block';
+            })
+            .catch(err => console.error('Ошибка при вызове get_marg_api:', err));
+        }
+    </script>
+
+    <script>
         $(document).ready(function () {
             $('#nmid-select').select2({
                 placeholder: 'Введите артикул для поиска',
@@ -302,39 +403,88 @@
           const vendorcode  = cells[2].textContent.trim();
           const redprice    = cells[3].textContent.trim() || null;
           const quantity    = parseInt(cells[4].textContent.trim()) || 0;
-          const keepInput   = tr.querySelector('input[type="number"]');
-          const keep_price  = keepInput ? keepInput.value : null;
-          const spp         = cells[6].textContent.trim();
-          const chk         = tr.querySelector('input[type="checkbox"]');
-          const is_active   = chk ? chk.checked : false;
-          return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, spp, is_active };
+          const spp         = cells[5].textContent.trim();
+
+          // Получаем значение из видимого поля (keep_price или price_plan)
+          const keep_price = tr.querySelector('.keep-price-field').value;
+          const price_plan = tr.querySelector('.price-plan-field').value;
+
+          // Получаем состояние тумблера
+          const toggleSwitch = tr.querySelector('.toggle-switch');
+          const marg_or_price = toggleSwitch ? toggleSwitch.checked : false;
+
+          // Получаем состояние чекбокса активности
+          const activeCheckbox = tr.querySelector('td:last-child input[type="checkbox"]');
+          const is_active = activeCheckbox ? activeCheckbox.checked : false;
+          return { lk_id, nmid, vendorcode, redprice, quantity, keep_price, price_plan, marg_or_price, spp, is_active };
         });
       }
 
-      document.getElementById('save-btn').addEventListener('click', () => {
-        const items = getItemsFromTable();
-        const saveToastEl = document.getElementById('save-toast');
-        const saveToast = new bootstrap.Toast(saveToastEl);
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'save-btn') {
+            const row = e.target.closest('tr');
+            const item = getItemFromRow(row);
 
-        fetch("{% url 'repricer_save' %}", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-          },
-          body: JSON.stringify({ items })
-        })
-        .then(resp => {
-          if (resp.ok) return resp.json();
-          throw new Error('Network response was not OK');
-        })
-        .then(data => {
-          if (data.status === 'ok') {
-            saveToast.show();
-          }
-        })
-        .catch(err => console.error('Ошибка при сохранении:', err));
+            const saveToastEl = document.getElementById('save-toast');
+            const saveToast = new bootstrap.Toast(saveToastEl);
+
+            fetch("{% url 'repricer_save' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ item })
+            })
+            .then(resp => {
+                if (resp.ok) return resp.json();
+                throw new Error('Network response was not OK');
+            })
+            .then(data => {
+                if (data.status === 'ok') {
+                    saveToast.show();
+                }
+            })
+            .catch(err => console.error('Ошибка при сохранении:', err));
+        }
       });
+
+      function getItemFromRow(row) {
+        const cells = row.children;
+        const lk_id = cells[0].textContent.trim(); // скрытая ячейка
+        const nmid = cells[1].querySelector('div').firstChild.textContent.trim();
+        const vendorcode = cells[2].textContent.trim();
+        const redprice = cells[3].textContent.trim() || null;
+        const quantity = parseInt(cells[4].textContent.trim()) || 0;
+        const spp = cells[5].textContent.trim();
+
+        // Получаем значения из полей ввода
+        const keepPriceInput = row.querySelector('.keep-price-field');
+        const pricePlanInput = row.querySelector('.price-plan-field');
+        const keep_price = keepPriceInput ? keepPriceInput.value : null;
+        const price_plan = pricePlanInput ? pricePlanInput.value : null;
+
+        // Получаем состояние тумблера
+        const toggleSwitch = row.querySelector('.toggle-switch');
+        const marg_or_price = toggleSwitch ? toggleSwitch.checked : false;
+
+        // Получаем состояние чекбокса активности
+        const activeCheckbox = row.querySelector('td:nth-child(9) input[type="checkbox"]');
+        const is_active = activeCheckbox ? activeCheckbox.checked : false;
+
+        return {
+            lk_id,
+            nmid,
+            vendorcode,
+            redprice,
+            quantity,
+            keep_price,
+            price_plan,
+            marg_or_price,
+            spp,
+            is_active
+        };
+      }
 
       document.getElementById('export-btn').addEventListener('click', () => {
         const items = getItemsFromTable();

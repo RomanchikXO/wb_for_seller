@@ -28,6 +28,8 @@ async def get_price_from_db_dor_wb()->List[dict]:
                 rp.nmid as nmid, 
                 wblk.token as token, 
                 rp.keep_price as keep_price,
+                rp.price_plan as price_plan,
+                rp.marg_or_price as marg_or_price,
                 price.redprice as redprice,
                 price.spp as spp,
                 price.discount as discount,
@@ -68,9 +70,11 @@ def get_price(
         drr: int,
         usn: int
 )-> tuple:
-    # Константы
+    """
+    получить цену без скидок по желаемой марже
+    """
+
     spp = int(spp)/100
-    disc_wb = int(disc_wb)/100
     nds = int(nds)/100
     reject = int(reject)/100
     commission = int(commission)/100
@@ -85,7 +89,6 @@ def get_price(
 
     # Вычисления, заменяем floor на просто выражение (приближенно)
     j = x * discount
-    redprice = j * (1 - spp) * (1 - disc_wb)
 
     n = cost_price + cost_price * reject + j * commission + j * acquiring + j * drr
     p = j * nds + (j - j * nds) * usn
@@ -104,8 +107,57 @@ def get_price(
     except Exception as e:
         logger.error(f"Ошибка в get_price: {e}. solution: {solutions}")
         return None, None
-    response = math.floor(math.floor(price_without_disc * discount) * (1 - spp))
-    return price_without_disc, response
+    black_price = math.floor(math.floor(price_without_disc * discount) * (1 - spp))
+    return price_without_disc, black_price
+
+
+def get_price_with_all_disc(
+        res_val: int,
+        spp: int,
+        discount_seller: float,
+        disc_wb: int,
+) -> tuple:
+    """
+    получить цену без скидок по желаемой красной цене с учетом спп и скидки кошелька
+    """
+    spp = int(spp)
+    disc_wb = int(disc_wb)
+    discount = int(discount_seller)
+
+    black_price = math.ceil(res_val / (100-disc_wb) * 100)
+    price_with_disc = math.ceil(black_price / (100 - spp) * 100)
+    price_without_disc = math.ceil(price_with_disc / (100 - discount) * 100)
+    return price_without_disc, black_price
+
+
+def get_marg(
+    price_without_disc: int,
+    discount: int,
+    cost_price: float,
+    reject: int,
+    commission: int,
+    acquiring: int,
+    nds: int,
+    usn: int,
+    drr: int
+) -> int:
+    """
+    Посчитать маржинальность
+    """
+    j = math.floor(price_without_disc * ((100 - discount) / 100))
+
+    n = round(cost_price +
+         cost_price * (reject / 100) +
+         j * (commission / 100) +
+         j * (acquiring / 100) +
+         j * (drr / 100),
+              2
+         )
+    p = round(j * (nds / 100) + (j - j * (nds / 100)) * (usn / 100), 2)
+    s = round(n + p, 2)
+
+    marg = round((j - s) / j * 100)
+    return marg
 
 
 def set_current_list(data: List[dict])-> dict:
@@ -116,7 +168,10 @@ def set_current_list(data: List[dict])-> dict:
             if not response.get(i["token"]):
                 response[i["token"]] = []
             try:
-                price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
+                if i["marg_or_price"]:
+                    price, black_price = get_price(i["keep_price"], i["cost_price"], i["spp"], i["discount"], i["wallet_discount"], i["nds"], i["reject"], i["commission"], i["acquiring"], i["drr"], i["usn"])
+                else:
+                    price, black_price = get_price_with_all_disc(i["price_plan"], i["spp"], i["discount"], i["wallet_discount"])
             except:
                 raise Exception(f"Ошибка при формировании price, black_price. Данные: {i}")
             if not price and not black_price:

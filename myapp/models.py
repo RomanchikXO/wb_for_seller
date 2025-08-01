@@ -2,6 +2,13 @@ from django.db import models
 from django.contrib.auth.hashers import make_password
 
 
+class Tags(models.Model):
+    tag = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "Теги"
+
+
 # Модаль для хранения данных о скорости доставки со складов в ообласти
 class AreaWarehouses(models.Model):
     area = models.CharField(max_length=255, unique=True)
@@ -75,7 +82,6 @@ class Price(models.Model):
     drr = models.IntegerField(default=5, null=True)
     usn = models.IntegerField(default=1, null=True)
     nds = models.IntegerField(default=7, null=True)
-    margin_plan = models.IntegerField(default=0, null=True)
 
     class Meta:
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
@@ -110,6 +116,8 @@ class Repricer(models.Model):
     nmid = models.IntegerField()
     keep_price = models.IntegerField(default=0) # теперь тут маржа желаемая
     is_active = models.BooleanField(default=False)
+    price_plan = models.IntegerField(default=0, null=True) # а здесь красная цена желаемая
+    marg_or_price = models.BooleanField(default=True, null=True)
 
     class Meta:
         unique_together = ['nmid', 'lk']
@@ -148,6 +156,7 @@ class nmids(models.Model):
     dimensions = models.JSONField() # Габариты и вес товара c упаковкой, см и кг
     characteristics = models.JSONField() # Характеристики
     sizes = models.JSONField() # Размеры товара
+    tag_ids = models.JSONField(default=list)
     created_at = models.DateTimeField() # Дата создания карточки товара (по данным WB)
     updated_at = models.DateTimeField() # Дата изменения карточки товара (по данным WB)
     added_db = models.DateTimeField(auto_now_add=True) # по МСК

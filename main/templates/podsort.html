@@ -42,6 +42,47 @@
             max-height: 100px !important;
             overflow-y: auto !important;
         }
+
+        .select2-container {
+            min-width: 100px !important;
+        }
+
+        .select2-container--default .select2-selection--multiple {
+            min-height: 32px;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #0d6efd;
+            border: 1px solid #0d6efd;
+            color: white;
+            font-size: 0.875rem;
+            padding: 2px 25px 2px 18px; /* Добавляем отступ справа для кнопки удаления */
+            margin: 2px;
+            position: relative;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: white;
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #ffdddd;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }
     </style>
 {% endblock %}
 
@@ -102,6 +143,7 @@
                                 {% endfor %}
                             </select>
                         </th>
+                        <th></th>
                         <th>
                             <select id="group-without-color" name="wc_filter" class="form-select">
                                 <option value="" {% if not without_color_filter %}selected{% endif %}>-- выбрать ткань --</option>
@@ -155,6 +197,15 @@
                             </select>
                         </th>
                         <th>
+                            <select id="tags_all_select" name="alltags" class="form-select" multiple>
+                                {% for i_tag in alltags %}
+                                    <option value="{{ i_tag }}" {% if i_tag|stringformat:"s" in alltags_filter %}selected{% endif %}>
+                                        {{ i_tag }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </th>
+                        <th>
                             <div class="btn-group align-self-end">
                                 <button type="submit" class="btn btn-primary">Фильтровать</button>
                             </div>
@@ -163,6 +214,7 @@
                     </form>
                     <tr>
                         <th>Артикул</th>
+                        <th>Артикул постащика</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
@@ -209,10 +261,11 @@
                             </a>
                         </th>
                         <th>АВС по размерам</th>
+                        <th>Теги</th>
                         <th>
                             <a style="color: black"
                                href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
-                                Оборачиваемость общая
+                                Оборачиваемость
                                 {% if sort_by == "turnover_total" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
                                 {% endif %}
@@ -245,13 +298,26 @@
                                     </a>
                                 </div>
                             </td>
-
+                            <td>{{ item.vendorcode }}</td>
                             <td>{{ item.cloth }}</td>
                             <td>{{ item.i_color }}</td>
                             <td>{{ item.i_size }}</td>
                             <td>{{ item.orders }}</td>
                             <td>{{ item.stock }}</td>
                             <td>{{ item.ABC }}</td>
+                            <td>
+                                <select class="form-select tags-select"
+                                        multiple
+                                        data-article="{{ item.article }}"
+                                        id="tags-select-{{ item.id }}">
+                                    {% for tag in alltags %}
+                                        <option value="{{ tag }}"
+                                                {% if tag in item.tags %}selected{% endif %}>
+                                            {{ tag }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
                             <td>{{ item.turnover_total }}</td>
                         </tr>
                         <tr class="collapse" id="subitems-{{ item.id }}">
@@ -354,7 +420,89 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
+        const updateTimeouts = {};
         $(document).ready(function () {
+            $('.tags-select').each(function() {
+                const selectElement = this;
+                $(this).select2({
+                    placeholder: 'Выберите теги или введите новый',
+                    allowClear: true,
+                    width: '200px',
+                    closeOnSelect: false,
+                    tags: true, // Включаем возможность создания новых тегов
+                    createTag: function (params) {
+                        const term = $.trim(params.term);
+
+                        if (term === '') {
+                            return null;
+                        }
+
+                        // Проверяем, не существует ли уже такой тег
+                        const existingOption = $(this).find("option").filter(function () {
+                            return $(this).val().toLowerCase() === term.toLowerCase();
+                        });
+
+                        if (existingOption.length) {
+                            return null;
+                        }
+
+                        return {
+                            id: term,
+                            text: term + ' (новый)',
+                            newTag: true // Помечаем как новый тег
+                        };
+                    }
+                }).on('select2:select', function(e) {
+                    const data = e.params.data;
+
+                    // Если это новый тег
+                    if (data.newTag) {
+                        const newTagName = data.id;
+
+                        // Добавляем новый тег на сервер
+                        console.log(newTagName)
+                        fetch("{% url 'add_tag' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify(newTagName)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(responseData => {
+                            const option = $(selectElement).find(`option[value="${newTagName}"]`);
+                            option.text(newTagName);
+
+                            // Добавляем новый тег во все остальные селекты на странице
+                            $('.tags-select').not(selectElement).each(function() {
+                                $(this).append(new Option(newTagName, newTagName, false, false));
+                            });
+
+                            // Вызываем обновление тегов для текущего артикула
+                            triggerUpdateTags(selectElement);
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при добавлении нового тега:', error);
+
+                            // Удаляем тег из селекта в случае ошибки
+                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
+                            $(selectElement).trigger('change');
+                        });
+                    } else {
+                        // Обычный выбор существующего тега
+                        triggerUpdateTags(selectElement);
+                    }
+                }).on('select2:unselect', function(e) {
+                    // При снятии выбора
+                    triggerUpdateTags(selectElement);
+                });
+            });
             $('#nmid-select').select2({
                 placeholder: 'Введите артикул для поиска',
                 allowClear: true,
@@ -363,6 +511,12 @@
             // для складов
             $('#warehouse-select').select2({
                 placeholder: 'Введите склад для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+            // для тегов
+            $('#tags_all_select').select2({
+                placeholder: 'Введите теги для поиска',
                 allowClear: true,
                 width: '100%'
             });
@@ -385,52 +539,128 @@
                 width: '100%'
             });
         });
+
+        function triggerUpdateTags(selectElement) {
+            const article = selectElement.getAttribute('data-article');
+
+            // Очищаем предыдущий таймаут для этого артикула
+            if (updateTimeouts[article]) {
+                clearTimeout(updateTimeouts[article]);
+            }
+
+            // Устанавливаем новый таймаут
+            updateTimeouts[article] = setTimeout(() => {
+                updateTags(selectElement);
+                delete updateTimeouts[article];
+            }, 300);
+        }
+
+        function updateTags(selectElement) {
+            const article = selectElement.getAttribute('data-article');
+            const selectedTags = Array.from(selectElement.selectedOptions).map(option => option.value);
+
+            // Отправляем запрос на сервер
+            fetch("{% url 'set_tags' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    [article]: selectedTags
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Ошибка при обновлении тегов:', error);
+            });
+        }
     </script>
 
     <script>
         function getItemsFromTable() {
-          const rows = Array.from(document.querySelectorAll('table.table-bordered tbody > tr'));
           const items = [];
 
-          for (let i = 0; i < rows.length; i++) {
-            const row = rows[i];
+          // Получаем основную таблицу
+          const mainTable = document.querySelector('table.table-bordered');
+          if (!mainTable) return items;
 
-            // Если строка не "collapse" — это основная строка item
-            if (!row.classList.contains('collapse')) {
-              const cells = row.querySelectorAll('td');
+          const tbody = mainTable.querySelector('tbody');
+          if (!tbody) return items;
 
-              const item = {
-                article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
-                cloth: cells[1]?.textContent.trim() || '',
-                i_color: cells[2]?.textContent.trim() || '',
-                i_size: cells[3]?.textContent.trim() || '',
-                orders: parseInt(cells[4]?.textContent.trim()) || 0,
-                stock: parseInt(cells[5]?.textContent.trim()) || 0,
-                ABC: cells[6]?.textContent.trim() || '',
-                turnover_total: parseFloat(cells[7]?.textContent.trim()) || 0,
-                subitems: []
-              };
+          const allRows = Array.from(tbody.children);
 
-              // Следующая строка — вложенная таблица subitems
-              const nextRow = rows[i + 1];
-              if (nextRow && nextRow.classList.contains('collapse')) {
-                const subRows = nextRow.querySelectorAll('tbody tr');
-                subRows.forEach(subRow => {
-                  const subCells = subRow.querySelectorAll('td');
-                  const subitem = {
-                    warehouse: subCells[0]?.textContent.trim() || '',
-                    order: parseInt(subCells[1]?.textContent.trim()) || 0,
-                    rec_delivery: parseInt(subCells[2]?.textContent.trim()) || 0,
-                    stock: parseInt(subCells[3]?.textContent.trim()) || 0,
-                    time_available: parseInt(subCells[4]?.textContent.trim()) || 0,
-                  };
-                  item.subitems.push(subitem);
-                });
-                i++; // Пропускаем collapse-строку
-              }
+          for (let i = 0; i < allRows.length; i++) {
+            const row = allRows[i];
 
-              items.push(item);
+            // Пропускаем collapse строки
+            if (row.classList.contains('collapse')) {
+              continue;
             }
+
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 10) continue; // Убеждаемся, что у нас есть все основные колонки
+
+            const item = {
+              article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
+              vendorcode: cells[1]?.textContent.trim() || '',
+              cloth: cells[2]?.textContent.trim() || '',
+              i_color: cells[3]?.textContent.trim() || '',
+              i_size: cells[4]?.textContent.trim() || '',
+              orders: parseInt(cells[5]?.textContent.trim()) || 0,
+              stock: parseInt(cells[6]?.textContent.trim()) || 0,
+              ABC: cells[7]?.textContent.trim() || '',
+              tags: Array.from(cells[8]?.querySelectorAll('select.tags-select option:checked')).map(option => option.textContent.trim()).join(', ') || '',
+              turnover_total: parseFloat(cells[9]?.textContent.trim()) || 0,
+              subitems: []
+            };
+
+            // Ищем следующую строку - должна быть collapse
+            const nextRow = allRows[i + 1];
+            if (nextRow && nextRow.classList.contains('collapse')) {
+              // Находим ID collapse элемента из текущей строки
+              const collapseButton = row.querySelector('[data-bs-target]');
+              if (collapseButton) {
+                const targetId = collapseButton.getAttribute('data-bs-target');
+                const collapseElement = document.querySelector(targetId);
+
+                if (collapseElement) {
+                  // Ищем таблицу внутри collapse элемента
+                  const subTable = collapseElement.querySelector('table tbody');
+                  if (subTable) {
+                    const subRows = subTable.querySelectorAll('tr');
+
+                    subRows.forEach(subRow => {
+                      const subCells = subRow.querySelectorAll('td');
+
+                      // Проверяем, что это строка с данными, а не заголовок
+                      if (subCells.length === 5) {
+                        const warehouseText = subCells[0]?.textContent.trim() || '';
+
+                        // Исключаем заголовочные строки и пустые
+                        if (warehouseText && warehouseText !== 'Склад') {
+                          const subitem = {
+                            warehouse: warehouseText,
+                            order: parseInt(subCells[1]?.textContent.trim()) || 0,
+                            rec_delivery: parseInt(subCells[2]?.textContent.trim()) || 0,
+                            stock: parseInt(subCells[3]?.textContent.trim()) || 0,
+                            time_available: parseInt(subCells[4]?.textContent.trim()) || 0,
+                          };
+                          item.subitems.push(subitem);
+                        }
+                      }
+                    });
+                  }
+                }
+              }
+            }
+
+            items.push(item);
           }
 
           return items;

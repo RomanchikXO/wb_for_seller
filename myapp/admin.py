@@ -1,6 +1,11 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
-                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses)
+                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags)
+
+
+class TagsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'tag')
+    search_fields = ('tag',)
 
 
 class AreaWarehousesAdmin(admin.ModelAdmin):
@@ -93,7 +98,7 @@ class OrdersAdmin(admin.ModelAdmin):
 
 class RepricerAdmin(admin.ModelAdmin):
     list_display = (
-        'nmid', 'keep_price', 'is_active'
+        'nmid', 'keep_price', 'price_plan', 'marg_or_price', 'is_active'
     )
 
     list_filter = ('lk', 'is_active')
@@ -115,3 +120,4 @@ admin.site.register(Supplies, SuppliesAdmin)
 admin.site.register(Shipments, ShipmentsAdmin)
 admin.site.register(Betweenwarhouses, BetweenwarhousesAdmin)
 admin.site.register(AreaWarehouses, AreaWarehousesAdmin)
+admin.site.register(Tags, TagsAdmin)
