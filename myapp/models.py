@@ -2,6 +2,11 @@ from django.db import models
 from django.contrib.auth.hashers import make_password
 
 
+class Addindicators(models.Model):
+    our_g = models.IntegerField(default=0, null=True)
+    category_g = models.IntegerField(default=0, null=True)
+
+
 class Tags(models.Model):
     tag = models.CharField(max_length=100)
 

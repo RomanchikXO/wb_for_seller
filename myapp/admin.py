@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
-                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags)
+                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators)
+
+
+class AddindicatorsAdmin(admin.ModelAdmin):
+    list_display = ('our_g', 'category_g')
 
 
 class TagsAdmin(admin.ModelAdmin):
@@ -121,3 +125,4 @@ admin.site.register(Shipments, ShipmentsAdmin)
 admin.site.register(Betweenwarhouses, BetweenwarhousesAdmin)
 admin.site.register(AreaWarehouses, AreaWarehousesAdmin)
 admin.site.register(Tags, TagsAdmin)
+admin.site.register(Addindicators, AddindicatorsAdmin)

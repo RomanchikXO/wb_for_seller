@@ -9,7 +9,7 @@ from parsers.wildberies import get_uuid
 from tasks.set_price_on_wb_from_repricer import get_marg, get_price_with_all_disc
 
 import csv
-from myapp.models import Price, Stocks, Repricer, WbLk, Tags, nmids as nmids_db
+from myapp.models import Price, Stocks, Repricer, WbLk, Tags, nmids as nmids_db, Addindicators
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
@@ -1023,6 +1023,11 @@ def podsort_view(request):
     except Exception as e:
         logger.exception(f"Сбой при получении всех тегов. Error: {e}")
 
+    try:
+        our_g, category_g = Addindicators.objects.values_list('our_g', 'category_g').get(id=1)
+    except Addindicators.DoesNotExist:
+        our_g, category_g = 0, 0
+
     return render(
         request,
         "podsort.html",
@@ -1050,9 +1055,41 @@ def podsort_view(request):
             "filter_options_without_color": filter_options_without_color,
             "filter_options_sizes": filter_options_sizes,
             "filter_options_colors": filter_options_colors,
-            "alltags": alltags
+            "alltags": alltags,
+            "our_g": our_g,
+            "category_g": category_g,
         }
     )
+
+
+@require_POST
+@login_required_cust
+def our_growth(request):
+    try:
+        data = json.loads(request.body)
+        Addindicators.objects.update_or_create(
+            id=1,
+            defaults={'our_g': data['value']}
+        )
+        return JsonResponse({'status': 'ok', 'value': data.get('value', 0)})
+    except Exception as e:
+        logger.error(f"Ошибка обновления нашего роста: {e}")
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@require_POST
+@login_required_cust
+def category_growth(request):
+    try:
+        data = json.loads(request.body)
+        Addindicators.objects.update_or_create(
+            id=1,
+            defaults={'category_g': data['value']}
+        )
+        return JsonResponse({'status': 'ok', 'value': data.get('value', 0)})
+    except Exception as e:
+        logger.error(f"Ошибка обновления роста категории: {e}")
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 @require_POST

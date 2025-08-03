@@ -83,6 +83,11 @@
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 50%;
         }
+
+        .growth-input {
+            width: 100px;
+            font-size: 0.875rem;
+        }
     </style>
 {% endblock %}
 
@@ -96,36 +101,57 @@
                 Выгрузить в Excel
             </button>
         </form>
-        <form method="get" id="filters-form">
-            <div class="d-flex gap-3">
-                <div>
-                    <label for="per_page">Показывать по:</label>
-                    <select id="per_page" name="per_page" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                        {% for num in page_sizes %}
-                            <option value="{{ num }}" {% if per_page == num %}selected{% endif %}>{{ num }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="order-period" class="form-label mb-0">Заказы период:</label>
-                    <select id="order-period" name="period_ord" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                        {% for days in order_periods %}
-                            <option value="{{ days }}" {% if days == period_ord %}selected{% endif %}>
-                                {{ days }} дней
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+        <div class="growth-controls d-flex gap-3">
+            <div>
+                <label for="category-growth" class="form-label mb-0">Рост категории:</label>
+                <input type="text"
+                       id="category-growth"
+                       class="form-control form-control-sm growth-input"
+                       value="{{ category_g|default:'0' }}"
+                       placeholder="0">
+            </div>
 
-                <div>
-                    <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
-                    <select id="turnover-period" name="turnover_change" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
-                        {% for days in turnover_periods %}
-                            <option value="{{ days }}" {% if days == turnover_change %}selected{% endif %}>
-                                {{ days }} дней
-                            </option>
-                        {% endfor %}
-                    </select>
+            <div>
+                <label for="our-growth" class="form-label mb-0">Наш рост:</label>
+                <input type="text"
+                       id="our-growth"
+                       class="form-control form-control-sm growth-input"
+                       value="{{ our_g|default:'0' }}"
+                       placeholder="0">
+            </div>
+        </div>
+        <form method="get" id="filters-form">
+            <div class="d-flex flex-column gap-3">
+                <div class="d-flex gap-3">
+                    <div>
+                        <label for="per_page">Показывать по:</label>
+                        <select id="per_page" name="per_page" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                            {% for num in page_sizes %}
+                                <option value="{{ num }}" {% if per_page == num %}selected{% endif %}>{{ num }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="order-period" class="form-label mb-0">Заказы период:</label>
+                        <select id="order-period" name="period_ord" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                            {% for days in order_periods %}
+                                <option value="{{ days }}" {% if days == period_ord %}selected{% endif %}>
+                                    {{ days }} дней
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="turnover-period" class="form-label mb-0">Оборачиваемость период:</label>
+                        <select id="turnover-period" name="turnover_change" class="form-select form-select-sm" onchange="document.getElementById('filters-form').submit();">
+                            {% for days in turnover_periods %}
+                                <option value="{{ days }}" {% if days == turnover_change %}selected{% endif %}>
+                                    {{ days }} дней
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </div>
     </div>
@@ -321,7 +347,7 @@
                             <td>{{ item.turnover_total }}</td>
                         </tr>
                         <tr class="collapse" id="subitems-{{ item.id }}">
-                            <td colspan="8">
+                            <td colspan="10">
                                 <table class="table table-sm table-bordered">
                                     <thead>
                                         <tr>
@@ -337,7 +363,10 @@
                                             <tr {% if subitem.color == "red" %} class="row-red" {% elif subitem.color == "green" %} class="row-green" {% elif subitem.color == "yellow" %} class="row-yellow" {% endif %}>
                                                 <td>{{ subitem.warehouse }}</td>
                                                 <td>{{ subitem.order }}</td>
-                                                <td>{{ subitem.rec_delivery }}</td>
+                                                <td>
+                                                    <span class="original-value">{{ subitem.rec_delivery }}</span>
+                                                    <span class="calculated-value text-muted"></span>
+                                                </td>
                                                 <td>{{ subitem.stock }}</td>
                                                 <td>{{ subitem.time_available }}</td>
                                             </tr>
@@ -421,165 +450,310 @@
 
     <script>
         const updateTimeouts = {};
-        $(document).ready(function () {
-            $('.tags-select').each(function() {
-                const selectElement = this;
-                $(this).select2({
-                    placeholder: 'Выберите теги или введите новый',
-                    allowClear: true,
-                    width: '200px',
-                    closeOnSelect: false,
-                    tags: true, // Включаем возможность создания новых тегов
-                    createTag: function (params) {
-                        const term = $.trim(params.term);
+let currentCategoryGrowth = parseInt($('#category-growth').val()) || 0;
+let currentOurGrowth = parseInt($('#our-growth').val()) || 0;
 
-                        if (term === '') {
-                            return null;
-                        }
+$(document).ready(function () {
+    $('.tags-select').each(function() {
+        const selectElement = this;
+        $(this).select2({
+            placeholder: 'Выберите теги или введите новый',
+            allowClear: true,
+            width: '200px',
+            closeOnSelect: false,
+            tags: true,
+            createTag: function (params) {
+                const term = $.trim(params.term);
 
-                        // Проверяем, не существует ли уже такой тег
-                        const existingOption = $(this).find("option").filter(function () {
-                            return $(this).val().toLowerCase() === term.toLowerCase();
-                        });
+                if (term === '') {
+                    return null;
+                }
 
-                        if (existingOption.length) {
-                            return null;
-                        }
-
-                        return {
-                            id: term,
-                            text: term + ' (новый)',
-                            newTag: true // Помечаем как новый тег
-                        };
-                    }
-                }).on('select2:select', function(e) {
-                    const data = e.params.data;
-
-                    // Если это новый тег
-                    if (data.newTag) {
-                        const newTagName = data.id;
-
-                        // Добавляем новый тег на сервер
-                        console.log(newTagName)
-                        fetch("{% url 'add_tag' %}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                            },
-                            body: JSON.stringify(newTagName)
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(responseData => {
-                            const option = $(selectElement).find(`option[value="${newTagName}"]`);
-                            option.text(newTagName);
-
-                            // Добавляем новый тег во все остальные селекты на странице
-                            $('.tags-select').not(selectElement).each(function() {
-                                $(this).append(new Option(newTagName, newTagName, false, false));
-                            });
-
-                            // Вызываем обновление тегов для текущего артикула
-                            triggerUpdateTags(selectElement);
-                        })
-                        .catch(error => {
-                            console.error('Ошибка при добавлении нового тега:', error);
-
-                            // Удаляем тег из селекта в случае ошибки
-                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
-                            $(selectElement).trigger('change');
-                        });
-                    } else {
-                        // Обычный выбор существующего тега
-                        triggerUpdateTags(selectElement);
-                    }
-                }).on('select2:unselect', function(e) {
-                    // При снятии выбора
-                    triggerUpdateTags(selectElement);
+                const existingOption = $(this).find("option").filter(function () {
+                    return $(this).val().toLowerCase() === term.toLowerCase();
                 });
-            });
-            $('#nmid-select').select2({
-                placeholder: 'Введите артикул для поиска',
-                allowClear: true,
-                width: '100%'
-            });
-            // для складов
-            $('#warehouse-select').select2({
-                placeholder: 'Введите склад для поиска',
-                allowClear: true,
-                width: '100%'
-            });
-            // для тегов
-            $('#tags_all_select').select2({
-                placeholder: 'Введите теги для поиска',
-                allowClear: true,
-                width: '100%'
-            });
-            // Для ткани
-            $('#group-without-color').select2({
-                placeholder: 'Выберите ткань',
-                allowClear: true,
-                width: '100%'
-            });
-            // Для размера
-            $('#filter-sizes').select2({
-                placeholder: 'Выберите размер',
-                allowClear: true,
-                width: '100%'
-            });
-            // Для цвета
-            $('#filter-colors').select2({
-                placeholder: 'Выберите цвет',
-                allowClear: true,
-                width: '100%'
-            });
+
+                if (existingOption.length) {
+                    return null;
+                }
+
+                return {
+                    id: term,
+                    text: term + ' (новый)',
+                    newTag: true
+                };
+            }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+
+            if (data.newTag) {
+                const newTagName = data.id;
+
+                fetch("{% url 'add_tag' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(newTagName)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(responseData => {
+                    // Сначала удаляем временную опцию с пометкой "(новый)"
+                    $(selectElement).find(`option[value="${newTagName}"]`).remove();
+
+                    // Добавляем постоянную опцию в текущий селект
+                    $(selectElement).append(new Option(newTagName, newTagName, true, true));
+
+                    // Добавляем новый тег во ВСЕ остальные селекты тегов на странице
+                    $('.tags-select').not(selectElement).each(function() {
+                        // Проверяем, что тег еще не существует в этом селекте
+                        if ($(this).find(`option[value="${newTagName}"]`).length === 0) {
+                            $(this).append(new Option(newTagName, newTagName, false, false));
+                        }
+                    });
+
+                    // Добавляем новый тег в фильтр тегов
+                    if ($('#tags_all_select').find(`option[value="${newTagName}"]`).length === 0) {
+                        $('#tags_all_select').append(new Option(newTagName, newTagName, false, false));
+                    }
+
+                    // Обновляем Select2 для текущего элемента
+                    $(selectElement).trigger('change');
+
+                    triggerUpdateTags(selectElement);
+                })
+                .catch(error => {
+                    console.error('Ошибка при добавлении нового тега:', error);
+                    // Удаляем опцию при ошибке
+                    $(selectElement).find(`option[value="${newTagName}"]`).remove();
+                    $(selectElement).trigger('change');
+                });
+            } else {
+                triggerUpdateTags(selectElement);
+            }
+        }).on('select2:unselect', function(e) {
+            triggerUpdateTags(selectElement);
+        }).on('select2:clear', function(e) {
+            // Предотвращаем открытие dropdown при очистке
+            e.preventDefault();
+
+            // Очищаем все выбранные опции
+            $(this).val(null).trigger('change');
+
+            // Обновляем теги на сервере
+            triggerUpdateTags(this);
+
+            // Закрываем dropdown если он открыт
+            $(this).select2('close');
+        });
+    });
+
+    // Остальные Select2 инициализации остаются без изменений
+    $('#nmid-select').select2({
+        placeholder: 'Введите артикул для поиска',
+        allowClear: true,
+        width: '100%'
+    });
+
+    $('#warehouse-select').select2({
+        placeholder: 'Введите склад для поиска',
+        allowClear: true,
+        width: '100%'
+    });
+
+    $('#tags_all_select').select2({
+        placeholder: 'Введите теги для поиска',
+        allowClear: true,
+        width: '100%'
+    });
+
+    $('#group-without-color').select2({
+        placeholder: 'Выберите ткань',
+        allowClear: true,
+        width: '100%'
+    });
+
+    $('#filter-sizes').select2({
+        placeholder: 'Выберите размер',
+        allowClear: true,
+        width: '100%'
+    });
+
+    $('#filter-colors').select2({
+        placeholder: 'Выберите цвет',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Обработчики для полей роста
+    let categoryGrowthTimeout;
+    let ourGrowthTimeout;
+
+    function filterNumericInput(input) {
+        $(input).on('input', function(e) {
+            let value = this.value;
+            value = value.replace(/[^0-9]/g, '');
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            this.value = value;
         });
 
-        function triggerUpdateTags(selectElement) {
-            const article = selectElement.getAttribute('data-article');
-
-            // Очищаем предыдущий таймаут для этого артикула
-            if (updateTimeouts[article]) {
-                clearTimeout(updateTimeouts[article]);
+        $(input).on('keypress', function(e) {
+            const char = String.fromCharCode(e.which);
+            if (!/[0-9]/.test(char) && e.which !== 8 && e.which !== 0) {
+                e.preventDefault();
             }
+        });
 
-            // Устанавливаем новый таймаут
-            updateTimeouts[article] = setTimeout(() => {
-                updateTags(selectElement);
-                delete updateTimeouts[article];
-            }, 300);
-        }
-
-        function updateTags(selectElement) {
-            const article = selectElement.getAttribute('data-article');
-            const selectedTags = Array.from(selectElement.selectedOptions).map(option => option.value);
-
-            // Отправляем запрос на сервер
-            fetch("{% url 'set_tags' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({
-                    [article]: selectedTags
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+        $(input).on('paste', function(e) {
+            setTimeout(() => {
+                let value = this.value;
+                value = value.replace(/[^0-9]/g, '');
+                if (value.length > 10) {
+                    value = value.substring(0, 10);
                 }
-                return response.json();
-            })
-            .catch(error => {
-                console.error('Ошибка при обновлении тегов:', error);
-            });
+                this.value = value;
+            }, 0);
+        });
+    }
+
+    filterNumericInput('#category-growth');
+    filterNumericInput('#our-growth');
+
+    $('#category-growth').on('input', function() {
+        clearTimeout(categoryGrowthTimeout);
+        categoryGrowthTimeout = setTimeout(function() {
+            updateCategoryGrowth();
+        }, 500);
+    });
+
+    $('#our-growth').on('input', function() {
+        clearTimeout(ourGrowthTimeout);
+        ourGrowthTimeout = setTimeout(function() {
+            updateOurGrowth();
+        }, 500);
+    });
+
+    updateCalculatedValues();
+});
+
+function updateCategoryGrowth() {
+    const value = parseInt($('#category-growth').val()) || 0;
+
+    fetch("{% url 'category_growth' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ value: value })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(data => {
+        currentCategoryGrowth = value;
+        updateCalculatedValues();
+    })
+    .catch(error => {
+        console.error('Ошибка при обновлении роста категории:', error);
+    });
+}
+
+function updateOurGrowth() {
+    const value = parseInt($('#our-growth').val()) || 0;
+
+    fetch("{% url 'our_growth' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ value: value })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        currentOurGrowth = value;
+        updateCalculatedValues();
+    })
+    .catch(error => {
+        console.error('Ошибка при обновлении нашего роста:', error);
+    });
+}
+
+function updateCalculatedValues() {
+    $('.original-value').each(function() {
+        const originalValue = parseInt($(this).text()) || 0;
+        const categoryMultiplier = currentCategoryGrowth > 0 ? (1 + currentCategoryGrowth / 100) : 1;
+        const ourMultiplier = currentOurGrowth > 0 ? (1 + currentOurGrowth / 100) : 1;
+
+        const calculatedValue = Math.round(originalValue * categoryMultiplier * ourMultiplier);
+
+        if (calculatedValue !== originalValue && (currentCategoryGrowth > 0 || currentOurGrowth > 0)) {
+            $(this).next('.calculated-value').text(` (${calculatedValue})`);
+        } else {
+            $(this).next('.calculated-value').text('');
+        }
+    });
+}
+
+function triggerUpdateTags(selectElement) {
+    // Проверяем, что это действительно селект тегов
+    if (!$(selectElement).hasClass('tags-select')) {
+        return;
+    }
+
+    const article = selectElement.getAttribute('data-article');
+
+    if (updateTimeouts[article]) {
+        clearTimeout(updateTimeouts[article]);
+    }
+
+    updateTimeouts[article] = setTimeout(() => {
+        updateTags(selectElement);
+        delete updateTimeouts[article];
+    }, 300);
+}
+
+function updateTags(selectElement) {
+    const article = selectElement.getAttribute('data-article');
+    const selectedTags = Array.from(selectElement.selectedOptions).map(option => option.value);
+
+    fetch("{% url 'set_tags' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            [article]: selectedTags
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .catch(error => {
+        console.error('Ошибка при обновлении тегов:', error);
+    });
+}
     </script>
 
     <script>
@@ -644,10 +818,14 @@
 
                         // Исключаем заголовочные строки и пустые
                         if (warehouseText && warehouseText !== 'Склад') {
+                          const recDeliveryCell = subCells[2];
+                          const originalValue = recDeliveryCell?.querySelector('.original-value')?.textContent.trim() || '';
+                          const calculatedValue = recDeliveryCell?.querySelector('.calculated-value')?.textContent.trim() || '';
+
                           const subitem = {
                             warehouse: warehouseText,
                             order: parseInt(subCells[1]?.textContent.trim()) || 0,
-                            rec_delivery: parseInt(subCells[2]?.textContent.trim()) || 0,
+                            rec_delivery: originalValue + calculatedValue,
                             stock: parseInt(subCells[3]?.textContent.trim()) || 0,
                             time_available: parseInt(subCells[4]?.textContent.trim()) || 0,
                           };
