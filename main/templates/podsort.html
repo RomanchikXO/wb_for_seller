@@ -704,7 +704,7 @@ function updateCalculatedValues() {
 
         const calculatedValue = Math.round(originalValue * categoryMultiplier * ourMultiplier);
 
-        if (calculatedValue !== originalValue && (currentCategoryGrowth > 0 || currentOurGrowth > 0)) {
+        if (currentCategoryGrowth > 0 || currentOurGrowth > 0) {
             $(this).next('.calculated-value').text(` (${calculatedValue})`);
         } else {
             $(this).next('.calculated-value').text('');
