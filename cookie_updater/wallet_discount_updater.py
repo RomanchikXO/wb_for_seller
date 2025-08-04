@@ -132,7 +132,12 @@ async def login_and_get_context():
             await conn.close()
 
         await asyncio.sleep(300)
-        await page.reload()
+        try:
+            await page.reload(timeout=60000, wait_until="domcontentloaded")
+        except Exception as e:
+            logger.error(f"Ошибка в основном цикле playwright_discount_updater в функции login_and_get_context: {e}")
+            await asyncio.sleep(60)  # отдохнём минуту перед повтором
+            await page.reload(timeout=60000, wait_until="domcontentloaded")
 
 
 
