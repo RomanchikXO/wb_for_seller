@@ -5,6 +5,8 @@ from database.DataBase import async_connect_to_database
 import logging
 from context_logger import ContextLogger
 from typing import List
+
+from myapp.models import Price
 from parsers.wildberies import wb_api
 import aiohttp
 
@@ -232,14 +234,20 @@ async def set_price_on_wb_from_repricer():
 
     request = {}
 
-    # try:
-    #     async with aiohttp.ClientSession() as session:
-    #         for seller in param:
-    #             request[seller["API_KEY"]] = wb_api(session, seller)
-    #         await asyncio.gather(*request.values())
-    # except Exception as e:
-    #     logger.error(f"Цены не установлены. Ошибка: {e}")
-    #     return
+    try:
+        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
+    except Exception as e:
+        logger.error(f"Ошибка получения main_status в set_price_on_wb_from_repricer: {e}")
+
+    if status_rep:
+        try:
+            async with aiohttp.ClientSession() as session:
+                for seller in param:
+                    request[seller["API_KEY"]] = wb_api(session, seller)
+                await asyncio.gather(*request.values())
+        except Exception as e:
+            logger.error(f"Цены не установлены. Ошибка: {e}")
+            return
 
     conn = await async_connect_to_database()
     if not conn:

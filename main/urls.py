@@ -8,6 +8,7 @@ urlpatterns = [
     path('repricer/', views.repricer_view, name='repricer'),
     path('repricer/save/', views.repricer_save, name='repricer_save'),
     path('repricer/get_marg/', views.get_marg_api, name='get_marg_api'),
+    path('repricer/set_status_rep/', views.set_status_rep, name='set_status_rep'),
     path('podsort/', views.podsort_view, name='podsort'),
     path('repricer/export_excel/', views.export_excel, name='export_excel'),
     path('repricer/upload_excel/', views.upload_excel, name='upload_excel'),

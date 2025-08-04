@@ -18,10 +18,20 @@
 
 {% block main_content %}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h3>Репрайсер</h3>
-            <p class="mb-0">Обновление происходит каждый час в 2, 7, 12, 17, ... минут (раз в 5 минут).</p>
+        <div class="mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <h3 class="mb-0">Репрайсер</h3>
+                <div class="form-check form-switch fs-4 m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="repToggle"
+                           {% if status_rep %}checked{% endif %}>
+                    <label class="form-check-label" for="repToggle"></label>
+                </div>
+            </div>
+            <p class="mb-0 mt-1 text-muted">
+                Обновление происходит каждый час в 2, 7, 12, 17, ... минут (раз в 5 минут).
+            </p>
         </div>
+
         <form id="download-form" method="post" action="{% url 'export_excel' %}">
             {% csrf_token %}
             <button type="button" id="export-btn" class="btn btn-outline-success">
@@ -279,6 +289,38 @@
 {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const repToggle = document.getElementById("repToggle");
+
+            repToggle.addEventListener("change", function () {
+                const newStatus = this.checked;
+
+                fetch("{% url 'set_status_rep' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error("Ошибка при обновлении статуса репрайсера");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Статус репрайсера обновлён:", data);
+                })
+                .catch(error => {
+                    console.error("Ошибка:", error);
+                    // По желанию — откат чекбокса:
+                    repToggle.checked = !newStatus;
+                });
+            });
+        });
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const switches = document.querySelectorAll('.toggle-switch');

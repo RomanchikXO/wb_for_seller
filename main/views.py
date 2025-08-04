@@ -488,6 +488,8 @@ def repricer_view(request):
         nmids = []
         paginator = None
 
+    status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
+
     return render(request, 'repricer.html', {
         "page_obj": page_obj,
         "per_page": per_page,
@@ -498,7 +500,21 @@ def repricer_view(request):
         "sort_by": sort_by,
         "order": order,
         "tail_filter_options": tail_filter_options,
+        "status_rep": status_rep,
     })
+
+
+@require_POST
+@login_required_cust
+def set_status_rep(request):
+    payload = json.loads(request.body)
+
+    try:
+        Price.objects.all().update(main_status=payload['status'])
+    except Exception as e:
+        logger.error(f"Ошибка при переключении включении/отключении репрайсера в set_status_rep: {e}")
+        return JsonResponse({'status': 'error'})
+    return JsonResponse({'status': 'ok'})
 
 
 @require_POST

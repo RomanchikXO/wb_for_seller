@@ -87,6 +87,7 @@ class Price(models.Model):
     drr = models.IntegerField(default=5, null=True)
     usn = models.IntegerField(default=1, null=True)
     nds = models.IntegerField(default=7, null=True)
+    main_status = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ['nmid', 'lk']  # Уникальное ограничение на комбинацию nmID и lk
