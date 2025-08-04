@@ -482,6 +482,7 @@ async def get_products_and_prices():
                                     discount=item["discount"],
                                     clubdiscount=item["clubDiscount"],
                                     editablesizeprice=item["editableSizePrice"],
+                                    main_status=False,
                                 ),
                                 conflict_fields=["nmid", "lk_id"]
                             )
