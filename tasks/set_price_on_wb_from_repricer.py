@@ -238,6 +238,7 @@ async def set_price_on_wb_from_repricer():
         status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
     except Exception as e:
         logger.error(f"Ошибка получения main_status в set_price_on_wb_from_repricer: {e}")
+        return
 
     if status_rep:
         try:
