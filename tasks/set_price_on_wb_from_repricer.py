@@ -9,6 +9,8 @@ from typing import List
 from myapp.models import Price
 from parsers.wildberies import wb_api
 import aiohttp
+from asgiref.sync import sync_to_async
+
 
 logger = ContextLogger(logging.getLogger("core"))
 
@@ -202,6 +204,11 @@ def set_current_list(data: List[dict])-> dict:
     return response
 
 
+@sync_to_async
+def get_main_status():
+    return Price.objects.order_by('id').values_list('main_status', flat=True).first()
+
+
 async def set_price_on_wb_from_repricer():
     result = await get_price_from_db_dor_wb()
 
@@ -234,8 +241,9 @@ async def set_price_on_wb_from_repricer():
 
     request = {}
 
+    status_rep = False
     try:
-        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
+        status_rep = await get_main_status()
     except Exception as e:
         logger.error(f"Ошибка получения main_status в set_price_on_wb_from_repricer: {e}")
         return
