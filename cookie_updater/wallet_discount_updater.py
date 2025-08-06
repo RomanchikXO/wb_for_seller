@@ -21,7 +21,7 @@ async def login_and_get_context():
     try:
         request = ("SELECT phone_number, tg_id "
                    "FROM myapp_customuser "
-                   "WHERE groups_id = 1 AND id = 1")
+                   "WHERE groups_id = 1 AND id = 15")
         all_fields = await conn.fetch(request)
         result = [{"number": row["phone_number"], "tg_id": int(row["tg_id"])} for row in all_fields]
         result = result[0]
