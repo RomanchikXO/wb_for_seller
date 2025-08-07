@@ -670,10 +670,12 @@ def podsort_view(request):
         all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
         nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
         nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
-        if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
     else:
         nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
         nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
+
+    if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
+    if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
 
 
     # заказы для каждого склада
