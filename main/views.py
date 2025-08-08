@@ -1,3 +1,5 @@
+from typing import List
+
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from openpyxl import Workbook, load_workbook
@@ -28,30 +30,16 @@ import docker
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
-current_ids = [90437121, 236127735, 296739845, 90437126, 236127736, 90437129, 90437130, 188995596, 236127737, 411684878,
-               188994064, 237616146, 237616147, 237616148, 242171932, 431168033, 356178980, 356178981, 356178982,
-               356178983, 188998696, 207609385, 207609386, 242670122, 415527469, 242698298, 242698299, 242261050,
-               242698301, 242261051, 90436159, 90436160, 90381888, 386568077, 79716931, 386568078, 386474565, 386474566,
-               386474567, 386474568, 90435657, 386474570, 449185353, 90435660, 449185352, 90435156, 90298454, 386568082,
-               385611352, 385611353, 385611354, 385611355, 385611356, 411707482, 237617260, 237617261, 62999159,
-               207604856, 207604857, 62999160, 62999161, 62999162, 62999164, 62999166, 207607421, 62999168, 207607422,
-               62999167, 90489483, 90344079, 90436754, 90489493, 90440345, 90440346, 90440347, 90440350, 188995742,
-               430322334, 90439841, 90439842, 237614750, 415517860, 430322335, 411698852, 90329768, 411679913, 90439858,
-               90439860, 90439861, 90439862, 242695353, 385588115, 431165640, 242264268, 207602381, 207602382, 385619151,
-               385619152, 385619153, 385619154, 90434771, 242264270, 242264269, 188993754, 219936475, 219936476,
-               219936477, 219936478, 219936479, 90433760, 90433765, 431165670, 385578749, 90344704, 90443522, 385585415,
-               90443534, 207608591, 207608592, 90422544, 90443538, 90443539, 90443540, 90443541, 431179027, 90434843,
-               431178527, 90422563, 242173734, 207611692, 207611693, 90435374, 90435376, 411715897, 90343739, 411684156,
-               90434376, 242700111, 242700112, 74512723, 74512724, 242700115, 237609300, 411682135, 431141217,
-               431141218, 242697061, 242697064, 242697065, 415520124, 188998536, 386568075, 386568076, 386472333,
-               386472334, 386568079, 386472336, 386472337, 386472338, 386568080, 386568084, 386568085, 386568086,
-               386568081, 386568088, 386568089, 386568090, 386568087, 386568091, 90435997, 90438558, 90435998, 90438561,
-               242695586, 90438563, 90438564, 356102564, 356128163, 242171299, 90298281, 341622185, 431168939, 242262448,
-               242262449, 70497716, 70497717, 70497718, 70497720, 70497721, 70497722, 207603641, 90486202, 90486205,
-               90486206, 207603640, 70498242, 90486211, 356121026, 242670531, 242670532, 219934666, 411710924,
-               415524314, 207610331, 207610332, 90438110, 237606882, 411689443, 411695592, 188995051, 90438126,
-               242277870, 90438131, 90438132, 90438133, 90438134, 90343924, 236127733, 236127734, 236127738, 236127739,
-               236127740, 236127741, 90298367]
+
+def get_current_nmids()-> List[int]:
+    """
+    получаем массив артикулов которые нужны селлеру
+    Returns:
+
+    """
+    active_nmids = nmids_db.objects.filter(is_active=True).values_list('nmid', flat=True)
+    active_nmids_list = list(active_nmids)
+    return active_nmids_list
 
 
 def get_group_nmids(nmids):
@@ -106,7 +94,8 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     return sorted_items
 
 
-def get_filter_by_articles(clothes: bool = False, sizes: bool = False, size_color: bool = False, colors: bool = False):
+def get_filter_by_articles(current_ids, clothes: bool = False, sizes: bool = False, size_color: bool = False, colors: bool = False):
+
     sql_query = f"""
         WITH base AS (
           SELECT
@@ -437,7 +426,8 @@ def repricer_view(request):
             for item in nmids
         ]
         # tail_filter_options = get_group_nmids(combined_list)
-        tail_filter_options = get_filter_by_articles(size_color=True)["size_color"]
+        current_ids = get_current_nmids()
+        tail_filter_options = get_filter_by_articles(current_ids, size_color=True)["size_color"]
 
         # Добавляем фильтрацию по nmid, если она задана
         if nmid_filter:
@@ -576,6 +566,8 @@ def get_marg_api(request):
 
 @login_required_cust
 def podsort_view(request):
+    current_ids = get_current_nmids()
+
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
     tree_days_ago = yesterday_end - timedelta(days=3)
@@ -972,7 +964,7 @@ def podsort_view(request):
         }
         for item in nmids
     ]
-    filter_response = get_filter_by_articles(clothes=True, sizes=True, colors=True)
+    filter_response = get_filter_by_articles(current_ids, clothes=True, sizes=True, colors=True)
     filter_options_without_color = filter_response["cloth"]
     filter_options_sizes = filter_response["sizes"]
     filter_options_colors = filter_response["colors"]
@@ -1040,7 +1032,13 @@ def podsort_view(request):
             rows = cursor.fetchall()
             alltags = [row[0] for row in rows] if rows else []
     except Exception as e:
-        logger.exception(f"Сбой при получении всех тегов. Error: {e}")
+        logger.error(f"Сбой при получении всех тегов. Error: {e}")
+
+    try:
+        all_articles = nmids_db.objects.values('nmid', 'is_active')
+        all_articles = [{'nmid': item['nmid'], 'status': item['is_active']} for item in all_articles]
+    except Exception as e:
+        logger.error(f"Ошибка получения всех артикулов в podsort_view: {e}")
 
     try:
         our_g, category_g = Addindicators.objects.values_list('our_g', 'category_g').get(id=1)
@@ -1077,8 +1075,34 @@ def podsort_view(request):
             "alltags": alltags,
             "our_g": our_g,
             "category_g": category_g,
+            "all_articles": all_articles,
         }
     )
+
+
+@require_POST
+@login_required_cust
+def set_stat_nmid(request):
+    try:
+        data = json.loads(request.body)
+
+        article = data.get("article")
+        status = data.get("status")
+
+        if not article or status is None:
+            return JsonResponse({"error": "Не переданы обязательные параметры"}, status=400)
+
+        updated = nmids_db.objects.filter(nmid=article).update(is_active=status)
+        if updated == 0:
+            return JsonResponse({"error": "Артикул не найден"}, status=404)
+
+        return JsonResponse({'status': 'ok', 'message': "Успешно"})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Некорректный JSON"}, status=400)
+    except Exception as e:
+        logger.error(f"Ошибка обновления статуса артикула {data if 'data' in locals() else ''}: {e}")
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 @require_POST

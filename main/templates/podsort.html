@@ -442,207 +442,290 @@
             </form>
         </div>
     </div>
+
+    {#  табличка для исключения артикулов  #}
+    <div class="card mt-4 p-3" style="max-width: 400px;">
+        <h6>Статусы артикулов</h6>
+        <input type="text"
+               id="status-search"
+               class="form-control form-control-sm mb-2"
+               placeholder="Поиск по артикулу...">
+
+        <div style="max-height: 250px; overflow-y: auto;">
+            <table class="table table-sm table-bordered mb-0" id="status-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Артикул</th>
+                        <th style="width: 50%;">Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in all_articles %}
+                        <tr>
+                            <td class="status-article">{{ article.nmid }}</td>
+                            <td>
+                                <input type="checkbox" class="status-toggle" data-art="{{ article.nmid }}" {% if article.status %}checked{% endif %}>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 {% endblock %}
 
 {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const searchInput = document.getElementById('status-search');
+            const table = document.getElementById('status-table');
+            const rows = table.querySelectorAll('tbody tr');
+
+            // Поиск по артикулу
+            searchInput.addEventListener('input', function() {
+                const filter = this.value.trim().toLowerCase();
+                rows.forEach(row => {
+                    const articleCell = row.querySelector('.status-article');
+                    if (articleCell && articleCell.textContent.toLowerCase().includes(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+
+            // Отправка изменений статуса
+            table.addEventListener('change', function(e) {
+                if (e.target.classList.contains('status-toggle')) {
+                    const article = e.target.getAttribute('data-art');
+                    const status = e.target.checked;  // булево значение
+
+                    fetch("{% url 'set_stat_nmid' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                        },
+                        body: JSON.stringify({
+                            article: article,
+                            status: status
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Ошибка при обновлении статуса');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Статус обновлён:', data);
+                    })
+                    .catch(err => {
+                        console.error('Ошибка при отправке статуса:', err);
+                    });
+                }
+            });
+        });
+    </script>
 
     <script>
         const updateTimeouts = {};
-let currentCategoryGrowth = parseInt($('#category-growth').val()) || 0;
-let currentOurGrowth = parseInt($('#our-growth').val()) || 0;
+        let currentCategoryGrowth = parseInt($('#category-growth').val()) || 0;
+        let currentOurGrowth = parseInt($('#our-growth').val()) || 0;
 
-$(document).ready(function () {
-    $('.tags-select').each(function() {
-        const selectElement = this;
-        $(this).select2({
-            placeholder: 'Выберите теги или введите новый',
-            allowClear: true,
-            width: '200px',
-            closeOnSelect: false,
-            tags: true,
-            createTag: function (params) {
-                const term = $.trim(params.term);
+        $(document).ready(function () {
+            $('.tags-select').each(function() {
+                const selectElement = this;
+                $(this).select2({
+                    placeholder: 'Выберите теги или введите новый',
+                    allowClear: true,
+                    width: '200px',
+                    closeOnSelect: false,
+                    tags: true,
+                    createTag: function (params) {
+                        const term = $.trim(params.term);
 
-                if (term === '') {
-                    return null;
-                }
-
-                const existingOption = $(this).find("option").filter(function () {
-                    return $(this).val().toLowerCase() === term.toLowerCase();
-                });
-
-                if (existingOption.length) {
-                    return null;
-                }
-
-                return {
-                    id: term,
-                    text: term + ' (новый)',
-                    newTag: true
-                };
-            }
-        }).on('select2:select', function(e) {
-            const data = e.params.data;
-
-            if (data.newTag) {
-                const newTagName = data.id;
-
-                fetch("{% url 'add_tag' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify(newTagName)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(responseData => {
-                    // Сначала удаляем временную опцию с пометкой "(новый)"
-                    $(selectElement).find(`option[value="${newTagName}"]`).remove();
-
-                    // Добавляем постоянную опцию в текущий селект
-                    $(selectElement).append(new Option(newTagName, newTagName, true, true));
-
-                    // Добавляем новый тег во ВСЕ остальные селекты тегов на странице
-                    $('.tags-select').not(selectElement).each(function() {
-                        // Проверяем, что тег еще не существует в этом селекте
-                        if ($(this).find(`option[value="${newTagName}"]`).length === 0) {
-                            $(this).append(new Option(newTagName, newTagName, false, false));
+                        if (term === '') {
+                            return null;
                         }
-                    });
 
-                    // Добавляем новый тег в фильтр тегов
-                    if ($('#tags_all_select').find(`option[value="${newTagName}"]`).length === 0) {
-                        $('#tags_all_select').append(new Option(newTagName, newTagName, false, false));
+                        const existingOption = $(this).find("option").filter(function () {
+                            return $(this).val().toLowerCase() === term.toLowerCase();
+                        });
+
+                        if (existingOption.length) {
+                            return null;
+                        }
+
+                        return {
+                            id: term,
+                            text: term + ' (новый)',
+                            newTag: true
+                        };
                     }
+                }).on('select2:select', function(e) {
+                    const data = e.params.data;
 
-                    // Обновляем Select2 для текущего элемента
-                    $(selectElement).trigger('change');
+                    if (data.newTag) {
+                        const newTagName = data.id;
 
+                        fetch("{% url 'add_tag' %}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                            },
+                            body: JSON.stringify(newTagName)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(responseData => {
+                            // Сначала удаляем временную опцию с пометкой "(новый)"
+                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
+
+                            // Добавляем постоянную опцию в текущий селект
+                            $(selectElement).append(new Option(newTagName, newTagName, true, true));
+
+                            // Добавляем новый тег во ВСЕ остальные селекты тегов на странице
+                            $('.tags-select').not(selectElement).each(function() {
+                                // Проверяем, что тег еще не существует в этом селекте
+                                if ($(this).find(`option[value="${newTagName}"]`).length === 0) {
+                                    $(this).append(new Option(newTagName, newTagName, false, false));
+                                }
+                            });
+
+                            // Добавляем новый тег в фильтр тегов
+                            if ($('#tags_all_select').find(`option[value="${newTagName}"]`).length === 0) {
+                                $('#tags_all_select').append(new Option(newTagName, newTagName, false, false));
+                            }
+
+                            // Обновляем Select2 для текущего элемента
+                            $(selectElement).trigger('change');
+
+                            triggerUpdateTags(selectElement);
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при добавлении нового тега:', error);
+                            // Удаляем опцию при ошибке
+                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
+                            $(selectElement).trigger('change');
+                        });
+                    } else {
+                        triggerUpdateTags(selectElement);
+                    }
+                }).on('select2:unselect', function(e) {
                     triggerUpdateTags(selectElement);
-                })
-                .catch(error => {
-                    console.error('Ошибка при добавлении нового тега:', error);
-                    // Удаляем опцию при ошибке
-                    $(selectElement).find(`option[value="${newTagName}"]`).remove();
-                    $(selectElement).trigger('change');
+                }).on('select2:clear', function(e) {
+                    // Предотвращаем открытие dropdown при очистке
+                    e.preventDefault();
+
+                    // Очищаем все выбранные опции
+                    $(this).val(null).trigger('change');
+
+                    // Обновляем теги на сервере
+                    triggerUpdateTags(this);
+
+                    // Закрываем dropdown если он открыт
+                    $(this).select2('close');
                 });
-            } else {
-                triggerUpdateTags(selectElement);
+            });
+
+            // Остальные Select2 инициализации остаются без изменений
+            $('#nmid-select').select2({
+                placeholder: 'Введите артикул для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#warehouse-select').select2({
+                placeholder: 'Введите склад для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#tags_all_select').select2({
+                placeholder: 'Введите теги для поиска',
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#group-without-color').select2({
+                placeholder: 'Выберите ткань',
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#filter-sizes').select2({
+                placeholder: 'Выберите размер',
+                allowClear: true,
+                width: '100%'
+            });
+
+            $('#filter-colors').select2({
+                placeholder: 'Выберите цвет',
+                allowClear: true,
+                width: '100%'
+            });
+
+            // Обработчики для полей роста
+            let categoryGrowthTimeout;
+            let ourGrowthTimeout;
+
+            function filterNumericInput(input) {
+                $(input).on('input', function(e) {
+                    let value = this.value;
+                    value = value.replace(/[^0-9]/g, '');
+                    if (value.length > 10) {
+                        value = value.substring(0, 10);
+                    }
+                    this.value = value;
+                });
+
+                $(input).on('keypress', function(e) {
+                    const char = String.fromCharCode(e.which);
+                    if (!/[0-9]/.test(char) && e.which !== 8 && e.which !== 0) {
+                        e.preventDefault();
+                    }
+                });
+
+                $(input).on('paste', function(e) {
+                    setTimeout(() => {
+                        let value = this.value;
+                        value = value.replace(/[^0-9]/g, '');
+                        if (value.length > 10) {
+                            value = value.substring(0, 10);
+                        }
+                        this.value = value;
+                    }, 0);
+                });
             }
-        }).on('select2:unselect', function(e) {
-            triggerUpdateTags(selectElement);
-        }).on('select2:clear', function(e) {
-            // Предотвращаем открытие dropdown при очистке
-            e.preventDefault();
 
-            // Очищаем все выбранные опции
-            $(this).val(null).trigger('change');
+            filterNumericInput('#category-growth');
+            filterNumericInput('#our-growth');
 
-            // Обновляем теги на сервере
-            triggerUpdateTags(this);
+            $('#category-growth').on('input', function() {
+                clearTimeout(categoryGrowthTimeout);
+                categoryGrowthTimeout = setTimeout(function() {
+                    updateCategoryGrowth();
+                }, 500);
+            });
 
-            // Закрываем dropdown если он открыт
-            $(this).select2('close');
+            $('#our-growth').on('input', function() {
+                clearTimeout(ourGrowthTimeout);
+                ourGrowthTimeout = setTimeout(function() {
+                    updateOurGrowth();
+                }, 500);
+            });
+
+            updateCalculatedValues();
         });
-    });
-
-    // Остальные Select2 инициализации остаются без изменений
-    $('#nmid-select').select2({
-        placeholder: 'Введите артикул для поиска',
-        allowClear: true,
-        width: '100%'
-    });
-
-    $('#warehouse-select').select2({
-        placeholder: 'Введите склад для поиска',
-        allowClear: true,
-        width: '100%'
-    });
-
-    $('#tags_all_select').select2({
-        placeholder: 'Введите теги для поиска',
-        allowClear: true,
-        width: '100%'
-    });
-
-    $('#group-without-color').select2({
-        placeholder: 'Выберите ткань',
-        allowClear: true,
-        width: '100%'
-    });
-
-    $('#filter-sizes').select2({
-        placeholder: 'Выберите размер',
-        allowClear: true,
-        width: '100%'
-    });
-
-    $('#filter-colors').select2({
-        placeholder: 'Выберите цвет',
-        allowClear: true,
-        width: '100%'
-    });
-
-    // Обработчики для полей роста
-    let categoryGrowthTimeout;
-    let ourGrowthTimeout;
-
-    function filterNumericInput(input) {
-        $(input).on('input', function(e) {
-            let value = this.value;
-            value = value.replace(/[^0-9]/g, '');
-            if (value.length > 10) {
-                value = value.substring(0, 10);
-            }
-            this.value = value;
-        });
-
-        $(input).on('keypress', function(e) {
-            const char = String.fromCharCode(e.which);
-            if (!/[0-9]/.test(char) && e.which !== 8 && e.which !== 0) {
-                e.preventDefault();
-            }
-        });
-
-        $(input).on('paste', function(e) {
-            setTimeout(() => {
-                let value = this.value;
-                value = value.replace(/[^0-9]/g, '');
-                if (value.length > 10) {
-                    value = value.substring(0, 10);
-                }
-                this.value = value;
-            }, 0);
-        });
-    }
-
-    filterNumericInput('#category-growth');
-    filterNumericInput('#our-growth');
-
-    $('#category-growth').on('input', function() {
-        clearTimeout(categoryGrowthTimeout);
-        categoryGrowthTimeout = setTimeout(function() {
-            updateCategoryGrowth();
-        }, 500);
-    });
-
-    $('#our-growth').on('input', function() {
-        clearTimeout(ourGrowthTimeout);
-        ourGrowthTimeout = setTimeout(function() {
-            updateOurGrowth();
-        }, 500);
-    });
-
-    updateCalculatedValues();
-});
 
 function updateCategoryGrowth() {
     const value = parseInt($('#category-growth').val()) || 0;
