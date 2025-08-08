@@ -1,7 +1,7 @@
 import asyncio
 import random
 import httpx
-from typing import Union
+from typing import Union, List
 import time
 import aiohttp
 from database.DataBase import async_connect_to_database
@@ -90,8 +90,8 @@ def calculate_card_price(price: Union[int, float]) -> int:
 
 
 def parse_link(
-    link: Union[int, str], type
-):
+    link: Union[int, str], disc: int
+) -> tuple:
     api_url = "https://card.wb.ru/cards/v4/detail"
     params = {
         "spp": "0",
@@ -105,45 +105,38 @@ def parse_link(
 
     if not data or not data["products"][0]:
         logger.info(f"Fail {link}. Функция: parse_link. Data: {data}")
-        return 0
+        return 0, 0
 
     sku = data["products"][0]
 
-    price = sku.get("priceU", 0) / 100
-    promo_price = sku.get("salePriceU", 0) / 100
-    if price == promo_price:
-        promo_price = 0
-    if promo_price > price:
-        prices = [price, promo_price]
-        price = prices[1]
-        promo_price = prices[0]
-    if type:
-        if isinstance(type, list):
-            return [price, promo_price]
-        elif type == "price":
-            return price
-        elif type == "promo_price":
-            return promo_price
-    card_price = calculate_card_price(promo_price) if promo_price else calculate_card_price(price)
-    return card_price
-# parse_link(230574114, None)
-def safe_parse_link(link, type):
     try:
-        data = parse_link(link, type)
+        price = int(int(sku["sizes"][0]["price"]["product"] / 100 * 0.97) * ((100-disc) / 100))
+    except Exception as e:
+        logger.info(f"Не нашли цену для артикула {link}. Ошибка {e}")
+        price = 0
+
+    rating = sku.get("reviewRating", 0)
+
+    return price, rating
+
+
+def safe_parse_link(link, disc: int) -> tuple:
+    try:
+        data = parse_link(link, disc)
         return data
     except Exception as e:
         logger.error(f"Can't parse link. Url: {link}. Error: {e}")
 
-def parse_by_links(links: list, type) -> list:
+def parse_by_links(links: list, disc: int) -> List[tuple]:
     tasks = [
-        safe_parse_link(link, type)
+        safe_parse_link(link, disc)
         for link in links
     ]
     return tasks
 
 
-def parse(links: list, type: Union[str, list] = None) -> list:
-    response = parse_by_links(links, type)
+def parse(links: list, disc: int) -> List[tuple]:
+    response = parse_by_links(links, disc)
     return response
 
 async def wb_api(session, param):
@@ -460,7 +453,7 @@ async def get_products_and_prices():
 
         results = await asyncio.gather(*data.values())
         id_to_result = {name: result for name, result in zip(data.keys(), results)}      
-        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first();
+        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
 
         try:
             conn = await async_connect_to_database()
