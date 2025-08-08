@@ -101,6 +101,9 @@ async def add_set_data_from_db(
     try:
         if not data.get("updated_at"):
             data["updated_at"] = datetime.now()
+
+        if "is_active" not in data and table_name == "myapp_nmids":
+            data["is_active"] = True
         columns = list(data.keys())
         values = list(data.values())
 
@@ -112,8 +115,9 @@ async def add_set_data_from_db(
 
         # Строим update-часть для ON CONFLICT
         update_str = ", ".join(
-            f"{col} = EXCLUDED.{col}" for col in columns
-            if col not in conflict_fields and col != 'tag_ids'
+            f"{col} = EXCLUDED.{col}"
+            for col in columns
+            if col not in conflict_fields and col not in ("tag_ids", "is_active")
         )
 
         # Формируем запрос
