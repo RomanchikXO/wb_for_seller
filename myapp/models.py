@@ -166,6 +166,7 @@ class nmids(models.Model):
     created_at = models.DateTimeField() # Дата создания карточки товара (по данным WB)
     updated_at = models.DateTimeField() # Дата изменения карточки товара (по данным WB)
     added_db = models.DateTimeField(auto_now_add=True) # по МСК
+    is_active = models.BooleanField(default=True) # поле для понимания нужен им товар или нет
 
     class Meta:
         unique_together = ['nmid', 'lk']
