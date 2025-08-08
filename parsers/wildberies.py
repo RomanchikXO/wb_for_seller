@@ -17,6 +17,7 @@ import io
 import csv
 from context_logger import ContextLogger
 from itertools import chain
+from myapp.models import Price
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
@@ -458,7 +459,8 @@ async def get_products_and_prices():
             data[cab["id"]] = wb_api(session, param)
 
         results = await asyncio.gather(*data.values())
-        id_to_result = {name: result for name, result in zip(data.keys(), results)}
+        id_to_result = {name: result for name, result in zip(data.keys(), results)}      
+        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first();
 
         try:
             conn = await async_connect_to_database()
@@ -482,7 +484,7 @@ async def get_products_and_prices():
                                     discount=item["discount"],
                                     clubdiscount=item["clubDiscount"],
                                     editablesizeprice=item["editableSizePrice"],
-                                    main_status=False,
+                                    main_status=status_rep,
                                 ),
                                 conflict_fields=["nmid", "lk_id"]
                             )
