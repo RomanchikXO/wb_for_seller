@@ -911,8 +911,8 @@ def podsort_view(request):
                     if i_key not in all_orders[art].keys() and i_val["total_quantity"]:
                         all_orders[art][i_key] = 0
                 for warh, i_order in all_orders[art].items():
-                    if warh != "Неопределено":
-                        all_response[art]["orders"] += i_order
+                    logger.info(warh, i_order)
+                    all_response[art]["orders"] += i_order
                     all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
                     all_response[art]["subitems"].append(
                         {
