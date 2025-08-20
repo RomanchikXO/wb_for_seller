@@ -911,7 +911,8 @@ def podsort_view(request):
                     if i_key not in all_orders[art].keys() and i_val["total_quantity"]:
                         all_orders[art][i_key] = 0
                 for warh, i_order in all_orders[art].items():
-                    all_response[art]["orders"] += i_order
+                    if warh != "Неопределено":
+                        all_response[art]["orders"] += i_order
                     all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
                     all_response[art]["subitems"].append(
                         {
@@ -995,12 +996,12 @@ def podsort_view(request):
                                 all_response[key]["subitems"][index]["order"] = 0
                         else:
                             if i.get("warehouse") == "Неопределено":
-                                all_response[key]["subitems"][index]["rec_delivery"] = all_response[key]["subitems"][index]["order"]
+                                all_response[key]["subitems"][index]["order_for_change_war"] = all_response[key]["subitems"][index]["order"]
                                 all_response[key]["subitems"][index]["order"] = 0
-                            else:
-                                all_response[key]["subitems"][index]["rec_delivery"] = int(
-                                    all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
-                                ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
+
+                            all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
+                            ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
 
                         # ниже просто цвета присваиваем без делений
                         if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or all_response[key]["subitems"][index]["rec_delivery"] >= 100:
