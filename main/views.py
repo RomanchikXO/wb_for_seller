@@ -981,18 +981,27 @@ def podsort_view(request):
                 )
 
                 for index, i in enumerate(all_response[key]["subitems"]):
-                    if i.get("warehouse") == "Неопределено": continue
+                    # по просьбе заказчика от 18.08.25 учитывать нераспределенные заказы
+                    # if i.get("warehouse") == "Неопределено": continue
                     try:
+                        # считаем рек поставку для складов
                         if not warehouse_filter:
                             all_response[key]["subitems"][index]["rec_delivery"] = int(
                                 all_response[key]["subitems"][index][
                                     "order"] / period_ord * turnover_change -
                                 all_response[key]["subitems"][index]["stock"]
                             )
+                            if i.get("warehouse") == "Неопределено":
+                                all_response[key]["subitems"][index]["order"] = 0
                         else:
                             all_response[key]["subitems"][index]["rec_delivery"] = int(
                                 all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
                             ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
+
+                            if i.get("warehouse") == "Неопределено":
+                                all_response[key]["subitems"][index]["order_for_change_war"] = 0
+
+                        # ниже просто цвета присваиваем без делений
                         if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or all_response[key]["subitems"][index]["rec_delivery"] >= 100:
                             all_response[key]["subitems"][index]["color"] = "red"
                             all_response[key]["color"] = "red" if all_response[key]["turnover_total"] < 25 else "white"
@@ -1605,3 +1614,85 @@ def google_webhook_view(request):
         data = json.loads(request.body)
     except Exception as e:
         logger.error(f"Ошибка {e}")
+
+
+# @require_POST
+# @login_required_cust
+# def get_dynamic_filters(request):
+#     try:
+#         data = json.loads(request.body)
+#
+#         wc_filter = set(data.get("wc_filter", "").split(",")) if data.get("wc_filter") else set()
+#         if wc_filter: wc_filter = {int(i) for i in wc_filter}
+#         cl_filter = set(data.get("cl_filter", "").split(",")) if data.get("cl_filter") else set()
+#         if cl_filter: cl_filter = {int(i) for i in cl_filter}
+#         sz_filter = set(data.get("sz_filter", "").split(",")) if data.get("sz_filter") else set()
+#         if sz_filter: sz_filter = {int(i) for i in sz_filter}
+#
+#         filter_options_without_color = data.get("filter_options_without_color", [])
+#         filter_options_colors = data.get("filter_options_colors", [])
+#         filter_options_sizes = data.get("filter_options_sizes", [])
+#
+#         # Исходные множества
+#         filtered_wc = filter_options_without_color
+#         filtered_cl = filter_options_colors
+#         filtered_sz = filter_options_sizes
+#
+#         # Если выбрано что-то, чистим остальные списки по пересечениям
+#         if wc_filter: # ткань
+#             nmids_allowed = wc_filter
+#             if cl_filter:
+#                 nmids_allowed &= cl_filter
+#             if sz_filter:
+#                 nmids_allowed &= sz_filter
+#
+#             filtered_cl = [
+#                 c for c in filter_options_colors
+#                 if nmids_allowed & set(c["nmids"])
+#             ]
+#             filtered_sz = [
+#                 s for s in filter_options_sizes
+#                 if nmids_allowed & set(s["nmids"])
+#             ]
+#
+#         if cl_filter: # цвет
+#             nmids_allowed = cl_filter
+#             if wc_filter:
+#                 nmids_allowed &= wc_filter
+#             if sz_filter:
+#                 nmids_allowed &= sz_filter
+#
+#             filtered_wc = [
+#                 w for w in filter_options_without_color
+#                 if nmids_allowed & set(w["nmids"])
+#             ]
+#             filtered_sz = [
+#                 s for s in filter_options_sizes
+#                 if nmids_allowed & set(s["nmids"])
+#             ]
+#
+#         if sz_filter: # размер
+#             nmids_allowed = sz_filter
+#
+#             if wc_filter:
+#                 nmids_allowed &= wc_filter
+#             if cl_filter:
+#                 nmids_allowed &= cl_filter
+#
+#             filtered_wc = [
+#                 w for w in filter_options_without_color
+#                 if nmids_allowed & set(w["nmids"])
+#             ]
+#             filtered_cl = [
+#                 c for c in filter_options_colors
+#                 if nmids_allowed & set(c["nmids"])
+#             ]
+#     except Exception as e:
+#         logger.error(f"Ошибка в get_dynamic_filters: {e}")
+#         return JsonResponse({'error': e}, status=400)
+#
+#     return JsonResponse({
+#         "filter_options_without_color": filtered_wc,
+#         "filter_options_colors": filtered_cl,
+#         "filter_options_sizes": filtered_sz
+#     })
