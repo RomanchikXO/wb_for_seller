@@ -994,12 +994,13 @@ def podsort_view(request):
                             if i.get("warehouse") == "Неопределено":
                                 all_response[key]["subitems"][index]["order"] = 0
                         else:
-                            all_response[key]["subitems"][index]["rec_delivery"] = int(
-                                all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
-                            ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
-
                             if i.get("warehouse") == "Неопределено":
-                                all_response[key]["subitems"][index]["order_for_change_war"] = 0
+                                all_response[key]["subitems"][index]["rec_delivery"] = all_response[key]["subitems"][index]["order"]
+                                all_response[key]["subitems"][index]["order"] = 0
+                            else:
+                                all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                    all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
+                                ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
 
                         # ниже просто цвета присваиваем без делений
                         if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or all_response[key]["subitems"][index]["rec_delivery"] >= 100:
