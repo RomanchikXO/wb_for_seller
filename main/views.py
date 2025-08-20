@@ -938,7 +938,6 @@ def podsort_view(request):
                             "rec_delivery": 0,
                         }
                     )
-                    all_response[art]["orders"] += order_for_change_war
     except Exception as e:
         logger.error(f"Ошибка в обработке итоговых данных {e}")
 
