@@ -841,7 +841,7 @@ def podsort_view(request):
                     for row in rows}
 
     all_response = {}
-    logger.info(f"длина {len(articles)}")
+
     try:
         for art, index in articles.items():
             if not all_response.get(art):
@@ -851,7 +851,7 @@ def podsort_view(request):
                     if art in all_response:
                         all_response.pop(art)
                     continue
-            logger.info(f"Index: {index}")
+
             all_response[art]["id"] = index["id"]
             all_response[art]["article"] = art
             all_response[art]["cloth"] = index["cloth"]
@@ -907,6 +907,8 @@ def podsort_view(request):
             all_response[art]["subitems"] = []
             all_response[art]["orders"] = 0
             all_response[art]["stock"] = 0
+            if index["id"] == 57:
+                logger.info(f'тут умираем 1? {art} {all_response[art]}')
             if all_orders.get(art):
                 for i_key, i_val in warh_stock.get(art, {}).items():
                     if i_key not in all_orders[art].keys() and i_val["total_quantity"]:
