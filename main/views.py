@@ -669,8 +669,6 @@ def podsort_view(request):
     if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
     if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
 
-    logger.info("лог 5555")
-
     # заказы для каждого склада
     sql_query = f"""
         WITH region_warehouse_min AS (
@@ -719,8 +717,6 @@ def podsort_view(request):
             result[nmid][warehouse] = count
 
         all_orders = dict(result)
-
-    logger.info("лог 4444")
 
     if warehouse_filter:
         sql_query = f"""
@@ -772,8 +768,6 @@ def podsort_view(request):
 
             orders_with_filter = dict(result)
 
-    logger.info("лог 3333")
-
     # остатки и кол-во дней в наличии
     sql_query = f"""
         SELECT
@@ -805,8 +799,6 @@ def podsort_view(request):
             result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
 
         warh_stock = dict(result)
-
-    logger.info("лог 2222")
 
     # артикул, id, ткань и цвет
     sql_query = f"""
@@ -949,6 +941,7 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Ошибка в обработке итоговых данных {e}")
 
+    logger.info("лог 2222")
 
     sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
                 "FROM myapp_price p "
@@ -963,6 +956,8 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Ошибка при запросе артикулов и vendorcode {e}")
 
+    logger.info("лог 333")
+
     columns_nmids = [desc[0] for desc in cursor.description]
     nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
     combined_list = [
@@ -972,10 +967,14 @@ def podsort_view(request):
         }
         for item in nmids
     ]
+
+    logger.info("лог 4444")
     filter_response = get_filter_by_articles(current_ids, clothes=True, sizes=True, colors=True)
     filter_options_without_color = filter_response["cloth"]
     filter_options_sizes = filter_response["sizes"]
     filter_options_colors = filter_response["colors"]
+
+    logger.info("лог 5555")
 
     try:
         for key, value in all_response.items():
@@ -1042,6 +1041,8 @@ def podsort_view(request):
         logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
         page_obj = []
         paginator = None
+
+    logger.info("лог 6666")
 
     sql_query = """SELECT DISTINCT tag FROM myapp_tags"""
     try:
