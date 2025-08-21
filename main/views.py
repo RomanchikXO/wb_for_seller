@@ -841,7 +841,7 @@ def podsort_view(request):
                     for row in rows}
 
     all_response = {}
-    logger.info("лог 1111")
+    logger.info(f"длина {len(articles)}")
     try:
         for art, index in articles.items():
             if not all_response.get(art):
@@ -851,6 +851,7 @@ def podsort_view(request):
                     if art in all_response:
                         all_response.pop(art)
                     continue
+            logger.info(f"Index: {index}")
             all_response[art]["id"] = index["id"]
             all_response[art]["article"] = art
             all_response[art]["cloth"] = index["cloth"]
@@ -941,7 +942,7 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Ошибка в обработке итоговых данных {e}")
 
-    logger.info("лог 2222")
+    logger.info("лог 7777")
 
     sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
                 "FROM myapp_price p "
@@ -956,8 +957,6 @@ def podsort_view(request):
     except Exception as e:
         logger.error(f"Ошибка при запросе артикулов и vendorcode {e}")
 
-    logger.info("лог 333")
-
     columns_nmids = [desc[0] for desc in cursor.description]
     nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
     combined_list = [
@@ -968,13 +967,10 @@ def podsort_view(request):
         for item in nmids
     ]
 
-    logger.info("лог 4444")
     filter_response = get_filter_by_articles(current_ids, clothes=True, sizes=True, colors=True)
     filter_options_without_color = filter_response["cloth"]
     filter_options_sizes = filter_response["sizes"]
     filter_options_colors = filter_response["colors"]
-
-    logger.info("лог 5555")
 
     try:
         for key, value in all_response.items():
@@ -1041,8 +1037,6 @@ def podsort_view(request):
         logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
         page_obj = []
         paginator = None
-
-    logger.info("лог 6666")
 
     sql_query = """SELECT DISTINCT tag FROM myapp_tags"""
     try:
