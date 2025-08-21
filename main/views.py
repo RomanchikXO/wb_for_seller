@@ -669,6 +669,7 @@ def podsort_view(request):
     if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
     if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
 
+    logger.info("лог 5555")
 
     # заказы для каждого склада
     sql_query = f"""
@@ -718,6 +719,8 @@ def podsort_view(request):
             result[nmid][warehouse] = count
 
         all_orders = dict(result)
+
+    logger.info("лог 4444")
 
     if warehouse_filter:
         sql_query = f"""
@@ -769,6 +772,8 @@ def podsort_view(request):
 
             orders_with_filter = dict(result)
 
+    logger.info("лог 3333")
+
     # остатки и кол-во дней в наличии
     sql_query = f"""
         SELECT
@@ -800,6 +805,8 @@ def podsort_view(request):
             result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
 
         warh_stock = dict(result)
+
+    logger.info("лог 2222")
 
     # артикул, id, ткань и цвет
     sql_query = f"""
@@ -842,6 +849,7 @@ def podsort_view(request):
                     for row in rows}
 
     all_response = {}
+    logger.info("лог 1111")
     try:
         for art, index in articles.items():
             if not all_response.get(art):
