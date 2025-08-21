@@ -909,15 +909,10 @@ def podsort_view(request):
             all_response[art]["stock"] = 0
 
             if all_orders.get(art):
-                if index["id"] == 57:
-                    logger.info(
-                        f'тут умираем 1? {art} {all_response[art]} .... {all_orders.get(art)} .... {warh_stock.get(art)}')
                 for i_key, i_val in warh_stock.get(art, {}).items():
                     if i_key not in all_orders[art].keys() and i_val["total_quantity"]:
                         all_orders[art][i_key] = 0
-                logger.info("Живем???")
                 for warh, i_order in all_orders[art].items():
-                    logger.info(warh, i_order)
                     all_response[art]["orders"] += i_order
                     all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
                     all_response[art]["subitems"].append(
