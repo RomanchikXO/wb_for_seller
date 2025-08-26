@@ -1169,7 +1169,7 @@ def podsort_view(request):
                         total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
 
         copy_data = copy.deepcopy(full_data["items"].object_list)
-        for i, index in enumerate(list(full_data["items"].object_list)):
+        for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
                 sum_rec = list(map(lambda x: x["rec_delivery"], subitems))
                 diff = sum_rec - total_short_rec_del[i["article"]]
