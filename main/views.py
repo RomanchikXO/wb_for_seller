@@ -1093,51 +1093,60 @@ def _podsort_view(params, flag: bool):
 
 @login_required_cust
 def podsort_view(request):
-    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
-                    'page', 'abc_filter']
-    for key in session_keys:
-        value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
-        if value:
-            request.session[key] = value
-    nmid_filter = request.GET.getlist('nmid', [])
-    without_color_filter = request.GET.getlist('wc_filter', "")
-    sizes_filter = request.GET.getlist('sz_filter', [])
-    colors_filter = request.GET.getlist('cl_filter', [])
-    warehouse_filter = request.GET.getlist('warehouse', "")
-    alltags_filter = request.GET.getlist('alltagstb', "")
-    per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
-    page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
-    sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
-    order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
-    abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
-    period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
-    turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
+    try:
+        session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
+                        'page', 'abc_filter']
+        for key in session_keys:
+            value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
+            if value:
+                request.session[key] = value
+        nmid_filter = request.GET.getlist('nmid', [])
+        without_color_filter = request.GET.getlist('wc_filter', "")
+        sizes_filter = request.GET.getlist('sz_filter', [])
+        colors_filter = request.GET.getlist('cl_filter', [])
+        warehouse_filter = request.GET.getlist('warehouse', "")
+        alltags_filter = request.GET.getlist('alltagstb', "")
+        per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
+        page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
+        sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
+        order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
+        abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
+        period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
+        turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
-    params = {
-        "value": value,
-        "nmid_filter": nmid_filter,
-        "without_color_filter": without_color_filter,
-        "sizes_filter": sizes_filter,
-        "colors_filter": colors_filter,
-        "warehouse_filter": warehouse_filter,
-        "alltags_filter": alltags_filter,
-        "per_page": per_page,
-        "page_number": page_number,
-        "sort_by": sort_by,
-        "order": order,
-        "abc_filter": abc_filter,
-        "period_ord": period_ord,
-        "turnover_change": turnover_change,
-    }
+        params = {
+            "value": value,
+            "nmid_filter": nmid_filter,
+            "without_color_filter": without_color_filter,
+            "sizes_filter": sizes_filter,
+            "colors_filter": colors_filter,
+            "warehouse_filter": warehouse_filter,
+            "alltags_filter": alltags_filter,
+            "per_page": per_page,
+            "page_number": page_number,
+            "sort_by": sort_by,
+            "order": order,
+            "abc_filter": abc_filter,
+            "period_ord": period_ord,
+            "turnover_change": turnover_change,
+        }
+    except Exception as e:
+        logger.error(f"Ошибка приготовления параметров {e}")
+        raise
 
     # Если складов не было возвращаем сразу результат
-    if not warehouse_filter:
-        response = _podsort_view(params, False)
-        return render(
-            request,
-            "podsort.html",
-            response
-        )
+    try:
+        if not warehouse_filter:
+            logger.info("Запускаемся")
+            response = _podsort_view(params, False)
+            return render(
+                request,
+                "podsort.html",
+                response
+            )
+    except Exception as e:
+        logger.error(f"Ошибка запроса без фильтра складов {e}")
+        raise
 
     # Если склады есть
     try:
