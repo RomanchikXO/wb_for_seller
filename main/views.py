@@ -1120,12 +1120,12 @@ def podsort_view(request):
             [(request, True), (request, False)]
         )
 
-    full_data = results[0]
-    short_data = list(results[1]["items"].object_list)
-
-    logger.info(short_data)
-
-
+    try:
+        full_data = results[0]
+        short_data = list(results[1]["items"].object_list)
+        logger.info(short_data)
+    except Exception as e:
+        logger.error(f"Какая то ошибка {e}")
 
 
     # return render(
