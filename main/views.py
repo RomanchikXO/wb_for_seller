@@ -1115,12 +1115,13 @@ def podsort_view(request):
 
     # Если склады есть
     try:
+        logger.info("запустились")
         with mp.Pool(processes=2) as pool:
             results = pool.starmap(
                 _podsort_view,
                 [(request, True), (request, False)]
             )
-
+        logger.info("Завершились")
 
         full_data = results[0]
         short_data = list(results[1]["items"].object_list)
