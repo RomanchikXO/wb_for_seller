@@ -1139,6 +1139,7 @@ def podsort_view(request):
         if not warehouse_filter:
             logger.info("Запускаемся")
             response = _podsort_view(params, False)
+            logger.info("Получили ответ")
             return render(
                 request,
                 "podsort.html",
