@@ -1154,7 +1154,7 @@ def podsort_view(request):
         with mp.Pool(processes=2) as pool:
             results = pool.starmap(
                 _podsort_view,
-                [(request, True), (request, False)]
+                [(params, True), (params, False)]
             )
 
         full_data = results[0]
