@@ -1131,7 +1131,7 @@ def podsort_view(request):
     }
 
     # Если складов не было возвращаем сразу результат
-    if not request.GET.getlist('warehouse', ""):
+    if not warehouse_filter:
         response = _podsort_view(params, False)
         return render(
             request,
