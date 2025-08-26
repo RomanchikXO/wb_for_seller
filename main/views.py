@@ -564,12 +564,11 @@ def get_marg_api(request):
     return JsonResponse({'status': 'ok', 'received': response})
 
 
-def _podsort_view(params, flag: bool):
+def _podsort_view(parametrs, flag: bool):
     """
     Если flag то функция отрабатывает со складами
     """
     current_ids = get_current_nmids()
-    logger.info(params)
 
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
@@ -581,43 +580,43 @@ def _podsort_view(params, flag: bool):
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
-    value = params["value"]
+    value = parametrs["value"]
 
     page_sizes = [5, 10, 20, 50, 100]
     abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
-    nmid_filter = params["nmid_filter"]
+    nmid_filter = parametrs["nmid_filter"]
 
-    without_color_filter = params["without_color_filter"]
+    without_color_filter = parametrs["without_color_filter"]
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
         else []
     )
 
-    sizes_filter = params["sizes_filter"]
+    sizes_filter = parametrs["sizes_filter"]
     sz_filter = (
         sizes_filter[0].split(',')
         if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
         else []
     )
-    colors_filter = params["colors_filter"]
+    colors_filter = parametrs["colors_filter"]
     cl_filter = (
         colors_filter[0].split(',')
         if colors_filter and colors_filter[0].strip() not in ['', '[]']
         else []
     )
 
-    warehouse_filter = params["warehouse_filter"] if flag else ""
+    warehouse_filter = parametrs["warehouse_filter"] if flag else ""
 
-    alltags_filter = params["alltags_filter"]
-    per_page = params["per_page"]
-    page_number = params["page_number"]
+    alltags_filter = parametrs["alltags_filter"]
+    per_page = parametrs["per_page"]
+    page_number = parametrs["page_number"]
 
-    sort_by = params["sort_by"]
-    order = params["order"]
-    abc_filter = params["abc_filter"]
+    sort_by = parametrs["sort_by"]
+    order = parametrs["order"]
+    abc_filter = parametrs["abc_filter"]
 
-    period_ord = params["period_ord"]
+    period_ord = parametrs["period_ord"]
     if period_ord == 3:
         period = tree_days_ago
         name_column_available = "days_in_stock_last_3"
@@ -632,8 +631,7 @@ def _podsort_view(params, flag: bool):
         name_column_available = "days_in_stock_last_30"
     params = [period]
 
-    turnover_change = params["turnover_change"]
-    logger.info('1111')
+    turnover_change = parametrs["turnover_change"]
 
     # получаем все склады
     sql_query = """
@@ -651,7 +649,6 @@ def _podsort_view(params, flag: bool):
         warehouses = [row[0] for row in rows]
 
     all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
-    logger.info('2222')
 
     if all_filters:
         all_filters = list(set.intersection(*all_filters))
