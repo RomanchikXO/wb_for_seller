@@ -569,6 +569,7 @@ def _podsort_view(params, flag: bool):
     Если flag то функция отрабатывает со складами
     """
     current_ids = get_current_nmids()
+    logger.info(params)
 
     now_msk = datetime.now() + timedelta(hours=3)
     yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
