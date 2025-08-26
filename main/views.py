@@ -613,8 +613,6 @@ def _podsort_view(request, flag: bool):
 
 
     warehouse_filter = request.GET.getlist('warehouse', "") if flag else ""
-    # if not warehouse_filter and not flag:
-    #     return None
 
     alltags_filter = request.GET.getlist('alltagstb', "")
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
@@ -1107,7 +1105,7 @@ def _podsort_view(request, flag: bool):
 @login_required_cust
 def podsort_view(request):
     # Если складов не было возвращаем сразу результат
-    if request.GET.getlist('warehouse', ""):
+    if not request.GET.getlist('warehouse', ""):
         response = _podsort_view(request, False)
         return render(
             request,
