@@ -1,5 +1,5 @@
 from typing import List
-
+import multiprocessing as mp
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from openpyxl import Workbook, load_workbook
@@ -564,8 +564,10 @@ def get_marg_api(request):
     return JsonResponse({'status': 'ok', 'received': response})
 
 
-@login_required_cust
-def podsort_view(request):
+def _podsort_view(request, flag: bool):
+    """
+    Если flag то функция отрабатывает со складами
+    """
     current_ids = get_current_nmids()
 
     now_msk = datetime.now() + timedelta(hours=3)
@@ -578,7 +580,8 @@ def podsort_view(request):
     turnover_periods = [a for a in range(25, 71, 5)]
     order_periods = [3, 7, 14, 30]
 
-    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order', 'page', 'abc_filter']
+    session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
+                    'page', 'abc_filter']
     for key in session_keys:
         value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
         if value:
@@ -608,7 +611,11 @@ def podsort_view(request):
         else []
     )
 
-    warehouse_filter = request.GET.getlist('warehouse', "")
+
+    warehouse_filter = request.GET.getlist('warehouse', "") if flag else ""
+    # if not warehouse_filter and not flag:
+    #     return None
+
     alltags_filter = request.GET.getlist('alltagstb', "")
     per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
     page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
@@ -636,19 +643,18 @@ def podsort_view(request):
 
     # получаем все склады
     sql_query = """
-        SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
-        FROM myapp_areawarehouses;
-    """
+            SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
+            FROM myapp_areawarehouses;
+        """
 
     conn = connect_to_database()
     with conn.cursor() as cursor:
         try:
-            cursor.execute(sql_query,)
+            cursor.execute(sql_query, )
             rows = cursor.fetchall()
         except Exception as e:
             logger.exception(f"Ошибка получаения складов в podsort_view: {e}")
         warehouses = [row[0] for row in rows]
-
 
     # warehouses = ["Казань", "Подольск", "Коледино", "Тула", "Екатеринбург - Испытателей 14г", "Электросталь",
     #               "Краснодар", "Новосибирск", "Санкт-Петербург Уткина Заводь"]
@@ -671,34 +677,34 @@ def podsort_view(request):
 
     # заказы для каждого склада
     sql_query = f"""
-        WITH region_warehouse_min AS (
+            WITH region_warehouse_min AS (
+                SELECT
+                    area,
+                    (SELECT key
+                     FROM jsonb_each_text(warehouses)
+                     ORDER BY (value)::int
+                     LIMIT 1) AS min_warehouse
+                FROM myapp_areawarehouses
+            ),
+            orders_with_warehouse AS (
+                SELECT
+                    o.nmid,
+                    rwm.min_warehouse
+                FROM myapp_orders o
+                JOIN region_warehouse_min rwm
+                    ON o.regionname = rwm.area
+                WHERE
+                    o.date >= '{period}'
+                AND {nmid_query_filter}
+            )
             SELECT
-                area,
-                (SELECT key
-                 FROM jsonb_each_text(warehouses)
-                 ORDER BY (value)::int
-                 LIMIT 1) AS min_warehouse
-            FROM myapp_areawarehouses
-        ),
-        orders_with_warehouse AS (
-            SELECT
-                o.nmid,
-                rwm.min_warehouse
-            FROM myapp_orders o
-            JOIN region_warehouse_min rwm
-                ON o.regionname = rwm.area
-            WHERE
-                o.date >= '{period}'
-            AND {nmid_query_filter}
-        )
-        SELECT
-            nmid,
-            min_warehouse AS warehouse_with_min_value,
-            COUNT(*) AS order_count
-        FROM orders_with_warehouse
-        GROUP BY nmid, min_warehouse
-        ORDER BY order_count DESC;
-    """
+                nmid,
+                min_warehouse AS warehouse_with_min_value,
+                COUNT(*) AS order_count
+            FROM orders_with_warehouse
+            GROUP BY nmid, min_warehouse
+            ORDER BY order_count DESC;
+        """
     conn = connect_to_database()
     with conn.cursor() as cursor:
         try:
@@ -720,35 +726,35 @@ def podsort_view(request):
 
     if warehouse_filter:
         sql_query = f"""
-            WITH region_warehouse_min AS (
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         WHERE key = ANY(%s)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                orders_with_warehouse AS (
+                    SELECT
+                        o.nmid,
+                        rwm.min_warehouse
+                    FROM myapp_orders o
+                    JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    WHERE
+                        o.date >= %s
+                    AND {nmid_query_filter}
+                )
                 SELECT
-                    area,
-                    (SELECT key
-                     FROM jsonb_each_text(warehouses)
-                     WHERE key = ANY(%s)
-                     ORDER BY (value)::int
-                     LIMIT 1) AS min_warehouse
-                FROM myapp_areawarehouses
-            ),
-            orders_with_warehouse AS (
-                SELECT
-                    o.nmid,
-                    rwm.min_warehouse
-                FROM myapp_orders o
-                JOIN region_warehouse_min rwm
-                    ON o.regionname = rwm.area
-                WHERE
-                    o.date >= %s
-                AND {nmid_query_filter}
-            )
-            SELECT
-                nmid,
-                COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
-                COUNT(*) AS order_count
-            FROM orders_with_warehouse
-            GROUP BY nmid, min_warehouse
-            ORDER BY order_count DESC;
-        """
+                    nmid,
+                    COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
+                    COUNT(*) AS order_count
+                FROM orders_with_warehouse
+                GROUP BY nmid, min_warehouse
+                ORDER BY order_count DESC;
+            """
         conn = connect_to_database()
         with conn.cursor() as cursor:
             try:
@@ -770,16 +776,16 @@ def podsort_view(request):
 
     # остатки и кол-во дней в наличии
     sql_query = f"""
-        SELECT
-            nmid,
-            warehousename,
-            {name_column_available} AS available,
-            SUM(quantity) AS total_quantity
-        FROM myapp_stocks
-        WHERE {nmid_query}
-        GROUP BY
-            nmid, warehousename, {name_column_available}
-    """
+            SELECT
+                nmid,
+                warehousename,
+                {name_column_available} AS available,
+                SUM(quantity) AS total_quantity
+            FROM myapp_stocks
+            WHERE {nmid_query}
+            GROUP BY
+                nmid, warehousename, {name_column_available}
+        """
     conn = connect_to_database()
     with conn.cursor() as cursor:
         try:
@@ -802,34 +808,34 @@ def podsort_view(request):
 
     # артикул, id, ткань и цвет
     sql_query = f"""
-        SELECT 
-        nmid,
-        id,
-        (
-            SELECT (elem->'value')->>0 AS value
-            FROM jsonb_array_elements(characteristics) AS elem
-            WHERE (elem->>'id')::int = 12
-            LIMIT 1
-        ) AS cloth,
-        (
-            SELECT (elem->'value')->>0 AS value
-            FROM jsonb_array_elements(characteristics) AS elem
-            WHERE (elem->>'id')::int = 14177449
-            LIMIT 1
-        ) AS i_color,
-        vendorcode,
-        (
-           SELECT COALESCE(json_agg(t.tag), '[]'::json)
-           FROM myapp_tags t
-           WHERE t.id = ANY(
-               SELECT jsonb_array_elements_text(tag_ids)::int
-               FROM myapp_nmids n2
-               WHERE n2.id = myapp_nmids.id
-           )
-        ) AS tag_ids
-        FROM myapp_nmids
-        WHERE {nmid_query}
-    """
+            SELECT 
+            nmid,
+            id,
+            (
+                SELECT (elem->'value')->>0 AS value
+                FROM jsonb_array_elements(characteristics) AS elem
+                WHERE (elem->>'id')::int = 12
+                LIMIT 1
+            ) AS cloth,
+            (
+                SELECT (elem->'value')->>0 AS value
+                FROM jsonb_array_elements(characteristics) AS elem
+                WHERE (elem->>'id')::int = 14177449
+                LIMIT 1
+            ) AS i_color,
+            vendorcode,
+            (
+               SELECT COALESCE(json_agg(t.tag), '[]'::json)
+               FROM myapp_tags t
+               WHERE t.id = ANY(
+                   SELECT jsonb_array_elements_text(tag_ids)::int
+                   FROM myapp_nmids n2
+                   WHERE n2.id = myapp_nmids.id
+               )
+            ) AS tag_ids
+            FROM myapp_nmids
+            WHERE {nmid_query}
+        """
     conn = connect_to_database()
     with conn.cursor() as cursor:
         try:
@@ -847,7 +853,8 @@ def podsort_view(request):
             if not all_response.get(art):
                 all_response[art] = {}
             if alltags_filter:
-                if not set(index["tag_ids"]) & set(alltags_filter): # если два массива не имеют хотя бы одну строку общую
+                if not set(index["tag_ids"]) & set(
+                        alltags_filter):  # если два массива не имеют хотя бы одну строку общую
                     if art in all_response:
                         all_response.pop(art)
                     continue
@@ -914,13 +921,16 @@ def podsort_view(request):
                         all_orders[art][i_key] = 0
                 for warh, i_order in all_orders[art].items():
                     all_response[art]["orders"] += i_order
-                    all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0
+                    all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (
+                                warh_stock.get(art) and warh_stock[art].get(warh)) else 0
                     all_response[art]["subitems"].append(
                         {
                             "warehouse": warh,
                             "order": i_order,
-                            "stock": warh_stock[art][warh].get("total_quantity", 0) or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
-                            "time_available": warh_stock[art][warh].get("available") or 0 if (warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
+                            "stock": warh_stock[art][warh].get("total_quantity", 0) or 0 if (
+                                        warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
+                            "time_available": warh_stock[art][warh].get("available") or 0 if (
+                                        warh_stock.get(art) and warh_stock[art].get(warh)) else 0,
                             "turnover": 0,
                             "rec_delivery": 0,
                             "order_for_change_war": 0,
@@ -941,8 +951,6 @@ def podsort_view(request):
                     )
     except Exception as e:
         logger.error(f"Ошибка в обработке итоговых данных {e}")
-
-    logger.info("лог 7777")
 
     sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
                 "FROM myapp_price p "
@@ -974,7 +982,8 @@ def podsort_view(request):
 
     try:
         for key, value in all_response.items():
-            all_response[key]["turnover_total"] = int(all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
+            all_response[key]["turnover_total"] = int(
+                all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
                 if all_response[key]["orders"] else all_response[key]["stock"]
             all_response[key]["color"] = "green"
             if all_response[key]["subitems"]:
@@ -998,20 +1007,26 @@ def podsort_view(request):
                                 all_response[key]["subitems"][index]["order"] = 0
                         else:
                             if i.get("warehouse") == "Неопределено":
-                                all_response[key]["subitems"][index]["order_for_change_war"] = all_response[key]["subitems"][index]["order"]
+                                all_response[key]["subitems"][index]["order_for_change_war"] = \
+                                all_response[key]["subitems"][index]["order"]
                                 all_response[key]["subitems"][index]["order"] = 0
 
                             all_response[key]["subitems"][index]["rec_delivery"] = int(
-                                all_response[key]["subitems"][index]["order_for_change_war"] / period_ord * turnover_change - all_response[key]["subitems"][index]["stock"]
+                                all_response[key]["subitems"][index][
+                                    "order_for_change_war"] / period_ord * turnover_change -
+                                all_response[key]["subitems"][index]["stock"]
                             ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
 
                         # ниже просто цвета присваиваем без делений
-                        if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or all_response[key]["subitems"][index]["rec_delivery"] >= 100:
+                        if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or \
+                                all_response[key]["subitems"][index]["rec_delivery"] >= 100:
                             all_response[key]["subitems"][index]["color"] = "red"
                             all_response[key]["color"] = "red" if all_response[key]["turnover_total"] < 25 else "white"
-                        elif 40 <= all_response[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= all_response[key]["subitems"][index]["rec_delivery"] > -100:
+                        elif 40 <= all_response[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= \
+                                all_response[key]["subitems"][index]["rec_delivery"] > -100:
                             all_response[key]["subitems"][index]["color"] = "yellow"
-                        elif 0 < all_response[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= all_response[key]["subitems"][index]["rec_delivery"] > -40:
+                        elif 0 < all_response[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= \
+                                all_response[key]["subitems"][index]["rec_delivery"] > -40:
                             all_response[key]["subitems"][index]["color"] = "green"
                         else:
                             all_response[key]["subitems"][index]["color"] = "white"
@@ -1058,10 +1073,7 @@ def podsort_view(request):
     except Addindicators.DoesNotExist:
         our_g, category_g = 0, 0
 
-    return render(
-        request,
-        "podsort.html",
-        {
+    return {
             "warehouses": warehouses,
             "warehouse_filter": warehouse_filter,
             "alltags_filter": alltags_filter,
@@ -1090,7 +1102,39 @@ def podsort_view(request):
             "category_g": category_g,
             "all_articles": all_articles,
         }
-    )
+
+
+@login_required_cust
+def podsort_view(request):
+    # Если складов не было возвращаем сразу результат
+    if request.GET.getlist('warehouse', ""):
+        response = _podsort_view(request, False)
+        return render(
+            request,
+            "podsort.html",
+            response
+        )
+
+    # Если склады есть
+    with mp.Pool(processes=2) as pool:
+        results = pool.starmap(
+            _podsort_view,
+            [(request, True), (request, False)]
+        )
+
+    full_data = results[0]
+    short_data = list(results[1]["items"].object_list)
+
+    logger.info(short_data)
+
+
+
+
+    # return render(
+    #     request,
+    #     "podsort.html",
+    #     {}
+
 
 
 @require_POST
