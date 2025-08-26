@@ -632,6 +632,7 @@ def _podsort_view(params, flag: bool):
     params = [period]
 
     turnover_change = params["turnover_change"]
+    logger.info('1111')
 
     # получаем все склады
     sql_query = """
@@ -649,6 +650,7 @@ def _podsort_view(params, flag: bool):
         warehouses = [row[0] for row in rows]
 
     all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
+    logger.info('2222')
 
     if all_filters:
         all_filters = list(set.intersection(*all_filters))
