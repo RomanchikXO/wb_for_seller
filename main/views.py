@@ -1,3 +1,4 @@
+import copy
 from typing import List
 import multiprocessing as mp
 from django.core.paginator import Paginator
@@ -1137,9 +1138,7 @@ def podsort_view(request):
     # Если складов не было возвращаем сразу результат
     try:
         if not warehouse_filter:
-            logger.info("Запускаемся")
             response = _podsort_view(params, False)
-            logger.info("Получили ответ")
             return render(
                 request,
                 "podsort.html",
@@ -1159,16 +1158,33 @@ def podsort_view(request):
 
         full_data = results[0]
         short_data = list(results[1]["items"].object_list)
-        logger.info(short_data)
+
+        total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма
+        for i in short_data:
+            if subitems:= i.get("subitems"):
+                for i_sub in subitems:
+                    if total_short_rec_del.get(i["article"]):
+                        total_short_rec_del[i["article"]] += i_sub["rec_delivery"]
+                    else:
+                        total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
+
+        copy_data = copy.deepcopy(full_data["items"].object_list)
+        for i, index in enumerate(list(full_data["items"].object_list)):
+            if subitems := i.get("subitems"):
+                sum_rec = list(map(lambda x: x["rec_delivery"], subitems))
+                diff = sum_rec - total_short_rec_del[i["article"]]
+                coef = abs(diff / sum_rec - 1)
+                for art in copy_data[index]["subitems"]:
+                    art["rec_delivery"] = art["rec_delivery"] * coef
+
+        full_data["items"] = copy_data
+        return render(
+            request,
+            "podsort.html",
+            full_data
+        )
     except Exception as e:
         logger.error(f"Какая то ошибка {e}")
-
-
-    # return render(
-    #     request,
-    #     "podsort.html",
-    #     {}
-
 
 
 @require_POST
