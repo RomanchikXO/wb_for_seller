@@ -1171,7 +1171,7 @@ def podsort_view(request):
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
-                sum_rec = list(map(lambda x: x["rec_delivery"], subitems))
+                sum_rec = sum(list(map(lambda x: x["rec_delivery"], subitems)))
                 diff = sum_rec - total_short_rec_del[i["article"]]
                 coef = abs(diff / sum_rec - 1)
                 for art in copy_data[index]["subitems"]:
