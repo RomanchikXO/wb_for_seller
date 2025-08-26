@@ -1175,7 +1175,7 @@ def podsort_view(request):
                 diff = sum_rec - total_short_rec_del[i["article"]]
                 coef = abs(diff / sum_rec - 1)
                 for art in copy_data[index]["subitems"]:
-                    art["rec_delivery"] = art["rec_delivery"] * coef
+                    art["rec_delivery"] = int(art["rec_delivery"] * coef)
 
         full_data["items"] = copy_data
         return render(
