@@ -56,11 +56,11 @@ async def login_and_get_context():
     await page.goto("https://www.wildberries.ru/security/login?returnUrl=https%3A%2F%2Fwww.wildberries.ru%2F")
 
     # Ожидание появления инпута и ввод номера
-    await page.wait_for_selector("input.input-item[inputmode='tel']", timeout=30000)
-    input_selector = "input.input-item[inputmode='tel']"
+    await page.wait_for_selector("input.input--BeCbN[inputmode='tel']", timeout=30000)
+    input_selector = "input.input--BeCbN[inputmode='tel']"
     await page.click(input_selector)  # сфокусировать
-    await page.fill(input_selector, "")  # очистить на всякий случай
-    await page.type(input_selector, f"+7{result['number']}", delay=100)  # имитируем ручной ввод
+    await asyncio.sleep(2)
+    await page.type(input_selector, f"{result['number']}", delay=100)  # имитируем ручной ввод
 
 
     # Ожидание активности кнопки и клик
@@ -68,7 +68,7 @@ async def login_and_get_context():
     await page.click("button#requestCode")
 
     # Ожидание появления полей для ввода кода
-    await page.wait_for_selector("input.char-input__item.j-b-charinput", timeout=10000)
+    await page.wait_for_selector("input.j-b-charinput[inputmode='numeric']", timeout=10000)
 
     # Ввод кода из консоли
     ask_user_for_input(result['tg_id'])
@@ -82,8 +82,8 @@ async def login_and_get_context():
         await asyncio.sleep(10)
 
     # Получение всех инпутов и заполнение их по одной цифре
-    inputs = await page.query_selector_all("input.char-input__item.j-b-charinput")
-    for i, digit in enumerate(sms_code):
+    inputs = await page.query_selector_all("input.j-b-charinput[inputmode='numeric']")
+    for i, digit in enumerate(sms_code.strip()):
         if i < len(inputs):
             await inputs[i].fill(digit)
 
@@ -98,23 +98,26 @@ async def login_and_get_context():
 
         # Шаг 4: Поиск первого блока карточки товара
         await page.wait_for_selector("div.product-card__wrapper", timeout=60000)
-        first_card = await page.query_selector("div.product-card__wrapper")
 
-        card_html = await first_card.inner_html()
-
-        card_html = lxml.html.fromstring(card_html)
-        url = card_html.cssselect("a.product-card__link")[0].attrib["href"]
+        first_card = await page.query_selector("div.product-card__wrapper a.product-card__link")
+        url = await first_card.get_attribute("href")
 
         # переходим в карточку
         await page.goto(url, wait_until="domcontentloaded")
 
-        await page.wait_for_selector("span.price-block__price", timeout=10000)
-        price_block = await page.query_selector("span.price-block__price")
+        await page.wait_for_selector("div.priceBlockPriceWrap--G4F0p", timeout=10000)
 
-        card_html = await price_block.inner_html()
-        card_html = lxml.html.fromstring(card_html)
-        red_price = int(card_html.cssselect("span.price-block__wallet-price")[0].text_content().replace("\xa0", "").replace("₽", ""))
-        black_price = int(card_html.cssselect("ins")[0].text_content().replace("\xa0", "").replace("₽", ""))
+        # Красная цена (с WB-кошельком)
+        red_price_el = await page.query_selector("span.priceBlockWalletPrice--RJGuT")
+        red_price = int(
+            (await red_price_el.inner_text()).replace("\xa0", "").replace("₽", "")
+        )
+
+        # Чёрная цена (финальная без кошелька)
+        black_price_el = await page.query_selector("ins.priceBlockFinalPrice--iToZR")
+        black_price = int(
+            (await black_price_el.inner_text()).replace("\xa0", "").replace("₽", "")
+        )
 
         discount = math.floor((black_price - red_price) / (black_price / 100))
 
