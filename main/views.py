@@ -1183,10 +1183,10 @@ def podsort_view(request):
 
                     sum_rec_warh += art["rec_delivery"]
                 if sum_rec_warh > sum_rec_all:
-                    copy_data[index]["subitems"][change_index]["rec_delivery"] = copy_data[index]["subitems"][change_index]["rec_delivery"] - (
+                    copy_data[index]["subitems"][change_index]["rec_delivery"] -= (
                             sum_rec_warh - sum_rec_all)
                 elif sum_rec_warh < sum_rec_all:
-                    copy_data[index]["subitems"][change_index]["rec_delivery"] = copy_data[index]["subitems"][change_index]["rec_delivery"] + abs(
+                    copy_data[index]["subitems"][change_index]["rec_delivery"] += abs(
                             sum_rec_warh - sum_rec_all)
 
         full_data["items"] = copy_data
