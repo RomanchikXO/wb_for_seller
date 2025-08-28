@@ -1173,7 +1173,7 @@ def podsort_view(request):
             if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок без фильтров
-                diff = total_short_rec_del[i["article"]] - sum_rec_all
+                diff = sum_rec_all - total_short_rec_del[i["article"]]
                 coef = diff / sum_rec_all - 1
 
                 change_index = 0 #индекс по которому мы изменим поставку у товара в случае разницы
