@@ -1171,11 +1171,20 @@ def podsort_view(request):
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
+                sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
                 coef = total_short_rec_del[i["article"]] / sum_rec_all
+                last_index = 0
 
                 for _index, art in enumerate(copy_data[index]["subitems"]):
                     art["rec_delivery"] = round(art["rec_delivery"] * coef)
+                    if art["rec_delivery"] != 0: last_index = _index
+                    sum_rec_warh += art["rec_delivery"]
+
+                if sum_rec_warh > total_short_rec_del[i["article"]]:
+                    copy_data[index]["subitems"][last_index] -= sum_rec_warh - total_short_rec_del[i["article"]]
+                elif sum_rec_warh < total_short_rec_del[i["article"]]:
+                    copy_data[index]["subitems"][last_index] += total_short_rec_del[i["article"]] - sum_rec_warh
 
         full_data["items"] = copy_data
         return render(
