@@ -1173,8 +1173,8 @@ def podsort_view(request):
             if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок без фильтров
-                diff = sum_rec_all - total_short_rec_del[i["article"]]
-                coef = abs(diff / sum_rec_all - 1)
+                diff = total_short_rec_del[i["article"]] - sum_rec_all
+                coef = diff / sum_rec_all - 1
 
                 change_index = 0 #индекс по которому мы изменим поставку у товара в случае разницы
                 for _index, art in enumerate(copy_data[index]["subitems"]):
@@ -1182,12 +1182,12 @@ def podsort_view(request):
                     if art["rec_delivery"] > 0: change_index = _index
 
                     sum_rec_warh += art["rec_delivery"]
-                if sum_rec_warh > sum_rec_all:
-                    copy_data[index]["subitems"][change_index]["rec_delivery"] -= (
-                            sum_rec_warh - sum_rec_all)
-                elif sum_rec_warh < sum_rec_all:
-                    copy_data[index]["subitems"][change_index]["rec_delivery"] += abs(
-                            sum_rec_warh - sum_rec_all)
+                # if sum_rec_warh > sum_rec_all:
+                #     copy_data[index]["subitems"][change_index]["rec_delivery"] -= (
+                #             sum_rec_warh - sum_rec_all)
+                # elif sum_rec_warh < sum_rec_all:
+                #     copy_data[index]["subitems"][change_index]["rec_delivery"] += abs(
+                #             sum_rec_warh - sum_rec_all)
 
         full_data["items"] = copy_data
         return render(
