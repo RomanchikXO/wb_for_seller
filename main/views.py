@@ -1162,8 +1162,7 @@ def podsort_view(request):
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма
         try:
             for i in short_data:
-                subitems = i["subitems"] if i.get("subitems") and i["subitems"] != {} else None
-                if subitems:
+                if subitems:= i.get("subitems"):
                     for i_sub in subitems:
                         if total_short_rec_del.get(i["article"]):
                             total_short_rec_del[i["article"]] += i_sub["rec_delivery"]
@@ -1174,22 +1173,27 @@ def podsort_view(request):
 
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
-            subitems = i["subitems"] if i.get("subitems") and i["subitems"] != {} else None
-            if subitems:
+            if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
                 coef = total_short_rec_del[i["article"]] / sum_rec_all
                 last_index = 0
 
-                for _index, art in enumerate(copy_data[index]["subitems"]):
-                    art["rec_delivery"] = round(art["rec_delivery"] * coef)
-                    if art["rec_delivery"] != 0: last_index = _index
-                    sum_rec_warh += art["rec_delivery"]
+                try:
+                    for _index, art in enumerate(copy_data[index]["subitems"]):
+                        art["rec_delivery"] = round(art["rec_delivery"] * coef)
+                        if art["rec_delivery"] != 0: last_index = _index
+                        sum_rec_warh += art["rec_delivery"]
+                except Exception as e:
+                    raise Exception(f"Ошибка при формировании sum_rec_warh. Ошибка: {e}")
 
-                if sum_rec_warh > total_short_rec_del[i["article"]]:
-                    copy_data[index]["subitems"][last_index] -= sum_rec_warh - total_short_rec_del[i["article"]]
-                elif sum_rec_warh < total_short_rec_del[i["article"]]:
-                    copy_data[index]["subitems"][last_index] += total_short_rec_del[i["article"]] - sum_rec_warh
+                try:
+                    if sum_rec_warh > total_short_rec_del[i["article"]]:
+                        copy_data[index]["subitems"][last_index] -= sum_rec_warh - total_short_rec_del[i["article"]]
+                    elif sum_rec_warh < total_short_rec_del[i["article"]]:
+                        copy_data[index]["subitems"][last_index] += total_short_rec_del[i["article"]] - sum_rec_warh
+                except Exception as e:
+                    raise Exception(f"Ошибка в блоке сравнения. Ошибка: {e}")
 
         full_data["items"] = copy_data
         return render(
