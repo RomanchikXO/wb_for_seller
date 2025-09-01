@@ -1160,17 +1160,22 @@ def podsort_view(request):
         short_data = list(results[1]["items"].object_list)
 
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма
-        for i in short_data:
-            if subitems:= i.get("subitems"):
-                for i_sub in subitems:
-                    if total_short_rec_del.get(i["article"]):
-                        total_short_rec_del[i["article"]] += i_sub["rec_delivery"]
-                    else:
-                        total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
+        try:
+            for i in short_data:
+                subitems = i["subitems"] if i.get("subitems") and i["subitems"] != {} else None
+                if subitems:
+                    for i_sub in subitems:
+                        if total_short_rec_del.get(i["article"]):
+                            total_short_rec_del[i["article"]] += i_sub["rec_delivery"]
+                        else:
+                            total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
+        except Exception as e:
+            raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
-            if subitems := i.get("subitems"):
+            subitems = i["subitems"] if i.get("subitems") and i["subitems"] != {} else None
+            if subitems:
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
                 coef = total_short_rec_del[i["article"]] / sum_rec_all
