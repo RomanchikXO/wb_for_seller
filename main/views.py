@@ -1193,7 +1193,11 @@ def podsort_view(request):
                     elif sum_rec_warh < total_short_rec_del[i["article"]]:
                         copy_data[index]["subitems"][last_index] += total_short_rec_del[i["article"]] - sum_rec_warh
                 except Exception as e:
-                    raise Exception(f"Ошибка в блоке сравнения. Ошибка: {e}")
+                    raise Exception(
+                        f"Ошибка в блоке сравнения. Ошибка: {e}. "
+                        f"Данные:{sum_rec_warh} {total_short_rec_del[i['article']]}"
+                        f"{copy_data[index]['subitems']}... "
+                    )
 
         full_data["items"] = copy_data
         return render(
