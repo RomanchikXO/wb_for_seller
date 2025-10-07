@@ -9,7 +9,8 @@ from context_logger import ContextLogger
 logger = ContextLogger(logging.getLogger("core"))
 
 async def get_area_warehouses():
-    url = "https://docs.google.com/spreadsheets/d/1m311sfWjhGUn1n3mi6G8dRT_j-UxHRIZDLvApqM3Zgg/edit?gid=0#gid=0"
+    # url = "https://docs.google.com/spreadsheets/d/1m311sfWjhGUn1n3mi6G8dRT_j-UxHRIZDLvApqM3Zgg/edit?gid=0#gid=0"
+    url = "https://docs.google.com/spreadsheets/d/1aBso_BgT-C7K16TGAWOxoQcw1NqclXgXXL9h15KmlOA/edit?gid=0#gid=0"
 
     base_data = fetch_google_sheet_data(
         url,
