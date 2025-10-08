@@ -702,9 +702,9 @@ def _podsort_view(parametrs, flag: bool):
             try:
                 cursor.execute(sql_query, )
                 rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
             except Exception as e:
                 logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
-            columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
 
             result = defaultdict(dict)
@@ -752,9 +752,9 @@ def _podsort_view(parametrs, flag: bool):
                 try:
                     cursor.execute(sql_query, (warehouse_filter, period))
                     rows = cursor.fetchall()
+                    columns = [desc[0] for desc in cursor.description]
                 except Exception as e:
                     logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
-                columns = [desc[0] for desc in cursor.description]
                 dict_rows = [dict(zip(columns, row)) for row in rows]
 
                 result = defaultdict(dict)
@@ -783,9 +783,9 @@ def _podsort_view(parametrs, flag: bool):
             try:
                 cursor.execute(sql_query, params)
                 rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
             except Exception as e:
                 logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
-            columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
 
             result = defaultdict(dict)
@@ -954,10 +954,10 @@ def _podsort_view(parametrs, flag: bool):
             with conn.cursor() as cursor:
                 cursor.execute(sql_nmid, )
                 res_nmids = cursor.fetchall()
+                columns_nmids = [desc[0] for desc in cursor.description]
         except Exception as e:
             logger.error(f"Ошибка при запросе артикулов и vendorcode {e}")
 
-        columns_nmids = [desc[0] for desc in cursor.description]
         nmids = [dict(zip(columns_nmids, row)) for row in res_nmids]
         combined_list = [
             {
