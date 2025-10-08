@@ -1061,8 +1061,14 @@ def _podsort_view(parametrs, flag: bool):
             logger.error(f"Ошибка получения всех артикулов в podsort_view: {e}")
 
         try:
-            our_g, category_g = Addindicators.objects.values_list('our_g', 'category_g').get(id=1)
-        except Addindicators.DoesNotExist:
+            # ИСПРАВЛЕНИЕ: используем filter().first() вместо get()
+            result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
+            if result:
+                our_g, category_g = result
+            else:
+                our_g, category_g = 0, 0
+        except Exception as e:
+            logger.error(f"Ошибка при получении Addindicators: {e}")
             our_g, category_g = 0, 0
 
         return {
