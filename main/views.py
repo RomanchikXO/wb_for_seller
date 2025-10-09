@@ -641,16 +641,16 @@ def _podsort_view(parametrs, flag: bool):
         conn = connect_to_database()
 
         sql_query = """
-                SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
-                FROM myapp_areawarehouses;
-            """
+            SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
+            FROM myapp_areawarehouses;
+        """
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, )
+                cursor.execute(sql_query)
                 rows = cursor.fetchall()
             except Exception as e:
-                logger.exception(f"Ошибка получаения складов в podsort_view: {e}")
+                logger.exception(f"Ошибка получения складов в podsort_view: {e}")
             warehouses = [row[0] for row in rows]
 
         all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
@@ -668,39 +668,39 @@ def _podsort_view(parametrs, flag: bool):
         if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
 
         # заказы для каждого склада
-        sql_query = f"""
-                WITH region_warehouse_min AS (
-                    SELECT
-                        area,
-                        (SELECT key
-                         FROM jsonb_each_text(warehouses)
-                         ORDER BY (value)::int
-                         LIMIT 1) AS min_warehouse
-                    FROM myapp_areawarehouses
-                ),
-                orders_with_warehouse AS (
-                    SELECT
-                        o.nmid,
-                        rwm.min_warehouse
-                    FROM myapp_orders o
-                    JOIN region_warehouse_min rwm
-                        ON o.regionname = rwm.area
-                    WHERE
-                        o.date >= '{period}'
-                    AND {nmid_query_filter}
-                )
+        sql_query = """
+            WITH region_warehouse_min AS (
                 SELECT
-                    nmid,
-                    min_warehouse AS warehouse_with_min_value,
-                    COUNT(*) AS order_count
-                FROM orders_with_warehouse
-                GROUP BY nmid, min_warehouse
-                ORDER BY order_count DESC;
-            """
+                    area,
+                    (SELECT key
+                     FROM jsonb_each_text(warehouses)
+                     ORDER BY (value)::int
+                     LIMIT 1) AS min_warehouse
+                FROM myapp_areawarehouses
+            ),
+            orders_with_warehouse AS (
+                SELECT
+                    o.nmid,
+                    rwm.min_warehouse
+                FROM myapp_orders o
+                JOIN region_warehouse_min rwm
+                    ON o.regionname = rwm.area
+                WHERE
+                    o.date >= %s
+                AND """ + nmid_query_filter + """
+            )
+            SELECT
+                nmid,
+                min_warehouse AS warehouse_with_min_value,
+                COUNT(*) AS order_count
+            FROM orders_with_warehouse
+            GROUP BY nmid, min_warehouse
+            ORDER BY order_count DESC;
+        """
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, )
+                cursor.execute(sql_query, (period,))
                 rows = cursor.fetchall()
                 columns = [desc[0] for desc in cursor.description]
             except Exception as e:
@@ -767,21 +767,20 @@ def _podsort_view(parametrs, flag: bool):
                 orders_with_filter = dict(result)
 
         # остатки и кол-во дней в наличии
-        sql_query = f"""
-                SELECT
-                    nmid,
-                    warehousename,
-                    {name_column_available} AS available,
-                    SUM(quantity) AS total_quantity
-                FROM myapp_stocks
-                WHERE {nmid_query}
-                GROUP BY
-                    nmid, warehousename, {name_column_available}
-            """
+        sql_query = """
+            SELECT
+                nmid,
+                warehousename,
+                """ + name_column_available + """ AS available,
+                SUM(quantity) AS total_quantity
+            FROM myapp_stocks
+            WHERE """ + nmid_query + """
+            GROUP BY
+                nmid, warehousename, """ + name_column_available
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, params)
+                cursor.execute(sql_query)  # БЕЗ params
                 rows = cursor.fetchall()
                 columns = [desc[0] for desc in cursor.description]
             except Exception as e:
@@ -799,42 +798,42 @@ def _podsort_view(parametrs, flag: bool):
             warh_stock = dict(result)
 
         # артикул, id, ткань и цвет
-        sql_query = f"""
-                SELECT 
-                nmid,
-                id,
-                (
-                    SELECT (elem->'value')->>0 AS value
-                    FROM jsonb_array_elements(characteristics) AS elem
-                    WHERE (elem->>'id')::int = 12
-                    LIMIT 1
-                ) AS cloth,
-                (
-                    SELECT (elem->'value')->>0 AS value
-                    FROM jsonb_array_elements(characteristics) AS elem
-                    WHERE (elem->>'id')::int = 14177449
-                    LIMIT 1
-                ) AS i_color,
-                vendorcode,
-                (
-                   SELECT COALESCE(json_agg(t.tag), '[]'::json)
-                   FROM myapp_tags t
-                   WHERE t.id = ANY(
-                       SELECT jsonb_array_elements_text(tag_ids)::int
-                       FROM myapp_nmids n2
-                       WHERE n2.id = myapp_nmids.id
-                   )
-                ) AS tag_ids
-                FROM myapp_nmids
-                WHERE {nmid_query}
-            """
+        sql_query = """
+            SELECT 
+            nmid,
+            id,
+            (
+                SELECT (elem->'value')->>0 AS value
+                FROM jsonb_array_elements(characteristics) AS elem
+                WHERE (elem->>'id')::int = 12
+                LIMIT 1
+            ) AS cloth,
+            (
+                SELECT (elem->'value')->>0 AS value
+                FROM jsonb_array_elements(characteristics) AS elem
+                WHERE (elem->>'id')::int = 14177449
+                LIMIT 1
+            ) AS i_color,
+            vendorcode,
+            (
+               SELECT COALESCE(json_agg(t.tag), '[]'::json)
+               FROM myapp_tags t
+               WHERE t.id = ANY(
+                   SELECT jsonb_array_elements_text(tag_ids)::int
+                   FROM myapp_nmids n2
+                   WHERE n2.id = myapp_nmids.id
+               )
+            ) AS tag_ids
+            FROM myapp_nmids
+            WHERE """ + nmid_query
 
         with conn.cursor() as cursor:
             try:
-                cursor.execute(sql_query, params)
+                cursor.execute(sql_query)
                 rows = cursor.fetchall()
             except Exception as e:
-                logger.exception(f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
+                logger.exception(
+                    f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
             articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4], "tag_ids": row[5]}
                         for row in rows}
 
@@ -944,15 +943,16 @@ def _podsort_view(parametrs, flag: bool):
         except Exception as e:
             logger.error(f"Ошибка в обработке итоговых данных {e}")
 
-        sql_nmid = ("SELECT p.nmid as nmid, p.vendorcode as vendorcode "
-                    "FROM myapp_price p "
-                    "JOIN myapp_wblk wblk "
-                    "ON p.lk_id = wblk.id "
-                    f"WHERE p.nmid IN ({', '.join(map(str, current_ids))})")
+        sql_nmid = """
+            SELECT p.nmid as nmid, p.vendorcode as vendorcode 
+            FROM myapp_price p 
+            JOIN myapp_wblk wblk 
+            ON p.lk_id = wblk.id 
+            WHERE """ + f"p.nmid IN ({', '.join(map(str, current_ids))})"
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute(sql_nmid, )
+                cursor.execute(sql_nmid)
                 res_nmids = cursor.fetchall()
                 columns_nmids = [desc[0] for desc in cursor.description]
         except Exception as e:
@@ -1048,7 +1048,7 @@ def _podsort_view(parametrs, flag: bool):
         sql_query = """SELECT DISTINCT tag FROM myapp_tags"""
         try:
             with conn.cursor() as cursor:
-                cursor.execute(sql_query, params)
+                cursor.execute(sql_query)
                 rows = cursor.fetchall()
                 alltags = [row[0] for row in rows] if rows else []
         except Exception as e:
