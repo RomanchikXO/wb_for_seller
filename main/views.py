@@ -38,8 +38,11 @@ def get_current_nmids()-> List[int]:
     Returns:
 
     """
-    active_nmids = nmids_db.objects.filter(is_active=True).values_list('nmid', flat=True)
-    active_nmids_list = list(active_nmids)
+    try:
+        active_nmids = nmids_db.objects.filter(is_active=True).values_list('nmid', flat=True)
+        active_nmids_list = list(active_nmids)
+    except Exception as e:
+        raise Exception(f"Ошибка в get_current_nmids: {e}")
     return active_nmids_list
 
 
@@ -565,13 +568,12 @@ def get_marg_api(request):
     return JsonResponse({'status': 'ok', 'received': response})
 
 
-def _podsort_view(parametrs, flag: bool):
+def _podsort_view(current_ids, parametrs, flag: bool):
     """
     Если flag то функция отрабатывает со складами
     """
     conn = None
     try:
-        current_ids = get_current_nmids()
 
         now_msk = datetime.now() + timedelta(hours=3)
         yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
@@ -1149,9 +1151,10 @@ def podsort_view(request):
         raise
 
     # Если складов не было возвращаем сразу результат
+    current_ids = get_current_nmids()
     try:
         if not warehouse_filter:
-            response = _podsort_view(params, False)
+            response = _podsort_view(current_ids, params, False)
             return render(
                 request,
                 "podsort.html",
@@ -1166,7 +1169,7 @@ def podsort_view(request):
         with mp.Pool(processes=2) as pool:
             results = pool.starmap(
                 _podsort_view,
-                [(params, True), (params, False)]
+                [(current_ids, params, True), (current_ids, params, False)]
             )
 
         full_data = results[0]
