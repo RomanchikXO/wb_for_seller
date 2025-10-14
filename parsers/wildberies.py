@@ -612,7 +612,7 @@ async def get_orders():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
-            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=14)).replace(hour=0, minute=0, second=0, microsecond=0)
+            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
             param = {
                 "type": "orders",
                 "API_KEY": cab["token"],
