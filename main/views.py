@@ -1042,17 +1042,6 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
         except Exception as e:
             logger.error(f"Ошибка получения всех артикулов в podsort_view: {e}")
 
-        try:
-            # ИСПРАВЛЕНИЕ: используем filter().first() вместо get()
-            result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
-            if result:
-                our_g, category_g = result
-            else:
-                our_g, category_g = 0, 0
-        except Exception as e:
-            logger.error(f"Ошибка при получении Addindicators: {e}")
-            our_g, category_g = 0, 0
-
         return {
                 "warehouses": warehouses,
                 "warehouse_filter": warehouse_filter,
@@ -1078,8 +1067,8 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
                 "filter_options_sizes": filter_options_sizes,
                 "filter_options_colors": filter_options_colors,
                 "alltags": alltags,
-                "our_g": our_g,
-                "category_g": category_g,
+                "our_g": parametrs['our_g'],
+                "category_g": parametrs['category_g'],
                 "all_articles": all_articles,
             }
     finally:
@@ -1110,7 +1099,19 @@ def podsort_view(request):
         period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
         turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
+        try:
+            result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
+            if result:
+                our_g, category_g = result
+            else:
+                our_g, category_g = 0, 0
+        except Exception as e:
+            logger.error(f"Ошибка при получении Addindicators: {e}")
+            our_g, category_g = 0, 0
+
         parametrs = {
+            "our_g": our_g,
+            "category_g": category_g,
             "value": value,
             "nmid_filter": nmid_filter,
             "without_color_filter": without_color_filter,
