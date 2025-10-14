@@ -1059,29 +1059,29 @@ async def get_stat_products():
                                 for idx, (
                                         nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub, buyoutsCount,
                                         buyoutsSumRub, cancelCount, cancelSumRub, addToCartConversion, cartToOrderConversion,
-                                        buyoutPercent) in enumerate(batch):
-                                    base = idx * 13
+                                        buyoutPercent, lk) in enumerate(batch):
+                                    base = idx * 14
                                     values_placeholders.append(
                                         f"(${base + 1}::integer, ${base + 2}, ${base + 3}::integer, "
                                         f"${base + 4}::integer, ${base + 5}::integer, ${base + 6}::integer, "
                                         f"${base + 7}::integer, ${base + 8}::integer, ${base + 9}::integer, "
                                         f"${base + 10}::integer, ${base + 11}::integer, ${base + 12}::integer, "
-                                        f"${base + 13}::integer)"
+                                        f"${base + 13}::integer, ${base + 14}::integer)"
                                     )
                                     values_data.extend([
                                         nmid, date_wb, openCardCount, addToCartCount, ordersCount, ordersSumRub,
                                         buyoutsCount, buyoutsSumRub, cancelCount, cancelSumRub,
-                                        addToCartConversion, cartToOrderConversion, buyoutPercent
+                                        addToCartConversion, cartToOrderConversion, buyoutPercent, lk
                                     ])
 
                                 query = f"""
                                     INSERT INTO myapp_productsstat (
                                         nmid, date_wb, "openCardCount", "addToCartCount", "ordersCount", "ordersSumRub",
                                         "buyoutsCount", "buyoutsSumRub", "cancelCount", "cancelSumRub",
-                                        "addToCartConversion", "cartToOrderConversion", "buyoutPercent"
+                                        "addToCartConversion", "cartToOrderConversion", "buyoutPercent", "lk_id"
                                     )
                                     VALUES {', '.join(values_placeholders)}
-                                    ON CONFLICT (nmid, date_wb) DO UPDATE SET
+                                    ON CONFLICT (nmid, date_wb, lk_id) DO UPDATE SET
                                         "openCardCount" = EXCLUDED."openCardCount",
                                         "addToCartCount" = EXCLUDED."addToCartCount",
                                         "ordersCount" = EXCLUDED."ordersCount",
