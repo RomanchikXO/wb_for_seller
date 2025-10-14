@@ -568,145 +568,66 @@ def get_marg_api(request):
     return JsonResponse({'status': 'ok', 'received': response})
 
 
-def _podsort_view(current_ids, parametrs, flag: bool):
-    """
-    Если flag то функция отрабатывает со складами
-    """
-    conn = None
-    try:
+def get_warh():
+    conn = connect_to_database()
 
-        now_msk = datetime.now() + timedelta(hours=3)
-        yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-        tree_days_ago = yesterday_end - timedelta(days=3)
-        seven_days_ago = yesterday_end - timedelta(days=7)
-        two_weeks_ago = yesterday_end - timedelta(weeks=2)
-        thirty_days_ago = yesterday_end - timedelta(days=30)
+    sql_query = """
+                SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
+                FROM myapp_areawarehouses;
+            """
 
-        turnover_periods = [a for a in range(25, 71, 5)]
-        order_periods = [3, 7, 14, 30]
-
-        value = parametrs["value"]
-
-        page_sizes = [5, 10, 20, 50, 100]
-        abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
-        nmid_filter = parametrs["nmid_filter"]
-
-        without_color_filter = parametrs["without_color_filter"]
-        wc_filter = (
-            without_color_filter[0].split(',')
-            if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
-            else []
-        )
-
-        sizes_filter = parametrs["sizes_filter"]
-        sz_filter = (
-            sizes_filter[0].split(',')
-            if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
-            else []
-        )
-        colors_filter = parametrs["colors_filter"]
-        cl_filter = (
-            colors_filter[0].split(',')
-            if colors_filter and colors_filter[0].strip() not in ['', '[]']
-            else []
-        )
-
-        warehouse_filter = parametrs["warehouse_filter"] if flag else ""
-
-        alltags_filter = parametrs["alltags_filter"]
-        per_page = parametrs["per_page"]
-        page_number = parametrs["page_number"]
-
-        sort_by = parametrs["sort_by"]
-        order = parametrs["order"]
-        abc_filter = parametrs["abc_filter"]
-
-        period_ord = parametrs["period_ord"]
-        if period_ord == 3:
-            period = tree_days_ago
-            name_column_available = "days_in_stock_last_3"
-        elif period_ord == 7:
-            period = seven_days_ago
-            name_column_available = "days_in_stock_last_7"
-        elif period_ord == 14:
-            period = two_weeks_ago
-            name_column_available = "days_in_stock_last_14"
-        elif period_ord == 30:
-            period = thirty_days_ago
-            name_column_available = "days_in_stock_last_30"
-        params = [period]
-
-        turnover_change = parametrs["turnover_change"]
-
-        # получаем все склады
-
-        conn = connect_to_database()
-
-        sql_query = """
-            SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
-            FROM myapp_areawarehouses;
-        """
-
-        with conn.cursor() as cursor:
-            try:
-                cursor.execute(sql_query)
-                rows = cursor.fetchall()
-            except Exception as e:
-                logger.exception(f"Ошибка получения складов в podsort_view: {e}")
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query)
+            rows = cursor.fetchall()
             warehouses = [row[0] for row in rows]
+        except Exception as e:
+            logger.exception(f"Ошибка получения складов в podsort_view: {e}")
+        finally:
+            conn.close()
 
-        all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
+    return warehouses
 
-        if all_filters:
-            all_filters = list(set.intersection(*all_filters))
-            all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
-            nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
-            nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
-        else:
-            nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
-            nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
 
-        if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
-        if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
+def get_all_orders(nmid_query_filter, period):
+    conn = connect_to_database()
 
-        # заказы для каждого склада
-        sql_query = """
-            WITH region_warehouse_min AS (
+    # заказы для каждого склада
+    sql_query = """
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                orders_with_warehouse AS (
+                    SELECT
+                        o.nmid,
+                        rwm.min_warehouse
+                    FROM myapp_orders o
+                    JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    WHERE
+                        o.date >= %s
+                    AND """ + nmid_query_filter + """
+                )
                 SELECT
-                    area,
-                    (SELECT key
-                     FROM jsonb_each_text(warehouses)
-                     ORDER BY (value)::int
-                     LIMIT 1) AS min_warehouse
-                FROM myapp_areawarehouses
-            ),
-            orders_with_warehouse AS (
-                SELECT
-                    o.nmid,
-                    rwm.min_warehouse
-                FROM myapp_orders o
-                JOIN region_warehouse_min rwm
-                    ON o.regionname = rwm.area
-                WHERE
-                    o.date >= %s
-                AND """ + nmid_query_filter + """
-            )
-            SELECT
-                nmid,
-                min_warehouse AS warehouse_with_min_value,
-                COUNT(*) AS order_count
-            FROM orders_with_warehouse
-            GROUP BY nmid, min_warehouse
-            ORDER BY order_count DESC;
-        """
+                    nmid,
+                    min_warehouse AS warehouse_with_min_value,
+                    COUNT(*) AS order_count
+                FROM orders_with_warehouse
+                GROUP BY nmid, min_warehouse
+                ORDER BY order_count DESC;
+            """
 
-        with conn.cursor() as cursor:
-            try:
-                cursor.execute(sql_query, (period,))
-                rows = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-            except Exception as e:
-                logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query, (period,))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
             dict_rows = [dict(zip(columns, row)) for row in rows]
 
             result = defaultdict(dict)
@@ -717,76 +638,35 @@ def _podsort_view(current_ids, parametrs, flag: bool):
                 result[nmid][warehouse] = count
 
             all_orders = dict(result)
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
+        finally:
+            conn.close()
 
-        if warehouse_filter:
-            sql_query = f"""
-                    WITH region_warehouse_min AS (
-                        SELECT
-                            area,
-                            (SELECT key
-                             FROM jsonb_each_text(warehouses)
-                             WHERE key = ANY(%s)
-                             ORDER BY (value)::int
-                             LIMIT 1) AS min_warehouse
-                        FROM myapp_areawarehouses
-                    ),
-                    orders_with_warehouse AS (
-                        SELECT
-                            o.nmid,
-                            rwm.min_warehouse
-                        FROM myapp_orders o
-                        JOIN region_warehouse_min rwm
-                            ON o.regionname = rwm.area
-                        WHERE
-                            o.date >= %s
-                        AND {nmid_query_filter}
-                    )
-                    SELECT
-                        nmid,
-                        COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
-                        COUNT(*) AS order_count
-                    FROM orders_with_warehouse
-                    GROUP BY nmid, min_warehouse
-                    ORDER BY order_count DESC;
-                """
+    return all_orders
 
-            with conn.cursor() as cursor:
-                try:
-                    cursor.execute(sql_query, (warehouse_filter, period))
-                    rows = cursor.fetchall()
-                    columns = [desc[0] for desc in cursor.description]
-                except Exception as e:
-                    logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
-                dict_rows = [dict(zip(columns, row)) for row in rows]
 
-                result = defaultdict(dict)
-                for entry in dict_rows:
-                    nmid = entry['nmid']
-                    warehouse = entry['warehouse_with_min_value']
-                    count = entry['order_count']
-                    result[nmid][warehouse] = count
+def get_warh_stock(name_column_available, nmid_query):
+    conn = connect_to_database()
 
-                orders_with_filter = dict(result)
+    # остатки и кол-во дней в наличии
+    sql_query = """
+                SELECT
+                    nmid,
+                    warehousename,
+                    """ + name_column_available + """ AS available,
+                    SUM(quantity) AS total_quantity
+                FROM myapp_stocks
+                WHERE """ + nmid_query + """
+                GROUP BY
+                    nmid, warehousename, """ + name_column_available
 
-        # остатки и кол-во дней в наличии
-        sql_query = """
-            SELECT
-                nmid,
-                warehousename,
-                """ + name_column_available + """ AS available,
-                SUM(quantity) AS total_quantity
-            FROM myapp_stocks
-            WHERE """ + nmid_query + """
-            GROUP BY
-                nmid, warehousename, """ + name_column_available
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query)  # БЕЗ params
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
 
-        with conn.cursor() as cursor:
-            try:
-                cursor.execute(sql_query)  # БЕЗ params
-                rows = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-            except Exception as e:
-                logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
             dict_rows = [dict(zip(columns, row)) for row in rows]
 
             result = defaultdict(dict)
@@ -798,46 +678,146 @@ def _podsort_view(current_ids, parametrs, flag: bool):
                 result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
 
             warh_stock = dict(result)
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
 
-        # артикул, id, ткань и цвет
-        sql_query = """
-            SELECT 
-            nmid,
-            id,
-            (
-                SELECT (elem->'value')->>0 AS value
-                FROM jsonb_array_elements(characteristics) AS elem
-                WHERE (elem->>'id')::int = 12
-                LIMIT 1
-            ) AS cloth,
-            (
-                SELECT (elem->'value')->>0 AS value
-                FROM jsonb_array_elements(characteristics) AS elem
-                WHERE (elem->>'id')::int = 14177449
-                LIMIT 1
-            ) AS i_color,
-            vendorcode,
-            (
-               SELECT COALESCE(json_agg(t.tag), '[]'::json)
-               FROM myapp_tags t
-               WHERE t.id = ANY(
-                   SELECT jsonb_array_elements_text(tag_ids)::int
-                   FROM myapp_nmids n2
-                   WHERE n2.id = myapp_nmids.id
-               )
-            ) AS tag_ids
-            FROM myapp_nmids
-            WHERE """ + nmid_query
+    return warh_stock
 
-        with conn.cursor() as cursor:
-            try:
-                cursor.execute(sql_query)
-                rows = cursor.fetchall()
-            except Exception as e:
-                logger.exception(
-                    f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
-            articles = {row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4], "tag_ids": row[5]}
-                        for row in rows}
+
+def get_articles(nmid_query):
+    conn = connect_to_database()
+
+    # артикул, id, ткань и цвет
+    sql_query = """
+                SELECT 
+                nmid,
+                id,
+                (
+                    SELECT (elem->'value')->>0 AS value
+                    FROM jsonb_array_elements(characteristics) AS elem
+                    WHERE (elem->>'id')::int = 12
+                    LIMIT 1
+                ) AS cloth,
+                (
+                    SELECT (elem->'value')->>0 AS value
+                    FROM jsonb_array_elements(characteristics) AS elem
+                    WHERE (elem->>'id')::int = 14177449
+                    LIMIT 1
+                ) AS i_color,
+                vendorcode,
+                (
+                   SELECT COALESCE(json_agg(t.tag), '[]'::json)
+                   FROM myapp_tags t
+                   WHERE t.id = ANY(
+                       SELECT jsonb_array_elements_text(tag_ids)::int
+                       FROM myapp_nmids n2
+                       WHERE n2.id = myapp_nmids.id
+                   )
+                ) AS tag_ids
+                FROM myapp_nmids
+                WHERE """ + nmid_query
+
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query)
+            rows = cursor.fetchall()
+            articles = {
+                row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4], "tag_ids": row[5]}
+                for row in rows}
+        except Exception as e:
+            logger.exception(
+                f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
+        finally:
+            conn.close()
+
+    return articles
+
+
+def get_orders_with_filter(nmid_query_filter, warehouse_filter, period):
+    conn = connect_to_database()
+
+    sql_query = f"""
+                        WITH region_warehouse_min AS (
+                            SELECT
+                                area,
+                                (SELECT key
+                                 FROM jsonb_each_text(warehouses)
+                                 WHERE key = ANY(%s)
+                                 ORDER BY (value)::int
+                                 LIMIT 1) AS min_warehouse
+                            FROM myapp_areawarehouses
+                        ),
+                        orders_with_warehouse AS (
+                            SELECT
+                                o.nmid,
+                                rwm.min_warehouse
+                            FROM myapp_orders o
+                            JOIN region_warehouse_min rwm
+                                ON o.regionname = rwm.area
+                            WHERE
+                                o.date >= %s
+                            AND {nmid_query_filter}
+                        )
+                        SELECT
+                            nmid,
+                            COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
+                            COUNT(*) AS order_count
+                        FROM orders_with_warehouse
+                        GROUP BY nmid, min_warehouse
+                        ORDER BY order_count DESC;
+                    """
+
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute(sql_query, (warehouse_filter, period))
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+
+            dict_rows = [dict(zip(columns, row)) for row in rows]
+
+            result = defaultdict(dict)
+            for entry in dict_rows:
+                nmid = entry['nmid']
+                warehouse = entry['warehouse_with_min_value']
+                count = entry['order_count']
+                result[nmid][warehouse] = count
+
+            orders_with_filter = dict(result)
+        except Exception as e:
+            logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
+        finally:
+            conn.close()
+
+    return orders_with_filter
+
+
+def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, flag: bool):
+    """
+    Если flag то функция отрабатывает со складами
+    """
+    conn = None
+    try:
+
+        turnover_periods = [a for a in range(25, 71, 5)]
+        order_periods = [3, 7, 14, 30]
+
+        page_sizes = [5, 10, 20, 50, 100]
+        abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
+        nmid_filter = parametrs["nmid_filter"]
+
+        warehouse_filter = parametrs["warehouse_filter"] if flag else ""
+
+        alltags_filter = parametrs["alltags_filter"]
+        per_page = parametrs["per_page"]
+        page_number = parametrs["page_number"]
+
+        sort_by = parametrs["sort_by"]
+        order = parametrs["order"]
+        abc_filter = parametrs["abc_filter"]
+
+        turnover_change = parametrs["turnover_change"]
+
+        conn = connect_to_database()
 
         all_response = {}
 
@@ -1079,9 +1059,9 @@ def _podsort_view(current_ids, parametrs, flag: bool):
                 "alltags_filter": alltags_filter,
                 "nmids": combined_list,
                 "nmid_filter": nmid_filter,
-                "without_color_filter": without_color_filter,
-                "sizes_filter": sizes_filter,
-                "colors_filter": colors_filter,
+                "without_color_filter": parametrs['without_color_filter'],
+                "sizes_filter": parametrs['sizes_filter'],
+                "colors_filter": parametrs['colors_filter'],
                 "items": page_obj,
                 "paginator": paginator,
                 "turnover_periods": turnover_periods,
@@ -1130,7 +1110,7 @@ def podsort_view(request):
         period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
         turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
-        params = {
+        parametrs = {
             "value": value,
             "nmid_filter": nmid_filter,
             "without_color_filter": without_color_filter,
@@ -1150,11 +1130,78 @@ def podsort_view(request):
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
 
-    # Если складов не было возвращаем сразу результат
+
+    without_color_filter = parametrs["without_color_filter"]
+    wc_filter = (
+        without_color_filter[0].split(',')
+        if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
+        else []
+    )
+
+    sizes_filter = parametrs["sizes_filter"]
+    sz_filter = (
+        sizes_filter[0].split(',')
+        if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
+        else []
+    )
+    colors_filter = parametrs["colors_filter"]
+    cl_filter = (
+        colors_filter[0].split(',')
+        if colors_filter and colors_filter[0].strip() not in ['', '[]']
+        else []
+    )
+    all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
+
     current_ids = get_current_nmids()
+
+    if all_filters:
+        all_filters = list(set.intersection(*all_filters))
+        all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
+        nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
+        nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
+    else:
+        nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
+        nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
+
+    if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
+    if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
+
+
+    now_msk = datetime.now() + timedelta(hours=3)
+    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+    tree_days_ago = yesterday_end - timedelta(days=3)
+    seven_days_ago = yesterday_end - timedelta(days=7)
+    two_weeks_ago = yesterday_end - timedelta(weeks=2)
+    thirty_days_ago = yesterday_end - timedelta(days=30)
+    period_ord = parametrs["period_ord"]
+    if period_ord == 3:
+        period = tree_days_ago
+        name_column_available = "days_in_stock_last_3"
+    elif period_ord == 7:
+        period = seven_days_ago
+        name_column_available = "days_in_stock_last_7"
+    elif period_ord == 14:
+        period = two_weeks_ago
+        name_column_available = "days_in_stock_last_14"
+    elif period_ord == 30:
+        period = thirty_days_ago
+        name_column_available = "days_in_stock_last_30"
+    params = [period]
+
+
+    warehouses = get_warh()
+    all_orders = get_all_orders(nmid_query_filter, period)
+    warh_stock = get_warh_stock(name_column_available, nmid_query)
+    articles = get_articles(nmid_query)
+
+    if warehouse_filter:
+        orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
+
+    # Если складов не было возвращаем сразу результат
     try:
         if not warehouse_filter:
-            response = _podsort_view(current_ids, params, False)
+            response = _podsort_view(None, articles, warh_stock, period_ord, period,
+                                     all_orders, warehouses, current_ids, parametrs, False)
             return render(
                 request,
                 "podsort.html",
@@ -1169,7 +1216,10 @@ def podsort_view(request):
         with mp.Pool(processes=2) as pool:
             results = pool.starmap(
                 _podsort_view,
-                [(current_ids, params, True), (current_ids, params, False)]
+                [
+                    (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
+                    (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
+                ]
             )
 
         full_data = results[0]
