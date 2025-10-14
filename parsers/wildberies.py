@@ -451,9 +451,13 @@ async def get_products_and_prices():
 
             data[cab["id"]] = wb_api(session, param)
 
-        results = await asyncio.gather(*data.values())
-        id_to_result = {name: result for name, result in zip(data.keys(), results)}      
-        status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
+        try:
+            results = await asyncio.gather(*data.values())
+            id_to_result = {name: result for name, result in zip(data.keys(), results)}
+            status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
+        except Exception as e:
+            logger.error(f"Ошибка при обработке данных полученных от вб в get_products_and_prices {e}")
+            return
 
         try:
             conn = await async_connect_to_database()
@@ -485,8 +489,8 @@ async def get_products_and_prices():
                     results = await asyncio.gather(*data)
                 except Exception as e:
                     logger.error(f"Ошибка при добавлении продуктов и цен {e}")
-        except:
-            return
+        except Exception as e:
+            logger.error(f"Глобальная ошибка при добавлении продуктов и цен: {e}")
         finally:
             await conn.close()
 
