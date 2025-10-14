@@ -18,6 +18,8 @@ import csv
 from context_logger import ContextLogger
 from itertools import chain
 from myapp.models import Price
+from asgiref.sync import sync_to_async
+
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
@@ -442,6 +444,10 @@ async def get_products_and_prices():
 
     data = {}
 
+    status_rep = await sync_to_async(
+        lambda: Price.objects.order_by('id').values_list('main_status', flat=True).first()
+    )()
+
     async with aiohttp.ClientSession() as session:
         for cab in cabinets:
             param = {
@@ -454,7 +460,6 @@ async def get_products_and_prices():
         try:
             results = await asyncio.gather(*data.values())
             id_to_result = {name: result for name, result in zip(data.keys(), results)}
-            status_rep = Price.objects.order_by('id').values_list('main_status', flat=True).first()
         except Exception as e:
             logger.error(f"Ошибка при обработке данных полученных от вб в get_products_and_prices {e}")
             return
