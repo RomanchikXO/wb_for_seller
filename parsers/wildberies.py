@@ -1040,6 +1040,7 @@ async def get_stat_products():
                                     int(row[addToCartConversion]),
                                     int(row[cartToOrderConversion]),
                                     int(row[buyoutPercent]),
+                                    int(cab['id'])
                                 )
                             )
 
