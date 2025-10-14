@@ -111,9 +111,10 @@ class ProductsStat(models.Model):
     addToCartConversion = models.IntegerField() # Конверсия в корзину, %
     cartToOrderConversion = models.IntegerField() # Конверсия в заказ, %
     buyoutPercent = models.IntegerField() # Процент выкупа, %
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
 
     class Meta:
-        unique_together = ['nmid', 'date_wb']  # Уникальное ограничение на комбинацию nmid и date_wb
+        unique_together = ['nmid', 'date_wb', 'lk']  # Уникальное ограничение на комбинацию nmid и date_wb
         verbose_name_plural = "Статистика товаров"
 
 
