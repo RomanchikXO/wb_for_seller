@@ -1238,7 +1238,7 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        logger.info(f"Полная {full_data}")
+        logger.info(f"Полная {list(full_data['items'].object_list)}")
         logger.info(f"коротко {total_short_rec_del}")
 
         copy_data = copy.deepcopy(full_data["items"].object_list)
