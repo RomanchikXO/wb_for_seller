@@ -1226,6 +1226,9 @@ def podsort_view(request):
         full_data = results[0]
         short_data = list(results[1]["items"].object_list)
 
+        logger.info(f"полные данные с фильтрами {full_data}")
+        logger.info(f"полные данные без фильтров {short_data}")
+
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма
         try:
             for i in short_data:
@@ -1243,7 +1246,6 @@ def podsort_view(request):
             if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
-                logger.info(f"Сумма поставок с фильрами {sum_rec_all}")
 
                 if sum_rec_all == 0:
                     logger.warning(f"Пропуск артикула {i['article']}: sum_rec_all = 0")
