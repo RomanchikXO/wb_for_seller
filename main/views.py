@@ -1223,13 +1223,10 @@ def podsort_view(request):
                 ]
             )
 
-        full_data = results[0]
-        short_data = list(results[1]["items"].object_list)
+        full_data = results[0] # с фильтрами
+        short_data = list(results[1]["items"].object_list) # без фильтров
 
-        logger.info(f"полные данные с фильтрами {full_data}")
-        logger.info(f"полные данные без фильтров {short_data}")
-
-        total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма
+        total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
         try:
             for i in short_data:
                 if subitems:= i.get("subitems"):
@@ -1241,7 +1238,7 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        copy_data = copy.deepcopy(full_data["items"].object_list)
+        copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
@@ -1251,6 +1248,8 @@ def podsort_view(request):
                     logger.warning(f"Пропуск артикула {i['article']}: sum_rec_all = 0")
                     continue
 
+                logger.info(f"без фильтра сумма {total_short_rec_del[i['article']]}")
+                logger.info(f"c фильтра сумма {sum_rec_all}")
                 coef = total_short_rec_del[i["article"]] / sum_rec_all
                 last_index = 0
 
