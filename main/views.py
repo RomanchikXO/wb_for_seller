@@ -1238,8 +1238,8 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        print(f"Полная {full_data}")
-        print(f"коротко {total_short_rec_del}")
+        logger.info(f"Полная {full_data}")
+        logger.info(f"коротко {total_short_rec_del}")
 
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
