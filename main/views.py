@@ -1238,14 +1238,12 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        logger.info(f"Полная {list(full_data['items'].object_list)}")
-        logger.info(f"коротко {total_short_rec_del}")
-
         copy_data = copy.deepcopy(full_data["items"].object_list)
         for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
                 sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
                 sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
+                logger.info(f"Сумма поставок с фильрами {sum_rec_all}")
 
                 if sum_rec_all == 0:
                     logger.warning(f"Пропуск артикула {i['article']}: sum_rec_all = 0")
