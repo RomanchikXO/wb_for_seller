@@ -429,9 +429,31 @@
 
             <!-- Выбор страницы и per_page -->
             <form method="get" class="d-flex align-items-center ms-3">
+                <!-- Передаем все фильтры -->
+                {% for id in nmid_filter %}
+                    <input type="hidden" name="nmid" value="{{ id }}">
+                {% endfor %}
+                {% for id in without_color_filter %}
+                    <input type="hidden" name="wc_filter" value="{{ id }}">
+                {% endfor %}
+                {% for id in sizes_filter %}
+                    <input type="hidden" name="sz_filter" value="{{ id }}">
+                {% endfor %}
+                {% for id in colors_filter %}
+                    <input type="hidden" name="cl_filter" value="{{ id }}">
+                {% endfor %}
+                {% for wh in warehouse_filter %}
+                    <input type="hidden" name="warehouse" value="{{ wh }}">
+                {% endfor %}
+                {% for af in alltags_filter %}
+                    <input type="hidden" name="alltagstb" value="{{ af }}">
+                {% endfor %}
                 <input type="hidden" name="turnover_change" value="{{ turnover_change }}">
                 <input type="hidden" name="period_ord" value="{{ period_ord }}">
                 <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="order" value="{{ order }}">
+                <input type="hidden" name="abc_filter" value="{{ abc_filter }}">
                 <label for="pageSelect" class="form-label me-2 mb-0">Страница:</label>
                 <select name="page" id="pageSelect" class="form-select form-select-sm me-3" style="width: auto;"
                         onchange="this.form.submit()">
