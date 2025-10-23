@@ -1269,7 +1269,7 @@ def podsort_view(request):
                         f"Ошибка в блоке сравнения. Ошибка: {e}. "
                     )
 
-        full_data["items"] = copy_data
+        full_data["items"].object_list = copy_data
         return render(
             request,
             "podsort.html",
