@@ -1248,8 +1248,6 @@ def podsort_view(request):
                     logger.warning(f"Пропуск артикула {i['article']}: sum_rec_all = 0")
                     continue
 
-                logger.info(f"без фильтра сумма {total_short_rec_del[i['article']]}")
-                logger.info(f"c фильтра сумма {sum_rec_all}")
                 coef = total_short_rec_del[i["article"]] / sum_rec_all
                 last_index = 0
 
