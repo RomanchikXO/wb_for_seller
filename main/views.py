@@ -893,8 +893,6 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
                         if i_key not in all_orders[art].keys() and i_val["total_quantity"]:
                             all_orders[art][i_key] = 0
                     for warh, i_order in all_orders[art].items():
-                        if art == 242695586:  # замените на реальный артикул
-                            logger.info(f"Склад: '{warh}' | Заказ: {i_order}")
                         all_response[art]["orders"] += i_order
                         all_response[art]["stock"] += warh_stock[art][warh].get("total_quantity", 0) or 0 if (
                                     warh_stock.get(art) and warh_stock[art].get(warh)) else 0
