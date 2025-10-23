@@ -19,7 +19,7 @@ async def get_area_warehouses():
     headers = base_data[0]
 
     result = {row[0]: {headers[row.index(i)]: int(i) for i in row[1:] if i} for row in base_data[1:]}
-
+    logger.info(result)
     conn = await async_connect_to_database()
     if not conn:
         logger.error("Ошибка подключения к БД")
