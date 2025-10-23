@@ -642,7 +642,7 @@ def get_all_orders(nmid_query_filter, period):
             logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
         finally:
             conn.close()
-
+    logger.info(all_orders)
     return all_orders
 
 
