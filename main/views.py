@@ -643,7 +643,6 @@ def get_all_orders(nmid_query_filter, period):
         finally:
             conn.close()
 
-    logger.info(f"Все заказы {all_orders}")
     return all_orders
 
 
@@ -922,6 +921,26 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
                         )
                         if warehouse_filter and orders_with_filter[art].get(warh):
                             all_response[art]["subitems"][-1]["order_for_change_war"] = orders_with_filter[art][warh]
+
+                    if warehouse_filter:
+                        warehouses_in_all_orders = set(all_orders[art].keys())  # склады из общих данных
+                        warehouses_in_orders_with_filter = set(orders_with_filter[art].keys()) # склады из общих данных
+                        missing_warehouses = warehouses_in_orders_with_filter - warehouses_in_all_orders # склады которые должны быть но их нет
+                        for mis_war in missing_warehouses:
+                            all_response[art]["subitems"].append(
+                                {
+                                    "warehouse": mis_war,
+                                    "order": 0,
+                                    "stock": warh_stock[art][mis_war].get("total_quantity", 0) or 0 if (
+                                            warh_stock.get(art) and warh_stock[art].get(mis_war)) else 0,
+                                    "time_available": warh_stock[art][mis_war].get("available") or 0 if (
+                                            warh_stock.get(art) and warh_stock[art].get(mis_war)) else 0,
+                                    "turnover": 0,
+                                    "rec_delivery": 0,
+                                    "order_for_change_war": orders_with_filter[art][mis_war],
+                                }
+                            )
+
                     if warehouse_filter and (order_for_change_war := orders_with_filter[art].get("Неопределено")):
                         all_response[art]["subitems"].append(
                             {
