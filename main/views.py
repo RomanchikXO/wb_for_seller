@@ -734,6 +734,9 @@ def get_articles(nmid_query):
 
 
 def get_orders_with_filter(nmid_query_filter, warehouse_filter, period):
+    logger.info(f"nmid_query_filter: {nmid_query_filter}")
+    logger.info(f"warehouse_filter: {warehouse_filter}")
+    logger.info(f"warehouse_filter: {period}")
     conn = connect_to_database()
 
     sql_query = f"""
@@ -798,11 +801,10 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
     conn = None
     try:
 
-        turnover_periods = [a for a in range(25, 71, 5)]
-        order_periods = [3, 7, 14, 30]
-
-        page_sizes = [5, 10, 20, 50, 100]
-        abc_vars = ["Все товары", "A", "B", "C", "Новинки"]
+        turnover_periods = [a for a in range(25, 71, 5)] # оборачиваемость для фронта
+        order_periods = [3, 7, 14, 30] # заказы для фронта
+        page_sizes = [5, 10, 20, 50, 100] # кол-во отоброажаемых строк
+        abc_vars = ["Все товары", "A", "B", "C", "Новинки"] # фильтр
         nmid_filter = parametrs["nmid_filter"]
 
         warehouse_filter = parametrs["warehouse_filter"] if flag else ""
@@ -1086,7 +1088,7 @@ def podsort_view(request):
             if value:
                 request.session[key] = value
         nmid_filter = request.GET.getlist('nmid', [])
-        without_color_filter = request.GET.getlist('wc_filter', "")
+        without_color_filter = request.GET.getlist('wc_filter', "") # ткань
         sizes_filter = request.GET.getlist('sz_filter', [])
         colors_filter = request.GET.getlist('cl_filter', [])
         warehouse_filter = request.GET.getlist('warehouse', "")
@@ -1132,20 +1134,18 @@ def podsort_view(request):
         raise
 
 
-    without_color_filter = parametrs["without_color_filter"]
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
         else []
     )
 
-    sizes_filter = parametrs["sizes_filter"]
     sz_filter = (
         sizes_filter[0].split(',')
         if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
         else []
     )
-    colors_filter = parametrs["colors_filter"]
+
     cl_filter = (
         colors_filter[0].split(',')
         if colors_filter and colors_filter[0].strip() not in ['', '[]']
