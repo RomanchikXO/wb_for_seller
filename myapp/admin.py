@@ -93,7 +93,7 @@ class StocksAdmin(admin.ModelAdmin):
 class OrdersAdmin(admin.ModelAdmin):
     list_display = (
         'date', 'lastchangedate', 'supplierarticle',
-        'nmid', 'barcode', 'warehousename', 'countryname',
+        'nmid', 'barcode', 'warehousename', 'regionname',
         'brand', 'totalprice', 'finishedprice', 'iscancel'
     )
     list_filter = ('lk', 'iscancel', 'warehousename', 'brand', 'countryname', 'isrealization', 'issupply')
