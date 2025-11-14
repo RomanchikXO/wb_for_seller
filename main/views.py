@@ -1,5 +1,5 @@
 import copy
-from typing import List
+from typing import List, Dict
 import multiprocessing as mp
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
@@ -643,6 +643,7 @@ def get_all_orders(nmid_query_filter, period):
         finally:
             conn.close()
 
+    logger.info(f"Все заказы {all_orders}")
     return all_orders
 
 
@@ -733,15 +734,16 @@ def get_articles(nmid_query):
     return articles
 
 
-def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], period):
+def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], period) -> Dict:
     """
     Вызывается только если передан warehouse_filter
+    Распределяет все заказы для каждого артикула на склады
     Args:
         nmid_query_filter: переданные артикулы в формате "o.nmid IN (356102564)" либо все артикулы
         warehouse_filter: переданные склады
         period: дата начала заказов в формате 2025-ММ-ДД 23:59:59
 
-    Returns:
+    Returns: возвращает словарь в виде {356102564: {'Коледино': 682, 'Казань': 410}}
 
     """
     conn = connect_to_database()
@@ -797,7 +799,7 @@ def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], 
             logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
         finally:
             conn.close()
-    logger.info(f"nmid_query_filter: {orders_with_filter}")
+
     return orders_with_filter
 
 
