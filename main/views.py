@@ -733,10 +733,17 @@ def get_articles(nmid_query):
     return articles
 
 
-def get_orders_with_filter(nmid_query_filter, warehouse_filter, period):
-    logger.info(f"nmid_query_filter: {nmid_query_filter}")
-    logger.info(f"warehouse_filter: {warehouse_filter}")
-    logger.info(f"warehouse_filter: {period}")
+def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], period):
+    """
+    Вызывается только если передан warehouse_filter
+    Args:
+        nmid_query_filter: переданные артикулы в формате "o.nmid IN (356102564)" либо все артикулы
+        warehouse_filter: переданные склады
+        period: дата начала заказов в формате 2025-ММ-ДД 23:59:59
+
+    Returns:
+
+    """
     conn = connect_to_database()
 
     sql_query = f"""
@@ -790,7 +797,7 @@ def get_orders_with_filter(nmid_query_filter, warehouse_filter, period):
             logger.exception(f"Сбой при выполнении podsort_view при получении склад-область. Error: {e}")
         finally:
             conn.close()
-
+    logger.info(f"nmid_query_filter: {orders_with_filter}")
     return orders_with_filter
 
 
