@@ -1276,7 +1276,6 @@ def podsort_view(request):
                 # сумма остатков НЕ выбранных складов для артикула
                 sum_stock_without_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] not in warehouse_filter])
 
-                logger.info(warehouse_filter)
                 for subitem in subitems:
                     if not subitem["warehouse"] in warehouse_filter:
                         # пропускаем не выбранные склады ибо нахер не нужныв
@@ -1289,7 +1288,7 @@ def podsort_view(request):
                     logger.info(f"новые остатки: {new_stock}")
 
                     # высчитывыаем поставку на основе новых остатков
-                    subitem["rec_delivery"] = subitem["order_for_change_war"] / period_ord * turnover_change - new_stock
+                    subitem["rec_delivery"] = round(subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
         # logger.info(f"copy_data: {copy_data}")
         # full_data["items"].object_list = copy_data
         return render(
