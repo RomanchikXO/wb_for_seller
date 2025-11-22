@@ -1262,7 +1262,7 @@ def podsort_view(request):
 
         sum_short_orders = {} # все заказы с фильтрами
         try:
-            for art, warh in orders_with_filter:
+            for art, warh in orders_with_filter.items():
                 sum_short_orders[art] = sum(list(warh.values()))
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
