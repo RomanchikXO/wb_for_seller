@@ -1286,6 +1286,7 @@ def podsort_view(request):
 
                     # распределяем остатки не выбранных складов на выбранные (на фронт они не передаются)
                     new_stock = stock_koef * sum_stock_without_check_warh + subitem["stock"]
+                    logger.info(f"новые остатки: {new_stock}")
 
                     # высчитывыаем поставку на основе новых остатков
                     subitem["rec_delivery"] = subitem["order_for_change_war"] / period_ord * turnover_change - new_stock
