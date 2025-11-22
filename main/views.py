@@ -1107,6 +1107,28 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
             conn.close()
 
 
+# Главная функция для параллельных запросов
+async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_query):
+    pool = await async_connect_to_database()
+    if pool is None:
+        raise Exception("Ошибка подключения к БД")
+
+    try:
+        results = await asyncio.gather(
+            get_warh(pool),
+            get_all_orders(pool, nmid_query_filter, period),
+            get_warh_stock(pool, name_column_available, nmid_query),
+            get_articles(pool, nmid_query)
+        )
+    except Exception as e:
+        raise Exception(f"Ошибка при параллельном получении данных: {e}")
+    finally:
+        if pool:
+            await pool.close()
+
+    return results
+
+
 @login_required_cust
 def podsort_view(request):
     try:
@@ -1218,22 +1240,14 @@ def podsort_view(request):
         name_column_available = "days_in_stock_last_30"
 
     try:
-        pool = async_to_sync(async_connect_to_database)()
-        if pool is None:
-            raise Exception("Ошибка подключения к БД")
-        warehouses, all_orders, warh_stock, articles = async_to_sync(
-            lambda: asyncio.gather(
-                get_warh(pool),
-                get_all_orders(pool, nmid_query_filter, period),
-                get_warh_stock(pool, name_column_available, nmid_query),
-                get_articles(pool, nmid_query)
-            )
-        )()
+        warehouses, all_orders, warh_stock, articles = async_to_sync(fetch_all_data)(
+            nmid_query_filter,
+            period,
+            name_column_available,
+            nmid_query
+        )
     except Exception as e:
         logger.exception(f"Ошибка при параллельном получении данных: {e}")
-    finally:
-        if pool:
-            async_to_sync(pool.close)()
 
     if warehouse_filter:
         orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
