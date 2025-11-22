@@ -1267,8 +1267,8 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
-        for index, i in enumerate(list(full_data["items"].object_list)):
+        # copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
+        for i in full_data["items"].object_list:
             if subitems := i.get("subitems"):
                 sum_stock = sum([stock["stock"] for stock in subitems])  #сумма остатков для артикула
 
@@ -1278,7 +1278,7 @@ def podsort_view(request):
                 for subitem in subitems:
                     subitem["rec_delivery"] = round(koef * subitem["order_for_change_war"])
         # logger.info(f"copy_data: {copy_data}")
-        full_data["items"].object_list = copy_data
+        # full_data["items"].object_list = copy_data
         return render(
             request,
             "podsort.html",
