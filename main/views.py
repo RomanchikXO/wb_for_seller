@@ -1255,54 +1255,28 @@ def podsort_view(request):
             )
 
         full_data = results[0] # с фильтрами
-        short_data = list(results[1]["items"].object_list) # без фильтров
+        # short_data = list(results[1]["items"].object_list) # без фильтров
 
         # logger.info(f"с фильтрами {full_data['items'].object_list}")
         # logger.info(f"без {short_data}")
 
-        total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
+        sum_short_orders = {} # все заказы с фильтрами
         try:
-            for i in full_data['items'].object_list:
-                if subitems:= i.get("subitems"):
-                    for i_sub in subitems:
-                        if total_short_rec_del.get(i["article"]):
-                            total_short_rec_del[i["article"]] += i_sub["rec_delivery"]
-                        else:
-                            total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
+            for art, warh in orders_with_filter:
+                sum_short_orders[art] = sum(list(warh.values()))
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
-        logger.info(total_short_rec_del)
 
         copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for index, i in enumerate(list(full_data["items"].object_list)):
             if subitems := i.get("subitems"):
-                sum_rec_warh = 0                                                    #сумма поставок когда есть фильтры
-                sum_rec_all = sum(list(map(lambda x: x["rec_delivery"], subitems))) #сумма поставок с фильтрами
+                sum_stock = sum([stock["stock"] for stock in subitems])  #сумма остатков для артикула
 
-                if sum_rec_all == 0:
-                    logger.warning(f"Пропуск артикула {i['article']}: sum_rec_all = 0")
-                    continue
+                new_sum_orders = sum_short_orders[i["article"]] - sum_stock
+                koef = new_sum_orders / sum_short_orders[i["article"]]
 
-                coef = total_short_rec_del[i["article"]] / sum_rec_all
-                last_index = 0
-
-                try:
-                    for _index, art in enumerate(copy_data[index]["subitems"]):
-                        art["rec_delivery"] = round(art["rec_delivery"] * coef)
-                        if art["rec_delivery"] != 0: last_index = _index
-                        sum_rec_warh += art["rec_delivery"]
-                except Exception as e:
-                    raise Exception(f"Ошибка при формировании sum_rec_warh. Ошибка: {e}")
-
-                try:
-                    if sum_rec_warh > total_short_rec_del[i["article"]]:
-                        copy_data[index]["subitems"][last_index]["rec_delivery"] -= sum_rec_warh - total_short_rec_del[i["article"]]
-                    elif sum_rec_warh < total_short_rec_del[i["article"]]:
-                        copy_data[index]["subitems"][last_index]["rec_delivery"] += total_short_rec_del[i["article"]] - sum_rec_warh
-                except Exception as e:
-                    raise Exception(
-                        f"Ошибка в блоке сравнения. Ошибка: {e}. "
-                    )
+                for subitem in subitems:
+                    subitem["rec_delivery"] = round(koef * subitem["order_for_change_war"])
         # logger.info(f"copy_data: {copy_data}")
         full_data["items"].object_list = copy_data
         return render(
