@@ -581,6 +581,7 @@ def get_warh():
             cursor.execute(sql_query)
             rows = cursor.fetchall()
             warehouses = [row[0] for row in rows]
+            logger.info(f"warehouses: {warehouses}")
         except Exception as e:
             logger.exception(f"Ошибка получения складов в podsort_view: {e}")
         finally:
