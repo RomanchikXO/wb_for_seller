@@ -1270,13 +1270,25 @@ def podsort_view(request):
         # copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for i in full_data["items"].object_list:
             if subitems := i.get("subitems"):
-                sum_stock = sum([stock["stock"] for stock in subitems])  #сумма остатков для артикула
 
-                new_sum_orders = sum_short_orders[i["article"]] - sum_stock
-                koef = new_sum_orders / sum_short_orders[i["article"]]
+                # сумма остатков выбранных складов для артикула
+                sum_stock_with_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] in wc_filter])
+                # сумма остатков НЕ выбранных складов для артикула
+                sum_stock_without_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] not in wc_filter])
+
 
                 for subitem in subitems:
-                    subitem["rec_delivery"] = round(koef * subitem["order_for_change_war"])
+                    if not subitem["warehouse"] in wc_filter:
+                        # пропускаем не выбранные склады ибо нахер не нужныв
+                        continue
+                    # какую часть занимают остатки одного склада относительно общих остатков выбранных складов
+                    stock_koef = (subitem["stock"] / sum_stock_with_check_warh)
+
+                    # распределяем остатки не выбранных складов на выбранные (на фронт они не передаются)
+                    new_stock = stock_koef * sum_stock_without_check_warh + subitem["stock"]
+
+                    # высчитывыаем поставку на основе новых остатков
+                    subitem["rec_delivery"] = subitem["order_for_change_war"] / period_ord * turnover_change - new_stock
         # logger.info(f"copy_data: {copy_data}")
         # full_data["items"].object_list = copy_data
         return render(
