@@ -644,6 +644,7 @@ def get_all_orders(nmid_query_filter, period):
         finally:
             conn.close()
 
+    logger.info(f"all_orders: {all_orders}")
     return all_orders
 
 
@@ -800,6 +801,7 @@ def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], 
         finally:
             conn.close()
 
+    logger.info(f"все заказы: {orders_with_filter}")
     return orders_with_filter
 
 
