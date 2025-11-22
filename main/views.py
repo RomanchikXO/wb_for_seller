@@ -1257,7 +1257,7 @@ def podsort_view(request):
         full_data = results[0] # с фильтрами
         short_data = list(results[1]["items"].object_list) # без фильтров
 
-        logger.info(f"с фильтрами {full_data}")
+        logger.info(f"с фильтрами {full_data['items'].object_list}")
         logger.info(f"без {short_data}")
 
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
