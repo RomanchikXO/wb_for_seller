@@ -1245,11 +1245,11 @@ def podsort_view(request):
 
     # Если склады есть
     try:
-        with mp.Pool(processes=2) as pool:
+        with mp.Pool(processes=1) as pool:
             results = pool.starmap(
                 _podsort_view,
                 [
-                    (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
+                    # (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
                     (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
                 ]
             )
@@ -1258,11 +1258,11 @@ def podsort_view(request):
         short_data = list(results[1]["items"].object_list) # без фильтров
 
         logger.info(f"с фильтрами {full_data['items'].object_list}")
-        logger.info(f"без {short_data}")
+        # logger.info(f"без {short_data}")
 
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
         try:
-            for i in short_data:
+            for i in full_data['items'].object_list:
                 if subitems:= i.get("subitems"):
                     for i_sub in subitems:
                         if total_short_rec_del.get(i["article"]):
