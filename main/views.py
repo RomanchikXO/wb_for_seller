@@ -644,7 +644,7 @@ def get_all_orders(nmid_query_filter, period):
         finally:
             conn.close()
 
-    logger.info(f"all_orders: {all_orders}")
+    # logger.info(f"all_orders: {all_orders}")
     return all_orders
 
 
@@ -801,7 +801,7 @@ def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], 
         finally:
             conn.close()
 
-    logger.info(f"все заказы: {orders_with_filter}")
+    # logger.info(f"все заказы: {orders_with_filter}")
     return orders_with_filter
 
 
@@ -1257,6 +1257,9 @@ def podsort_view(request):
         full_data = results[0] # с фильтрами
         short_data = list(results[1]["items"].object_list) # без фильтров
 
+        logger.info(f"с фильтрами {full_data}")
+        logger.info(f"без {short_data}")
+
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
         try:
             for i in short_data:
@@ -1299,7 +1302,7 @@ def podsort_view(request):
                     raise Exception(
                         f"Ошибка в блоке сравнения. Ошибка: {e}. "
                     )
-
+        logger.info(f"copy_data: {copy_data}")
         full_data["items"].object_list = copy_data
         return render(
             request,
