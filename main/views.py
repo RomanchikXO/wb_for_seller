@@ -1,6 +1,6 @@
-import copy
+import asyncio
+from asgiref.sync import async_to_sync
 from typing import List, Dict
-import multiprocessing as mp
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from openpyxl import Workbook, load_workbook
@@ -18,7 +18,7 @@ from decorators import login_required_cust
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
-from database.DataBase import connect_to_database
+from database.DataBase import connect_to_database, async_connect_to_database
 from datetime import datetime, timedelta
 
 import re
@@ -568,130 +568,121 @@ def get_marg_api(request):
     return JsonResponse({'status': 'ok', 'received': response})
 
 
-def get_warh():
-    conn = connect_to_database()
-
+async def get_warh(pool):
     sql_query = """
-                SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
-                FROM myapp_areawarehouses;
-            """
+        SELECT DISTINCT jsonb_object_keys(warehouses) AS warehouse
+        FROM myapp_areawarehouses;
+    """
 
-    with conn.cursor() as cursor:
-        try:
-            cursor.execute(sql_query)
-            rows = cursor.fetchall()
-            warehouses = [row[0] for row in rows]
+    warehouses = []
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_query)
+            warehouses = [row["warehouse"] for row in rows]
             warehouses.sort()
-        except Exception as e:
-            logger.exception(f"Ошибка получения складов в podsort_view: {e}")
-        finally:
-            conn.close()
+    except Exception as e:
+        logger.exception(f"Ошибка получения складов в podsort_view: {e}")
 
     return warehouses
 
 
-def get_all_orders(nmid_query_filter, period):
-    conn = connect_to_database()
+async def get_all_orders(pool, nmid_query_filter, period):
+    # итоговая структура: { nmid: { warehouse: count } }
+    all_orders = {}
 
     # заказы для каждого склада
-    sql_query = """
-                WITH region_warehouse_min AS (
-                    SELECT
-                        area,
-                        (SELECT key
-                         FROM jsonb_each_text(warehouses)
-                         ORDER BY (value)::int
-                         LIMIT 1) AS min_warehouse
-                    FROM myapp_areawarehouses
-                ),
-                orders_with_warehouse AS (
-                    SELECT
-                        o.nmid,
-                        rwm.min_warehouse
-                    FROM myapp_orders o
-                    JOIN region_warehouse_min rwm
-                        ON o.regionname = rwm.area
-                    WHERE
-                        o.date >= %s
-                    AND """ + nmid_query_filter + """
-                )
+    sql_query = f"""
+            WITH region_warehouse_min AS (
                 SELECT
-                    nmid,
-                    min_warehouse AS warehouse_with_min_value,
-                    COUNT(*) AS order_count
-                FROM orders_with_warehouse
-                GROUP BY nmid, min_warehouse
-                ORDER BY order_count DESC;
-            """
+                    area,
+                    (SELECT key
+                     FROM jsonb_each_text(warehouses)
+                     ORDER BY (value)::int
+                     LIMIT 1) AS min_warehouse
+                FROM myapp_areawarehouses
+            ),
+            orders_with_warehouse AS (
+                SELECT
+                    o.nmid,
+                    rwm.min_warehouse
+                FROM myapp_orders o
+                JOIN region_warehouse_min rwm
+                    ON o.regionname = rwm.area
+                WHERE
+                    o.date >= $1
+                    AND {nmid_query_filter}
+            )
+            SELECT
+                nmid,
+                min_warehouse AS warehouse_with_min_value,
+                COUNT(*) AS order_count
+            FROM orders_with_warehouse
+            GROUP BY nmid, min_warehouse
+            ORDER BY order_count DESC;
+        """
 
-    with conn.cursor() as cursor:
-        try:
-            cursor.execute(sql_query, (period,))
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            dict_rows = [dict(zip(columns, row)) for row in rows]
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_query, period)
 
             result = defaultdict(dict)
-            for entry in dict_rows:
-                nmid = entry['nmid']
-                warehouse = entry['warehouse_with_min_value']
-                count = entry['order_count']
+            for row in rows:
+                nmid = row["nmid"]
+                warehouse = row["warehouse_with_min_value"]
+                count = row["order_count"]
                 result[nmid][warehouse] = count
 
             all_orders = dict(result)
-        except Exception as e:
-            logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
-        finally:
-            conn.close()
 
-    # logger.info(f"all_orders: {all_orders}")
+    except Exception as e:
+        logger.exception(f"Сбой при выполнении podsort_view для заказов. Error: {e}")
+
     return all_orders
 
 
-def get_warh_stock(name_column_available, nmid_query):
-    conn = connect_to_database()
+async def get_warh_stock(pool, name_column_available, nmid_query):
+    sql_query = f"""
+            SELECT
+                nmid,
+                warehousename,
+                {name_column_available} AS available,
+                SUM(quantity) AS total_quantity
+            FROM myapp_stocks
+            WHERE {nmid_query}
+            GROUP BY
+                nmid, warehousename, {name_column_available}
+        """
 
-    # остатки и кол-во дней в наличии
-    sql_query = """
-                SELECT
-                    nmid,
-                    warehousename,
-                    """ + name_column_available + """ AS available,
-                    SUM(quantity) AS total_quantity
-                FROM myapp_stocks
-                WHERE """ + nmid_query + """
-                GROUP BY
-                    nmid, warehousename, """ + name_column_available
-
-    with conn.cursor() as cursor:
-        try:
-            cursor.execute(sql_query)  # БЕЗ params
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-
-            dict_rows = [dict(zip(columns, row)) for row in rows]
+    warh_stock = {}
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_query)
 
             result = defaultdict(dict)
-            for entry in dict_rows:
-                nmid = entry['nmid']
-                warehouse = entry['warehousename'] if entry['warehousename'] != "Тула" else "Алексин"
-                available = entry.get('available', 0)
-                total_quantity = entry.get('total_quantity', 0)
-                result[nmid][warehouse] = {'available': available, 'total_quantity': total_quantity}
+            for row in rows:
+                nmid = row['nmid']
+                warehouse = row['warehousename']
+                if warehouse == "Тула":
+                    warehouse = "Алексин"
+                available = row.get('available', 0)
+                total_quantity = row.get('total_quantity', 0)
+                result[nmid][warehouse] = {
+                    'available': available,
+                    'total_quantity': total_quantity
+                }
 
             warh_stock = dict(result)
-        except Exception as e:
-            logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
+
+    except Exception as e:
+        logger.exception(f"Сбой при выполнении podsort_view при получении остатков. Error: {e}")
 
     return warh_stock
 
 
-def get_articles(nmid_query):
-    conn = connect_to_database()
-
+async def get_articles(pool, nmid_query):
     # артикул, id, ткань и цвет
-    sql_query = """
-                SELECT 
+    sql_query = f"""
+            SELECT 
                 nmid,
                 id,
                 (
@@ -708,29 +699,36 @@ def get_articles(nmid_query):
                 ) AS i_color,
                 vendorcode,
                 (
-                   SELECT COALESCE(json_agg(t.tag), '[]'::json)
-                   FROM myapp_tags t
-                   WHERE t.id = ANY(
-                       SELECT jsonb_array_elements_text(tag_ids)::int
-                       FROM myapp_nmids n2
-                       WHERE n2.id = myapp_nmids.id
-                   )
+                    SELECT COALESCE(json_agg(t.tag), '[]'::json)
+                    FROM myapp_tags t
+                    WHERE t.id = ANY(
+                        SELECT jsonb_array_elements_text(tag_ids)::int
+                        FROM myapp_nmids n2
+                        WHERE n2.id = myapp_nmids.id
+                    )
                 ) AS tag_ids
-                FROM myapp_nmids
-                WHERE """ + nmid_query
+            FROM myapp_nmids
+            WHERE {nmid_query}
+        """
 
-    with conn.cursor() as cursor:
-        try:
-            cursor.execute(sql_query)
-            rows = cursor.fetchall()
+    articles = {}
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(sql_query)
             articles = {
-                row[0]: {"id": row[1], "cloth": row[2], "i_color": row[3], "vendorcode": row[4], "tag_ids": row[5]}
-                for row in rows}
-        except Exception as e:
-            logger.exception(
-                f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}")
-        finally:
-            conn.close()
+                row['nmid']: {
+                    "id": row['id'],
+                    "cloth": row['cloth'],
+                    "i_color": row['i_color'],
+                    "vendorcode": row['vendorcode'],
+                    "tag_ids": row['tag_ids']
+                }
+                for row in rows
+            }
+    except Exception as e:
+        logger.exception(
+            f"Сбой при выполнении podsort_view при получении артикул, id, ткань и цвет. Error: {e}"
+        )
 
     return articles
 
@@ -1218,13 +1216,24 @@ def podsort_view(request):
     elif period_ord == 30:
         period = thirty_days_ago
         name_column_available = "days_in_stock_last_30"
-    params = [period]
 
-
-    warehouses = get_warh()
-    all_orders = get_all_orders(nmid_query_filter, period)
-    warh_stock = get_warh_stock(name_column_available, nmid_query)
-    articles = get_articles(nmid_query)
+    try:
+        pool = async_to_sync(async_connect_to_database)()
+        if pool is None:
+            raise Exception("Ошибка подключения к БД")
+        warehouses, all_orders, warh_stock, articles = async_to_sync(
+            lambda: asyncio.gather(
+                get_warh(pool),
+                get_all_orders(pool, nmid_query_filter, period),
+                get_warh_stock(pool, name_column_available, nmid_query),
+                get_articles(pool, nmid_query)
+            )
+        )()
+    except Exception as e:
+        logger.exception(f"Ошибка при параллельном получении данных: {e}")
+    finally:
+        if pool:
+            async_to_sync(pool.close)()
 
     if warehouse_filter:
         orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
@@ -1248,10 +1257,6 @@ def podsort_view(request):
         results = _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True)
 
         full_data = results # с фильтрами
-        # short_data = list(results[1]["items"].object_list) # без фильтров
-
-        # logger.info(f"с фильтрами {full_data['items'].object_list}")
-        # logger.info(f"без {short_data}")
 
         sum_short_orders = {} # все заказы с фильтрами
         try:
@@ -1260,7 +1265,6 @@ def podsort_view(request):
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
 
-        # copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for i in full_data["items"].object_list:
             if subitems := i.get("subitems"):
 
