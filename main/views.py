@@ -1272,13 +1272,13 @@ def podsort_view(request):
             if subitems := i.get("subitems"):
 
                 # сумма остатков выбранных складов для артикула
-                sum_stock_with_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] in wc_filter])
+                sum_stock_with_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] in warehouse_filter])
                 # сумма остатков НЕ выбранных складов для артикула
-                sum_stock_without_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] not in wc_filter])
+                sum_stock_without_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] not in warehouse_filter])
 
-                logger.info(wc_filter)
+                logger.info(warehouse_filter)
                 for subitem in subitems:
-                    if not subitem["warehouse"] in wc_filter:
+                    if not subitem["warehouse"] in warehouse_filter:
                         # пропускаем не выбранные склады ибо нахер не нужныв
                         continue
                     # какую часть занимают остатки одного склада относительно общих остатков выбранных складов
