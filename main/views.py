@@ -1245,16 +1245,9 @@ def podsort_view(request):
 
     # Если склады есть
     try:
-        with mp.Pool(processes=2) as pool:
-            results = pool.starmap(
-                _podsort_view,
-                [
-                    (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
-                    # (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
-                ]
-            )
+        results = _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True)
 
-        full_data = results[0] # с фильтрами
+        full_data = results # с фильтрами
         # short_data = list(results[1]["items"].object_list) # без фильтров
 
         # logger.info(f"с фильтрами {full_data['items'].object_list}")
