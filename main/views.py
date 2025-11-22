@@ -1245,17 +1245,17 @@ def podsort_view(request):
 
     # Если склады есть
     try:
-        with mp.Pool(processes=1) as pool:
+        with mp.Pool(processes=2) as pool:
             results = pool.starmap(
                 _podsort_view,
                 [
-                    # (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
+                    (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
                     (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
                 ]
             )
 
         full_data = results[0] # с фильтрами
-        # short_data = list(results[1]["items"].object_list) # без фильтров
+        short_data = list(results[1]["items"].object_list) # без фильтров
 
         # logger.info(f"с фильтрами {full_data['items'].object_list}")
         # logger.info(f"без {short_data}")
@@ -1271,7 +1271,7 @@ def podsort_view(request):
                             total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
-        logger.info(f"total_short_rec_del: {total_short_rec_del}")
+        logger.info(total_short_rec_del)
 
         copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for index, i in enumerate(list(full_data["items"].object_list)):
