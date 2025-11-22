@@ -1257,7 +1257,7 @@ def podsort_view(request):
         full_data = results[0] # с фильтрами
         short_data = list(results[1]["items"].object_list) # без фильтров
 
-        logger.info(f"с фильтрами {full_data['items'].object_list}")
+        # logger.info(f"с фильтрами {full_data['items'].object_list}")
         # logger.info(f"без {short_data}")
 
         total_short_rec_del = {} # тут будем хранить общую рек поставку  артикул - сумма на основе данных без фильтров
@@ -1271,6 +1271,7 @@ def podsort_view(request):
                             total_short_rec_del[i["article"]] = i_sub["rec_delivery"]
         except Exception as e:
             raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
+        logger.info(f"total_short_rec_del: {total_short_rec_del}")
 
         copy_data = copy.deepcopy(full_data["items"].object_list) # здесь данные которые вернем после изменения на основе данных с фильтрами
         for index, i in enumerate(list(full_data["items"].object_list)):
@@ -1302,7 +1303,7 @@ def podsort_view(request):
                     raise Exception(
                         f"Ошибка в блоке сравнения. Ошибка: {e}. "
                     )
-        logger.info(f"copy_data: {copy_data}")
+        # logger.info(f"copy_data: {copy_data}")
         full_data["items"].object_list = copy_data
         return render(
             request,
