@@ -1250,7 +1250,7 @@ def podsort_view(request):
                 _podsort_view,
                 [
                     (orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True),
-                    (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
+                    # (None, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, False)
                 ]
             )
 
