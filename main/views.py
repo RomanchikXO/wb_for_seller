@@ -1139,6 +1139,149 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
     return results
 
 
+def get_all_filters(
+        nmid_filter,
+        without_color_filter,
+        sizes_filter,
+        colors_filter
+):
+    wc_filter = (
+        without_color_filter[0].split(',')
+        if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
+        else []
+    )
+
+    sz_filter = (
+        sizes_filter[0].split(',')
+        if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
+        else []
+    )
+
+    cl_filter = (
+        colors_filter[0].split(',')
+        if colors_filter and colors_filter[0].strip() not in ['', '[]']
+        else []
+    )
+    all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
+    return all_filters
+
+
+def business_logic_podsort(
+        request, warehouse_filter, parametrs,
+        turnover_change, all_filters
+):
+    export_mode = parametrs['export_mode']
+    current_ids = get_current_nmids()
+
+    if all_filters:
+        all_filters = list(set.intersection(*all_filters))
+        all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
+        nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
+        nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
+    else:
+        nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
+        nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
+
+    if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
+    if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
+
+    now_msk = datetime.now() + timedelta(hours=3)
+    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+    tree_days_ago = yesterday_end - timedelta(days=3)
+    seven_days_ago = yesterday_end - timedelta(days=7)
+    two_weeks_ago = yesterday_end - timedelta(weeks=2)
+    thirty_days_ago = yesterday_end - timedelta(days=30)
+    period_ord = parametrs["period_ord"]
+    if period_ord == 3:
+        period = tree_days_ago
+        name_column_available = "days_in_stock_last_3"
+    elif period_ord == 7:
+        period = seven_days_ago
+        name_column_available = "days_in_stock_last_7"
+    elif period_ord == 14:
+        period = two_weeks_ago
+        name_column_available = "days_in_stock_last_14"
+    elif period_ord == 30:
+        period = thirty_days_ago
+        name_column_available = "days_in_stock_last_30"
+
+    try:
+        warehouses, all_orders, warh_stock, articles = async_to_sync(fetch_all_data)(
+            nmid_query_filter,
+            period,
+            name_column_available,
+            nmid_query
+        )
+    except Exception as e:
+        logger.exception(f"Ошибка при параллельном получении данных: {e}")
+
+    if warehouse_filter:
+        orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
+    # Если складов не было возвращаем сразу результат
+    try:
+        if not warehouse_filter:
+            response = _podsort_view(None, articles, warh_stock, period_ord,
+                                     all_orders, warehouses, current_ids, parametrs, False, export_mode)
+
+            if export_mode: return response
+
+            return render(
+                request,
+                "podsort.html",
+                response
+            )
+    except Exception as e:
+        logger.error(f"Ошибка запроса без фильтра складов {e}")
+        raise
+
+    # Если склады есть
+    try:
+        # с фильтрами
+        full_data = _podsort_view(
+            orders_with_filter, articles, warh_stock, period_ord, all_orders, warehouses, current_ids,
+            parametrs, True, export_mode
+        )
+
+        sum_short_orders = {}  # все заказы с фильтрами
+        try:
+            for art, warh in orders_with_filter.items():
+                sum_short_orders[art] = sum(list(warh.values()))
+        except Exception as e:
+            raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
+
+        for i in full_data["items"].object_list:
+            if subitems := i.get("subitems"):
+
+                # сумма остатков выбранных складов для артикула
+                sum_stock_with_check_warh = sum(
+                    [subitem["stock"] for subitem in subitems if subitem["warehouse"] in warehouse_filter])
+                # сумма остатков НЕ выбранных складов для артикула
+                sum_stock_without_check_warh = sum(
+                    [subitem["stock"] for subitem in subitems if subitem["warehouse"] not in warehouse_filter])
+
+                for subitem in subitems:
+                    if not subitem["warehouse"] in warehouse_filter:
+                        # пропускаем не выбранные склады ибо нахер не нужныв
+                        continue
+                    # какую часть занимают остатки одного склада относительно общих остатков выбранных складов
+                    stock_koef = subitem["stock"] / sum_stock_with_check_warh if sum_stock_with_check_warh else 1
+
+                    # распределяем остатки не выбранных складов на выбранные (на фронт они не передаются)
+                    new_stock = stock_koef * sum_stock_without_check_warh + subitem["stock"]
+
+                    # высчитывыаем поставку на основе новых остатков
+                    subitem["rec_delivery"] = round(
+                        subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
+        if export_mode: return full_data
+        return render(
+            request,
+            "podsort.html",
+            full_data
+        )
+    except Exception as e:
+        logger.error(f"Какая то ошибка {e}")
+
+
 @login_required_cust
 def podsort_view(request):
     logger.info(request)
@@ -1198,134 +1341,14 @@ def podsort_view(request):
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
 
+    all_filters = get_all_filters(nmid_filter, without_color_filter, sizes_filter, colors_filter)
 
-    wc_filter = (
-        without_color_filter[0].split(',')
-        if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
-        else []
+
+    response = business_logic_podsort(
+        request, warehouse_filter, parametrs,
+        turnover_change, all_filters
     )
-
-    sz_filter = (
-        sizes_filter[0].split(',')
-        if sizes_filter and sizes_filter[0].strip() not in ['', '[]']
-        else []
-    )
-
-    cl_filter = (
-        colors_filter[0].split(',')
-        if colors_filter and colors_filter[0].strip() not in ['', '[]']
-        else []
-    )
-    all_filters = [set(i) for i in [nmid_filter, wc_filter, sz_filter, cl_filter] if i]
-
-    current_ids = get_current_nmids()
-
-    if all_filters:
-        all_filters = list(set.intersection(*all_filters))
-        all_current_ids = list(set(map(str, current_ids)) & set(all_filters))
-        nmid_query = f"nmid IN ({', '.join(map(str, all_current_ids))})"
-        nmid_query_filter = f"o.nmid IN ({', '.join(map(str, all_current_ids))})"
-    else:
-        nmid_query = f"nmid IN ({', '.join(map(str, current_ids))})"
-        nmid_query_filter = f"nmid IN ({', '.join(map(str, current_ids))})"
-
-    if nmid_query_filter == "o.nmid IN ()": nmid_query_filter = "o.nmid IN (0)"
-    if nmid_query == "nmid IN ()": nmid_query = "nmid IN (0)"
-
-
-    now_msk = datetime.now() + timedelta(hours=3)
-    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-    tree_days_ago = yesterday_end - timedelta(days=3)
-    seven_days_ago = yesterday_end - timedelta(days=7)
-    two_weeks_ago = yesterday_end - timedelta(weeks=2)
-    thirty_days_ago = yesterday_end - timedelta(days=30)
-    period_ord = parametrs["period_ord"]
-    if period_ord == 3:
-        period = tree_days_ago
-        name_column_available = "days_in_stock_last_3"
-    elif period_ord == 7:
-        period = seven_days_ago
-        name_column_available = "days_in_stock_last_7"
-    elif period_ord == 14:
-        period = two_weeks_ago
-        name_column_available = "days_in_stock_last_14"
-    elif period_ord == 30:
-        period = thirty_days_ago
-        name_column_available = "days_in_stock_last_30"
-
-    try:
-        warehouses, all_orders, warh_stock, articles = async_to_sync(fetch_all_data)(
-            nmid_query_filter,
-            period,
-            name_column_available,
-            nmid_query
-        )
-    except Exception as e:
-        logger.exception(f"Ошибка при параллельном получении данных: {e}")
-
-    if warehouse_filter:
-        orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
-
-    # Если складов не было возвращаем сразу результат
-    try:
-        if not warehouse_filter:
-            response = _podsort_view(None, articles, warh_stock, period_ord,
-                                     all_orders, warehouses, current_ids, parametrs, False, export_mode)
-
-            if export_mode: return response
-
-            return render(
-                request,
-                "podsort.html",
-                response
-            )
-    except Exception as e:
-        logger.error(f"Ошибка запроса без фильтра складов {e}")
-        raise
-
-    # Если склады есть
-    try:
-        # с фильтрами
-        full_data = _podsort_view(
-            orders_with_filter, articles, warh_stock, period_ord, all_orders, warehouses, current_ids,
-            parametrs, True, export_mode
-        )
-
-        sum_short_orders = {} # все заказы с фильтрами
-        try:
-            for art, warh in orders_with_filter.items():
-                sum_short_orders[art] = sum(list(warh.values()))
-        except Exception as e:
-            raise Exception(f"Ошибка при подсчете total_short_rec_del {e}")
-
-        for i in full_data["items"].object_list:
-            if subitems := i.get("subitems"):
-
-                # сумма остатков выбранных складов для артикула
-                sum_stock_with_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] in warehouse_filter])
-                # сумма остатков НЕ выбранных складов для артикула
-                sum_stock_without_check_warh = sum([subitem["stock"] for subitem in subitems if subitem["warehouse"] not in warehouse_filter])
-
-                for subitem in subitems:
-                    if not subitem["warehouse"] in warehouse_filter:
-                        # пропускаем не выбранные склады ибо нахер не нужныв
-                        continue
-                    # какую часть занимают остатки одного склада относительно общих остатков выбранных складов
-                    stock_koef = subitem["stock"] / sum_stock_with_check_warh if sum_stock_with_check_warh else 1
-
-                    # распределяем остатки не выбранных складов на выбранные (на фронт они не передаются)
-                    new_stock = stock_koef * sum_stock_without_check_warh + subitem["stock"]
-
-                    # высчитывыаем поставку на основе новых остатков
-                    subitem["rec_delivery"] = round(subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
-        if export_mode: return full_data
-        return render(
-            request,
-            "podsort.html",
-            full_data
-        )
-    except Exception as e:
-        logger.error(f"Какая то ошибка {e}")
+    return response
 
 
 @require_POST
@@ -1525,21 +1548,73 @@ def export_excel_podsort(request):
     try:
         payload = json.loads(request.body)
         params = payload.get("params", {})
-
-        # создаём копию request
-        fake_request = request.__class__(request.environ)
-        fake_request.user = request.user
-        fake_request.method = "GET"
-        params["export_mode"] = "full"
         logger.info(params)
-        fake_request.GET = params
 
-        # вызываем podsort_view
-        response = podsort_view(fake_request)
+        session_keys = [
+            'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
+            'page', 'abc_filter'
+        ]
+        for key in session_keys:
+            value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
+            if value:
+                request.session[key] = value
 
-        logger.info(response["items"].object_list)
+        export_mode = True
+        nmid_filter = request.GET.getlist('nmid', [])
+        without_color_filter = request.GET.getlist('wc_filter', "")  # ткань
+        sizes_filter = request.GET.getlist('sz_filter', [])
+        colors_filter = request.GET.getlist('cl_filter', [])
+        warehouse_filter = request.GET.getlist('warehouse', "")
+        alltags_filter = request.GET.getlist('alltagstb', "")
+        per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
+        page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
+        sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
+        order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
+        abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
+        period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
+        turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
+
+        try:
+            result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
+            if result:
+                our_g, category_g = result
+            else:
+                our_g, category_g = 0, 0
+        except Exception as e:
+            logger.error(f"Ошибка при получении Addindicators: {e}")
+            our_g, category_g = 0, 0
+
+        parametrs = {
+            "export_mode": export_mode,
+            "our_g": our_g,
+            "category_g": category_g,
+            "value": value,
+            "nmid_filter": nmid_filter,
+            "without_color_filter": without_color_filter,
+            "sizes_filter": sizes_filter,
+            "colors_filter": colors_filter,
+            "warehouse_filter": warehouse_filter,
+            "alltags_filter": alltags_filter,
+            "per_page": per_page,
+            "page_number": page_number,
+            "sort_by": sort_by,
+            "order": order,
+            "abc_filter": abc_filter,
+            "period_ord": period_ord,
+            "turnover_change": turnover_change,
+        }
     except Exception as e:
-        logger.error(response)
+        logger.error(f"Ошибка приготовления параметров {e}")
+        raise
+
+    all_filters = get_all_filters(nmid_filter, without_color_filter, sizes_filter, colors_filter)
+
+    response = business_logic_podsort(
+        request, warehouse_filter, parametrs,
+        turnover_change, all_filters
+    )
+
+    logger.info(response["items"].object_list)
 
     return HttpResponse(b"OK", content_type="application/octet-stream")
 
