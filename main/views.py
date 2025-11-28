@@ -74,9 +74,12 @@ def get_group_nmids(nmids):
 
 
 def filter_by(items: dict, filter_param: str):
-    filter_items = dict(
-        filter(lambda item: item[1]["ABC"] == filter_param, items.items())
-    )
+    try:
+        filter_items = dict(
+            filter(lambda item: item[1]["ABC"] == filter_param, items.items())
+        )
+    except Exception as e:
+        raise Exception(f"Ошибка фильтрации: {e}")
     return filter_items
 
 
@@ -88,13 +91,16 @@ def sorted_by(items: dict, sort_by: str, descending: bool = False) -> dict:
     :param descending: если True — сортировка по убыванию, иначе — по возрастанию
     :return: новый отсортированный словарь
     """
-    sorted_items = dict(
-        sorted(
-            items.items(),
-            key=lambda item: item[1].get(sort_by, 0),
-            reverse=descending
+    try:
+        sorted_items = dict(
+            sorted(
+                items.items(),
+                key=lambda item: item[1].get(sort_by, 0),
+                reverse=descending
+            )
         )
-    )
+    except Exception as e:
+        raise Exception(f"Ошибка сортировки: {e}")
     return sorted_items
 
 
@@ -295,24 +301,26 @@ def get_filter_by_articles(current_ids, clothes: bool = False, sizes: bool = Fal
 
 def abc_classification(data: dict):
     # Шаг 1: Сортируем по количеству заказов (убывание)
-    sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
+    try:
+        sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
 
-    # Шаг 2: Присваиваем категорию
-    for i, (art, info) in enumerate(sorted_items):
-        vendorcode = info["vendorcode"].lower()
-        if ("тв" in vendorcode or "мрк" in vendorcode or "тм2270" in vendorcode or "тм3270" in vendorcode or "тм4270" in vendorcode
-                or "мр3250" in vendorcode or "мр3260" in vendorcode or "мр3270" in vendorcode or "мр4270" in vendorcode
-                or "бл3250" in vendorcode or "бл3260" in vendorcode or "бл3270" in vendorcode or "бл4270" in vendorcode):
-            info["ABC"] = "Новинки"
-        elif ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
-                or "55ww" in vendorcode or "66ww" in vendorcode):
-            info["ABC"] = "A"
-        elif ("260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode or "77ww" in vendorcode
-              or "88ww" in vendorcode):
-            info["ABC"] = "B"
-        elif "3270" in vendorcode or "2270" in vendorcode or "22ww" in vendorcode:
-            info["ABC"] = "C"
-
+        # Шаг 2: Присваиваем категорию
+        for i, (art, info) in enumerate(sorted_items):
+            vendorcode = info["vendorcode"].lower()
+            if ("тв" in vendorcode or "мрк" in vendorcode or "тм2270" in vendorcode or "тм3270" in vendorcode or "тм4270" in vendorcode
+                    or "мр3250" in vendorcode or "мр3260" in vendorcode or "мр3270" in vendorcode or "мр4270" in vendorcode
+                    or "бл3250" in vendorcode or "бл3260" in vendorcode or "бл3270" in vendorcode or "бл4270" in vendorcode):
+                info["ABC"] = "Новинки"
+            elif ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
+                    or "55ww" in vendorcode or "66ww" in vendorcode):
+                info["ABC"] = "A"
+            elif ("260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode or "77ww" in vendorcode
+                  or "88ww" in vendorcode):
+                info["ABC"] = "B"
+            elif "3270" in vendorcode or "2270" in vendorcode or "22ww" in vendorcode:
+                info["ABC"] = "C"
+    except Exception as e:
+        raise Exception(f"Ошибка abc классификатора: {e}")
     return dict(sorted_items)
 
 
@@ -1065,17 +1073,21 @@ def _podsort_view(
             # чистим массив у которого пустые вложения по складам
             items = [item for item in items if item["subitems"]]
 
-            if export_mode:
-                """ Здесь возвращаем данные для формирования Excel """
-                per_page = len(items)
-                paginator = Paginator(items, per_page)
-                page_obj = paginator.get_page(1)
-                return {"items": page_obj}
+            try:
+                if export_mode:
+                    """ Здесь возвращаем данные для формирования Excel """
+                    per_page = len(items)
+                    paginator = Paginator(items, per_page)
+                    page_obj = paginator.get_page(1)
+                    return {"items": page_obj}
+            except Exception as e:
+                logger.error(f"Ошибка возврата данных при экспорте {e}")
+                raise Exception(e)
 
             paginator = Paginator(items, per_page)
             page_obj = paginator.get_page(page_number)
         except Exception as e:
-            logger.error(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
+            logger.exception(f"Ошибка при вторичной обработке данных в podsort_view: {e}")
             page_obj = []
             paginator = None
 
