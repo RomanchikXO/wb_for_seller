@@ -1071,6 +1071,7 @@ def _podsort_view(
             items = list(items.values())
 
             # чистим массив у которого пустые вложения по складам
+            logger.info(items)
             items = [item for item in items if item["subitems"]]
 
             try:
