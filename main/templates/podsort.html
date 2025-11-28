@@ -880,15 +880,18 @@ function updateTags(selectElement) {
         });
         document.getElementById('export-btn').addEventListener('click', () => {
             const urlParams = new URLSearchParams(window.location.search);
+            const params = {};
+            for (const key of urlParams.keys()) {
+              const values = urlParams.getAll(key); // получаем все значения ключа
+              params[key] = values.length > 1 ? values : values[0];
+            }
             fetch("{% url 'export_excel_podsort' %}", {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}',
               },
-                body: JSON.stringify({
-                    params: Object.fromEntries(urlParams.entries())
-                })
+              body: JSON.stringify({ params })
             })
             .then(resp => {
               if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
