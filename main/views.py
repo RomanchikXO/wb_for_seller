@@ -1141,6 +1141,7 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
 
 @login_required_cust
 def podsort_view(request):
+    logger.info(request)
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
                         'page', 'abc_filter']
