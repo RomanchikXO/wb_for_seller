@@ -990,9 +990,12 @@ def _podsort_view(
 
         try:
             for key, value in all_response.items():
-                all_response[key]["turnover_total"] = int(
-                    all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
-                    if all_response[key]["orders"] else all_response[key]["stock"]
+                try:
+                    all_response[key]["turnover_total"] = int(
+                        all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
+                        if all_response[key]["orders"] else all_response[key]["stock"]
+                except Exception as e:
+                    raise Exception(f"Ошибка {e} в первом блоке {all_response[key]['orders']} {period_ord}")
                 all_response[key]["color"] = "green"
                 if all_response[key]["subitems"]:
                     all_response[key]["subitems"].sort(
@@ -1006,11 +1009,15 @@ def _podsort_view(
                         try:
                             # считаем рек поставку для складов
                             if not warehouse_filter:
-                                all_response[key]["subitems"][index]["rec_delivery"] = int(
-                                    all_response[key]["subitems"][index][
-                                        "order"] / period_ord * turnover_change -
-                                    all_response[key]["subitems"][index]["stock"]
-                                )
+                                try:
+                                    all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                        all_response[key]["subitems"][index][
+                                            "order"] / period_ord * turnover_change -
+                                        all_response[key]["subitems"][index]["stock"]
+                                    )
+                                except Exception as e:
+                                    raise Exception(
+                                        f"Ошибка {e} во втором блоке {turnover_change} {period_ord}")
                                 if i.get("warehouse") == "Неопределено":
                                     all_response[key]["subitems"][index]["order"] = 0
                             else:
@@ -1019,12 +1026,15 @@ def _podsort_view(
                                     all_response[key]["subitems"][index]["order"]
                                     all_response[key]["subitems"][index]["order"] = 0
 
-                                all_response[key]["subitems"][index]["rec_delivery"] = int(
-                                    all_response[key]["subitems"][index][
-                                        "order_for_change_war"] / period_ord * turnover_change -
-                                    all_response[key]["subitems"][index]["stock"]
-                                ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
-
+                                try:
+                                    all_response[key]["subitems"][index]["rec_delivery"] = int(
+                                        all_response[key]["subitems"][index][
+                                            "order_for_change_war"] / period_ord * turnover_change -
+                                        all_response[key]["subitems"][index]["stock"]
+                                    ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
+                                except Exception as e:
+                                    raise Exception(
+                                        f"Ошибка {e} в третьем блоке {turnover_change} {period_ord}")
                             # ниже просто цвета присваиваем без делений
                             if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or \
                                     all_response[key]["subitems"][index]["rec_delivery"] >= 100:
@@ -1336,6 +1346,7 @@ def podsort_view(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
+        logger.info(f"Основа {parametrs}")
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
@@ -1600,7 +1611,7 @@ def export_excel_podsort(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
-        logger.info(parametrs)
+        logger.info(f"экспорт {parametrs}")
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
