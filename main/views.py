@@ -1336,7 +1336,6 @@ def podsort_view(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
-        logger.info(parametrs)
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
@@ -1602,6 +1601,7 @@ def export_excel_podsort(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
+        logger.info(parametrs)
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
