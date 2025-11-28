@@ -1521,7 +1521,7 @@ def make_data_to_load_excel(data: list) -> List[list]:
 @login_required_cust
 def export_excel_podsort(request):
     """Выгрузить Excel файл из страницы подсортировщика"""
-
+    print("мы тут")
     try:
         payload = json.loads(request.body)
         params = payload.get("params", {})
