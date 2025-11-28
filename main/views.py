@@ -1139,7 +1139,8 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
     return results
 
 
-def busines_logic_podsort(request):
+@login_required_cust
+def podsort_view(request):
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
                         'page', 'abc_filter']
@@ -1324,11 +1325,6 @@ def busines_logic_podsort(request):
         )
     except Exception as e:
         logger.error(f"Какая то ошибка {e}")
-
-@login_required_cust
-def podsort_view(request):
-    response = busines_logic_podsort(request)
-    return response
 
 
 @require_POST
@@ -1534,10 +1530,12 @@ def export_excel_podsort(request):
         fake_request.user = request.user
         fake_request.method = "GET"
         params["export_mode"] = "full"
+        logger.info(params)
         fake_request.GET = params
+        logger.info(fake_request)
 
-        # вызываем busines_logic_podsort
-        response = busines_logic_podsort(fake_request)
+        # вызываем podsort_view
+        response = podsort_view(fake_request)
 
         logger.info(response["items"].object_list)
     except Exception as e:
