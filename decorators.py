@@ -1,5 +1,3 @@
-import json
-
 from log_context import task_context
 from functools import wraps
 from django.shortcuts import redirect
@@ -22,26 +20,19 @@ def with_task_context(task_name):
 
 def login_required_cust(view_func):
     """
-    Декоратор сессии. Разрешает доступ, если пользователь залогинен
-    или если запрос — экспорт Excel (export_mode=full).
-    """
+    todo Возможно надо будет удалить блок try except дабы ошибки не выбрасывали на страницу регистрации
 
+    Декоратор сессии
+    Args:
+        view_func:
+
+    Returns:
+
+    """
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         try:
-            export_mode_full = False
-            if request.method == "GET":
-                export_mode_full = request.GET.get("export_mode") == "full"
-            elif request.method == "POST":
-                try:
-                    payload = json.loads(request.body)
-                    params = payload.get("params", {})
-                    export_mode_full = params.get("export_mode") == "full"
-                except Exception:
-                    export_mode_full = False
-
-            if (request.session.get('user_id') and CustomUser.objects.get(id=request.session.get('user_id'))
-                    or export_mode_full):
+            if request.session.get('user_id') and CustomUser.objects.get(id=request.session.get('user_id')):
                 return view_func(request, *args, **kwargs)
             else:
                 return redirect(f"/login/?next={request.path}")
