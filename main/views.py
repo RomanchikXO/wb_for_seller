@@ -1574,6 +1574,8 @@ def export_excel_podsort(request):
         period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
         turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
 
+        logger.info(per_page)
+
         try:
             result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
             if result:
@@ -1614,7 +1616,7 @@ def export_excel_podsort(request):
         turnover_change, all_filters
     )
 
-    logger.info(response["items"].object_list)
+    # logger.info(response["items"].object_list)
 
     return HttpResponse(b"OK", content_type="application/octet-stream")
 
