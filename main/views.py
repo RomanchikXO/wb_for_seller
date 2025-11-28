@@ -1613,10 +1613,6 @@ def export_excel_podsort(request):
         turnover_change, all_filters
     )
 
-    logger.info(response["items"].object_list)
-
-    return HttpResponse(b"OK", content_type="application/octet-stream")
-
     # Создаём книгу и активный лист
     wb = Workbook()
     ws = wb.active
@@ -1638,8 +1634,7 @@ def export_excel_podsort(request):
         cell.font = header_font
 
     # Загружаем данные
-    data = json.loads(request.body)
-    items = data.get("items", [])
+    items = response["items"].object_list
 
     data_to_load = make_data_to_load_excel(items)
 
