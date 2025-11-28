@@ -1532,7 +1532,6 @@ def export_excel_podsort(request):
         params["export_mode"] = "full"
         logger.info(params)
         fake_request.GET = params
-        logger.info(fake_request)
 
         # вызываем podsort_view
         response = podsort_view(fake_request)
