@@ -1473,6 +1473,32 @@ def upload_excel(request):
     return JsonResponse({'status': 'ok'})
 
 
+def make_data_to_load_excel(data: list) -> List[list]:
+    """Подготавливаем данные для загрузки в Excel"""
+    result = [
+        [
+            item["article"],
+            item["vendorcode"],
+            item["cloth"],
+            item["i_color"],
+            item["i_size"],
+            item["orders"],
+            item["stock"],
+            item["ABC"],
+            item["tags"],
+            item["turnover_total"],
+            subitem["warehouse"] if subitem else "",
+            subitem["order"] if subitem else 0,
+            subitem["rec_delivery"] if subitem else 0,
+            subitem["stock"] if subitem else 0,
+            subitem["time_available"] if subitem else 0
+        ]
+        for item in data
+        for subitem in item.get("subitems") or [None]
+    ]
+
+    return result
+
 @require_POST
 @login_required_cust
 def export_excel_podsort(request):
@@ -1483,9 +1509,9 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Теги", "Оборачиваемость общая"
+        "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Теги",
+        "Оборачиваемость общая", "Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"
     ]
-    subheaders = ["Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"]
 
     row_num = 1
     header_font = Font(bold=True)
@@ -1500,36 +1526,13 @@ def export_excel_podsort(request):
     data = json.loads(request.body)
     items = data.get("items", [])
 
-    for item in items:
-        row_num += 1
+    data_to_load = make_data_to_load_excel(items)
 
-        ws.cell(row=row_num, column=1, value=item["article"])
-        ws.cell(row=row_num, column=2, value=item["vendorcode"])
-        ws.cell(row=row_num, column=3, value=item["cloth"])
-        ws.cell(row=row_num, column=4, value=item["i_color"])
-        ws.cell(row=row_num, column=5, value=item["i_size"])
-        ws.cell(row=row_num, column=6, value=item["orders"])
-        ws.cell(row=row_num, column=7, value=item["stock"])
-        ws.cell(row=row_num, column=8, value=item["ABC"])
-        ws.cell(row=row_num, column=9, value=item["tags"])
-        ws.cell(row=row_num, column=10, value=item["turnover_total"])
-
-        # Вложенные subitems
-        if item.get("subitems"):
+    for item in data_to_load:
+        for col_num, subitem in enumerate(item, start=1):
             row_num += 1
-            # Подзаголовки
-            for col_num, column_title in enumerate(subheaders, 2):  # начинаем с колонки 2
-                cell = ws.cell(row=row_num, column=col_num)
-                cell.value = column_title
-                cell.font = Font(italic=True, bold=True)
 
-            for subitem in item["subitems"]:
-                row_num += 1
-                ws.cell(row=row_num, column=2, value=subitem["warehouse"])
-                ws.cell(row=row_num, column=3, value=subitem["order"])
-                ws.cell(row=row_num, column=4, value=subitem["rec_delivery"])
-                ws.cell(row=row_num, column=5, value=subitem["stock"])
-                ws.cell(row=row_num, column=6, value=subitem["time_available"])
+            ws.cell(row=row_num, column=col_num, value=subitem)
 
     # Автоширина колонок
     for col in ws.columns:
