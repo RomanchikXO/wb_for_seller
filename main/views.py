@@ -1139,8 +1139,7 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
     return results
 
 
-@login_required_cust
-def podsort_view(request):
+def busines_logic_podsort(request):
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
                         'page', 'abc_filter']
@@ -1325,6 +1324,11 @@ def podsort_view(request):
         )
     except Exception as e:
         logger.error(f"Какая то ошибка {e}")
+
+@login_required_cust
+def podsort_view(request):
+    response = busines_logic_podsort(request)
+    return response
 
 
 @require_POST
@@ -1521,7 +1525,6 @@ def make_data_to_load_excel(data: list) -> List[list]:
 @login_required_cust
 def export_excel_podsort(request):
     """Выгрузить Excel файл из страницы подсортировщика"""
-    logger.info("мы тут")
     try:
         payload = json.loads(request.body)
         params = payload.get("params", {})
@@ -1533,12 +1536,12 @@ def export_excel_podsort(request):
         params["export_mode"] = "full"
         fake_request.GET = params
 
-        # вызываем podsort_view
-        response = podsort_view(fake_request)
+        # вызываем busines_logic_podsort
+        response = busines_logic_podsort(fake_request)
 
         logger.info(response["items"].object_list)
     except Exception as e:
-        logger.error(response)
+        logger.error(e)
 
     return HttpResponse(b"OK", content_type="application/octet-stream")
 
