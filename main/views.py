@@ -1048,8 +1048,8 @@ def _podsort_view(
                                 all_response[key]["subitems"][index]["color"] = "green"
                             else:
                                 all_response[key]["subitems"][index]["color"] = "white"
-                        except Exception:
-                            raise Exception(all_response[key]["subitems"])
+                        except Exception as e:
+                            raise Exception(f"Ошибка: {e}. Данные: {all_response[key]['subitems']}")
             items = abc_classification(all_response)
 
             if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size", "i_color"):
