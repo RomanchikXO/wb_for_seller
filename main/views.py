@@ -995,7 +995,7 @@ def _podsort_view(
                         all_response[key]["stock"] / (all_response[key]["orders"] / period_ord)) \
                         if all_response[key]["orders"] else all_response[key]["stock"]
                 except Exception as e:
-                    raise Exception(f"Ошибка {e} в первом блоке {all_response[key]['orders']} {period_ord}")
+                    raise Exception(f"Ошибка {e} в первом блоке {all_response[key]['orders']} {period_ord}") from e
                 all_response[key]["color"] = "green"
                 if all_response[key]["subitems"]:
                     all_response[key]["subitems"].sort(
@@ -1017,7 +1017,7 @@ def _podsort_view(
                                     )
                                 except Exception as e:
                                     raise Exception(
-                                        f"Ошибка {e} во втором блоке {turnover_change} {period_ord}")
+                                        f"Ошибка {e} во втором блоке {turnover_change} {period_ord}") from e
                                 if i.get("warehouse") == "Неопределено":
                                     all_response[key]["subitems"][index]["order"] = 0
                             else:
@@ -1034,7 +1034,7 @@ def _podsort_view(
                                     ) if all_response[key]["subitems"][index]["order_for_change_war"] else 0
                                 except Exception as e:
                                     raise Exception(
-                                        f"Ошибка {e} в третьем блоке {turnover_change} {period_ord}")
+                                        f"Ошибка {e} в третьем блоке {turnover_change} {period_ord}") from e
                             # ниже просто цвета присваиваем без делений
                             if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or \
                                     all_response[key]["subitems"][index]["rec_delivery"] >= 100:
