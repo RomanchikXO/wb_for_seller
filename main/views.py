@@ -1529,9 +1529,8 @@ def export_excel_podsort(request):
     data_to_load = make_data_to_load_excel(items)
 
     for item in data_to_load:
+        row_num += 1
         for col_num, subitem in enumerate(item, start=1):
-            row_num += 1
-
             ws.cell(row=row_num, column=col_num, value=subitem)
 
     # Автоширина колонок
