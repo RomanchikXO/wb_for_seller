@@ -1548,33 +1548,30 @@ def export_excel_podsort(request):
     try:
         payload = json.loads(request.body)
         params: dict = payload.get("params", {})
-        logger.info(request.body)
 
         session_keys = [
             'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
             'page', 'abc_filter'
         ]
         for key in session_keys:
-            value = list(params.keys()) if key in ['nmid', 'warehouse', 'alltagstb'] else params.get(key)
+            value = params.get(key)
             if value:
                 request.session[key] = value
 
         export_mode = True
-        nmid_filter = request.GET.getlist('nmid', [])
-        without_color_filter = request.GET.getlist('wc_filter', "")  # ткань
-        sizes_filter = request.GET.getlist('sz_filter', [])
-        colors_filter = request.GET.getlist('cl_filter', [])
-        warehouse_filter = request.GET.getlist('warehouse', "")
-        alltags_filter = request.GET.getlist('alltagstb', "")
-        per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
-        page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
-        sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
-        order = request.session.get('order', request.GET.get("order", ""))  # asc / desc
-        abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
-        period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
-        turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
-
-        logger.info(per_page)
+        nmid_filter = params.get('nmid', [])
+        without_color_filter = params.get('wc_filter', "")  # ткань
+        sizes_filter = params.get('sz_filter', [])
+        colors_filter = params.get('cl_filter', [])
+        warehouse_filter = params.get('warehouse', "")
+        alltags_filter = params.get('alltagstb', "")
+        per_page = int(request.session.get('per_page', int(params.get('per_page', 10))))
+        page_number = int(request.session.get('page', int(params.get('page', 1))))
+        sort_by = request.session.get('sort_by', params.get("sort_by", ""))  # значение по умолчанию
+        order = request.session.get('order', params.get("order", ""))  # asc / desc
+        abc_filter = request.session.get('abc_filter', params.get("abc_filter", ""))
+        period_ord = int(request.session.get('period_ord', int(params.get('period_ord', 14))))
+        turnover_change = int(request.session.get('turnover_change', int(params.get('turnover_change', 40))))
 
         try:
             result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
@@ -1616,7 +1613,7 @@ def export_excel_podsort(request):
         turnover_change, all_filters
     )
 
-    # logger.info(response["items"].object_list)
+    logger.info(response["items"].object_list)
 
     return HttpResponse(b"OK", content_type="application/octet-stream")
 
