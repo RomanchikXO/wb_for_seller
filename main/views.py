@@ -1547,7 +1547,6 @@ def export_excel_podsort(request):
     try:
         payload = json.loads(request.body)
         params: dict = payload.get("params", {})
-        logger.info(params)
 
         session_keys = [
             'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
@@ -1588,9 +1587,9 @@ def export_excel_podsort(request):
             "our_g": our_g,
             "category_g": category_g,
             "nmid_filter": nmid_filter,
-            "without_color_filter": without_color_filter,
-            "sizes_filter": sizes_filter,
-            "colors_filter": colors_filter,
+            "without_color_filter": [without_color_filter],
+            "sizes_filter": [sizes_filter],
+            "colors_filter": [colors_filter],
             "warehouse_filter": warehouse_filter,
             "alltags_filter": alltags_filter,
             "per_page": per_page,
