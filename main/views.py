@@ -1167,8 +1167,8 @@ def get_all_filters(
 
 
 def business_logic_podsort(
-        request, warehouse_filter, parametrs,
-        turnover_change, all_filters
+        warehouse_filter, parametrs,
+        turnover_change, all_filters, request = None
 ):
     export_mode = parametrs['export_mode']
     current_ids = get_current_nmids()
@@ -1284,7 +1284,7 @@ def business_logic_podsort(
 
 @login_required_cust
 def podsort_view(request):
-    logger.info(request)
+
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
                         'page', 'abc_filter']
@@ -1322,7 +1322,6 @@ def podsort_view(request):
             "export_mode": export_mode,
             "our_g": our_g,
             "category_g": category_g,
-            "value": value,
             "nmid_filter": nmid_filter,
             "without_color_filter": without_color_filter,
             "sizes_filter": sizes_filter,
@@ -1337,6 +1336,7 @@ def podsort_view(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
+        logger.info(parametrs)
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
@@ -1345,8 +1345,8 @@ def podsort_view(request):
 
 
     response = business_logic_podsort(
-        request, warehouse_filter, parametrs,
-        turnover_change, all_filters
+        warehouse_filter, parametrs,
+        turnover_change, all_filters, request
     )
     return response
 
@@ -1548,6 +1548,7 @@ def export_excel_podsort(request):
     try:
         payload = json.loads(request.body)
         params: dict = payload.get("params", {})
+        logger.info(params)
 
         session_keys = [
             'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
@@ -1587,7 +1588,6 @@ def export_excel_podsort(request):
             "export_mode": export_mode,
             "our_g": our_g,
             "category_g": category_g,
-            "value": value,
             "nmid_filter": nmid_filter,
             "without_color_filter": without_color_filter,
             "sizes_filter": sizes_filter,
@@ -1609,7 +1609,7 @@ def export_excel_podsort(request):
     all_filters = get_all_filters(nmid_filter, without_color_filter, sizes_filter, colors_filter)
 
     response = business_logic_podsort(
-        request, warehouse_filter, parametrs,
+        warehouse_filter, parametrs,
         turnover_change, all_filters
     )
 
