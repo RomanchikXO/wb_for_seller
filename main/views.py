@@ -803,7 +803,10 @@ def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], 
     return orders_with_filter
 
 
-def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, flag: bool):
+def _podsort_view(
+        orders_with_filter, articles, warh_stock, period_ord, all_orders, warehouses, current_ids, parametrs,
+        flag: bool, export_mode
+):
     """
     Если flag то функция отрабатывает со складами
     """
@@ -1051,6 +1054,13 @@ def _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, 
             # чистим массив у которого пустые вложения по складам
             items = [item for item in items if item["subitems"]]
 
+            if export_mode:
+                """ Здесь возвращаем данные для формирования Excel """
+                per_page = len(items)
+                paginator = Paginator(items, per_page)
+                page_obj = paginator.get_page(1)
+                return {"items": page_obj}
+
             paginator = Paginator(items, per_page)
             page_obj = paginator.get_page(page_number)
         except Exception as e:
@@ -1138,6 +1148,8 @@ def podsort_view(request):
             value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
             if value:
                 request.session[key] = value
+
+        export_mode = request.GET.get('export_mode', False)
         nmid_filter = request.GET.getlist('nmid', [])
         without_color_filter = request.GET.getlist('wc_filter', "") # ткань
         sizes_filter = request.GET.getlist('sz_filter', [])
@@ -1163,6 +1175,7 @@ def podsort_view(request):
             our_g, category_g = 0, 0
 
         parametrs = {
+            "export_mode": export_mode,
             "our_g": our_g,
             "category_g": category_g,
             "value": value,
@@ -1255,8 +1268,11 @@ def podsort_view(request):
     # Если складов не было возвращаем сразу результат
     try:
         if not warehouse_filter:
-            response = _podsort_view(None, articles, warh_stock, period_ord, period,
-                                     all_orders, warehouses, current_ids, parametrs, False)
+            response = _podsort_view(None, articles, warh_stock, period_ord,
+                                     all_orders, warehouses, current_ids, parametrs, False, export_mode)
+
+            if export_mode: return response
+
             return render(
                 request,
                 "podsort.html",
@@ -1268,9 +1284,11 @@ def podsort_view(request):
 
     # Если склады есть
     try:
-        results = _podsort_view(orders_with_filter, articles, warh_stock, period_ord, period, all_orders, warehouses, current_ids, parametrs, True)
-
-        full_data = results # с фильтрами
+        # с фильтрами
+        full_data = _podsort_view(
+            orders_with_filter, articles, warh_stock, period_ord, all_orders, warehouses, current_ids,
+            parametrs, True, export_mode
+        )
 
         sum_short_orders = {} # все заказы с фильтрами
         try:
@@ -1299,7 +1317,7 @@ def podsort_view(request):
 
                     # высчитывыаем поставку на основе новых остатков
                     subitem["rec_delivery"] = round(subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
-
+        if export_mode: return full_data
         return render(
             request,
             "podsort.html",
@@ -1502,6 +1520,24 @@ def make_data_to_load_excel(data: list) -> List[list]:
 @require_POST
 @login_required_cust
 def export_excel_podsort(request):
+    """Выгрузить Excel файл из страницы подсортировщика"""
+
+    payload = json.loads(request.body)
+    params = payload.get("params", {})
+
+    # создаём копию request
+    fake_request = request.__class__(request.environ)
+    fake_request.user = request.user
+    fake_request.method = "GET"
+    params["export_mode"] = "full"
+    fake_request.GET = params
+
+    # вызываем podsort_view
+    response = podsort_view(fake_request)
+
+    logger.info(response["items"].object_list)
+    return JsonResponse({"status": "ok"})
+
     # Создаём книгу и активный лист
     wb = Workbook()
     ws = wb.active
