@@ -1522,20 +1522,23 @@ def make_data_to_load_excel(data: list) -> List[list]:
 def export_excel_podsort(request):
     """Выгрузить Excel файл из страницы подсортировщика"""
 
-    payload = json.loads(request.body)
-    params = payload.get("params", {})
+    try:
+        payload = json.loads(request.body)
+        params = payload.get("params", {})
 
-    # создаём копию request
-    fake_request = request.__class__(request.environ)
-    fake_request.user = request.user
-    fake_request.method = "GET"
-    params["export_mode"] = "full"
-    fake_request.GET = params
+        # создаём копию request
+        fake_request = request.__class__(request.environ)
+        fake_request.user = request.user
+        fake_request.method = "GET"
+        params["export_mode"] = "full"
+        fake_request.GET = params
 
-    # вызываем podsort_view
-    response = podsort_view(fake_request)
+        # вызываем podsort_view
+        response = podsort_view(fake_request)
 
-    logger.info(response["items"].object_list)
+        logger.info(response["items"].object_list)
+    except Exception as e:
+        logger.error(e)
     return JsonResponse({"status": "ok"})
 
     # Создаём книгу и активный лист
