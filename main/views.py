@@ -1547,15 +1547,15 @@ def export_excel_podsort(request):
     """Выгрузить Excel файл из страницы подсортировщика"""
     try:
         payload = json.loads(request.body)
-        params = payload.get("params", {})
-        logger.info(params)
+        params: dict = payload.get("params", {})
+        logger.info(request.body)
 
         session_keys = [
             'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
             'page', 'abc_filter'
         ]
         for key in session_keys:
-            value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
+            value = list(params.keys()) if key in ['nmid', 'warehouse', 'alltagstb'] else params.get(key)
             if value:
                 request.session[key] = value
 
