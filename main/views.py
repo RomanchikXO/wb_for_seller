@@ -1539,7 +1539,7 @@ def export_excel_podsort(request):
 
         logger.info(response["items"].object_list)
     except Exception as e:
-        logger.error(e)
+        logger.error(response)
 
     return HttpResponse(b"OK", content_type="application/octet-stream")
 
