@@ -32,7 +32,7 @@ def login_required_cust(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         try:
-            if request.session.get('user_id') and CustomUser.objects.get(id=request.session.get('user_id')):
+            if request.session.get('user_id') and CustomUser.objects.get(id=request.session.get('user_id')) or request.get("export_mode")=="full":
                 return view_func(request, *args, **kwargs)
             else:
                 return redirect(f"/login/?next={request.path}")

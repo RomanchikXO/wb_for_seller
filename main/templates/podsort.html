@@ -862,6 +862,92 @@ function updateTags(selectElement) {
     </script>
 
     <script>
+        function getItemsFromTable() {
+          const items = [];
+
+          // Получаем основную таблицу
+          const mainTable = document.querySelector('table.table-bordered');
+          if (!mainTable) return items;
+
+          const tbody = mainTable.querySelector('tbody');
+          if (!tbody) return items;
+
+          const allRows = Array.from(tbody.children);
+
+          for (let i = 0; i < allRows.length; i++) {
+            const row = allRows[i];
+
+            // Пропускаем collapse строки
+            if (row.classList.contains('collapse')) {
+              continue;
+            }
+
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 10) continue; // Убеждаемся, что у нас есть все основные колонки
+
+            const item = {
+              article: cells[0]?.querySelector('.user-select-text')?.textContent.trim() || '',
+              vendorcode: cells[1]?.textContent.trim() || '',
+              cloth: cells[2]?.textContent.trim() || '',
+              i_color: cells[3]?.textContent.trim() || '',
+              i_size: cells[4]?.textContent.trim() || '',
+              orders: parseInt(cells[5]?.textContent.trim()) || 0,
+              stock: parseInt(cells[6]?.textContent.trim()) || 0,
+              ABC: cells[7]?.textContent.trim() || '',
+              tags: Array.from(cells[8]?.querySelectorAll('select.tags-select option:checked')).map(option => option.textContent.trim()).join(', ') || '',
+              turnover_total: parseFloat(cells[9]?.textContent.trim()) || 0,
+              subitems: []
+            };
+
+            // Ищем следующую строку - должна быть collapse
+            const nextRow = allRows[i + 1];
+            if (nextRow && nextRow.classList.contains('collapse')) {
+              // Находим ID collapse элемента из текущей строки
+              const collapseButton = row.querySelector('[data-bs-target]');
+              if (collapseButton) {
+                const targetId = collapseButton.getAttribute('data-bs-target');
+                const collapseElement = document.querySelector(targetId);
+
+                if (collapseElement) {
+                  // Ищем таблицу внутри collapse элемента
+                  const subTable = collapseElement.querySelector('table tbody');
+                  if (subTable) {
+                    const subRows = subTable.querySelectorAll('tr');
+
+                    subRows.forEach(subRow => {
+                      const subCells = subRow.querySelectorAll('td');
+
+                      // Проверяем, что это строка с данными, а не заголовок
+                      if (subCells.length === 5) {
+                        const warehouseText = subCells[0]?.textContent.trim() || '';
+
+                        // Исключаем заголовочные строки и пустые
+                        if (warehouseText && warehouseText !== 'Склад') {
+                          const recDeliveryCell = subCells[2];
+                          const originalValue = recDeliveryCell?.querySelector('.original-value')?.textContent.trim() || '';
+                          const calculatedValue = recDeliveryCell?.querySelector('.calculated-value')?.textContent.trim() || '';
+
+                          const subitem = {
+                            warehouse: warehouseText,
+                            order: parseInt(subCells[1]?.textContent.trim()) || 0,
+                            rec_delivery: originalValue + calculatedValue,
+                            stock: parseInt(subCells[3]?.textContent.trim()) || 0,
+                            time_available: parseInt(subCells[4]?.textContent.trim()) || 0,
+                          };
+                          item.subitems.push(subitem);
+                        }
+                      }
+                    });
+                  }
+                }
+              }
+            }
+
+            items.push(item);
+          }
+
+          return items;
+        }
         document.addEventListener("DOMContentLoaded", function () {
             document.querySelectorAll('button[data-bs-toggle="collapse"]').forEach(function (btn) {
                 const targetId = btn.getAttribute("data-bs-target");
@@ -879,16 +965,14 @@ function updateTags(selectElement) {
             });
         });
         document.getElementById('export-btn').addEventListener('click', () => {
-            const urlParams = new URLSearchParams(window.location.search);
+            const items = getItemsFromTable();
             fetch("{% url 'export_excel_podsort' %}", {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}',
               },
-                body: JSON.stringify({
-                    params: Object.fromEntries(urlParams.entries())
-                })
+              body: JSON.stringify({ items })
             })
             .then(resp => {
               if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
