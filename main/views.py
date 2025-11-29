@@ -1611,10 +1611,10 @@ def export_excel_podsort(request):
             "our_g": our_g,
             "category_g": category_g,
             "nmid_filter": nmid_filter,
-            "without_color_filter": [without_color_filter],
-            "sizes_filter": [sizes_filter],
-            "colors_filter": [colors_filter],
-            "warehouse_filter": warehouse_filter,
+            "without_color_filter": [without_color_filter] if without_color_filter else without_color_filter,
+            "sizes_filter": [sizes_filter] if sizes_filter else sizes_filter,
+            "colors_filter": [colors_filter] if colors_filter else colors_filter,
+            "warehouse_filter": [warehouse_filter] if warehouse_filter else warehouse_filter,
             "alltags_filter": alltags_filter,
             "per_page": per_page,
             "page_number": page_number,
@@ -1631,9 +1631,9 @@ def export_excel_podsort(request):
 
     all_filters = get_all_filters(
         nmid_filter,
-        [without_color_filter] if any([without_color_filter, sizes_filter, colors_filter]) else without_color_filter,
-        [sizes_filter] if any([without_color_filter, sizes_filter, colors_filter]) else sizes_filter,
-        [colors_filter] if any([without_color_filter, sizes_filter, colors_filter]) else colors_filter
+        parametrs[without_color_filter],
+        parametrs[sizes_filter],
+        parametrs[colors_filter]
     )
 
     response = business_logic_podsort(
