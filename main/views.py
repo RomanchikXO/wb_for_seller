@@ -1168,6 +1168,7 @@ def get_all_filters(
         sizes_filter,
         colors_filter
 ):
+    logger.info(f"Входные параметры: {locals()}")
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
@@ -1193,7 +1194,6 @@ def business_logic_podsort(
         warehouse_filter, parametrs,
         turnover_change, all_filters, request = None
 ):
-    logger.info(f"Входные параметры: {locals()}")
     export_mode = parametrs['export_mode']
     current_ids = get_current_nmids()
 
