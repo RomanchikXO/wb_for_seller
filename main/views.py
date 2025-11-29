@@ -1632,9 +1632,9 @@ def export_excel_podsort(request):
 
     all_filters = get_all_filters(
         nmid_filter,
-        parametrs[without_color_filter],
-        parametrs[sizes_filter],
-        parametrs[colors_filter]
+        parametrs["without_color_filter"],
+        parametrs["sizes_filter"],
+        parametrs["colors_filter"]
     )
 
     response = business_logic_podsort(
