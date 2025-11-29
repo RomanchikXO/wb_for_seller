@@ -1638,7 +1638,7 @@ def export_excel_podsort(request):
     )
 
     response = business_logic_podsort(
-        warehouse_filter, parametrs,
+        parametrs["warehouse_filter"], parametrs,
         turnover_change, all_filters
     )
 
