@@ -1606,15 +1606,16 @@ def export_excel_podsort(request):
             logger.error(f"Ошибка при получении Addindicators: {e}")
             our_g, category_g = 0, 0
 
+        flag_list: bool = any(without_color_filter, sizes_filter, colors_filter, warehouse_filter)
         parametrs = {
             "export_mode": export_mode,
             "our_g": our_g,
             "category_g": category_g,
             "nmid_filter": nmid_filter,
-            "without_color_filter": [without_color_filter] if without_color_filter else without_color_filter,
-            "sizes_filter": [sizes_filter] if sizes_filter else sizes_filter,
-            "colors_filter": [colors_filter] if colors_filter else colors_filter,
-            "warehouse_filter": [warehouse_filter] if warehouse_filter else warehouse_filter,
+            "without_color_filter": [without_color_filter] if flag_list else without_color_filter,
+            "sizes_filter": [sizes_filter] if flag_list else sizes_filter,
+            "colors_filter": [colors_filter] if flag_list else colors_filter,
+            "warehouse_filter": [warehouse_filter] if flag_list else warehouse_filter,
             "alltags_filter": alltags_filter,
             "per_page": per_page,
             "page_number": page_number,
