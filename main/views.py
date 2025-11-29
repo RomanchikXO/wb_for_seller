@@ -818,6 +818,8 @@ def _podsort_view(
     """
     Если flag то функция отрабатывает со складами
     """
+    logger.info(f"Входные параметры: {locals()}")
+
     conn = None
     try:
 
@@ -1071,7 +1073,6 @@ def _podsort_view(
             items = list(items.values())
 
             # чистим массив у которого пустые вложения по складам
-            logger.info(items)
             items = [item for item in items if item["subitems"]]
 
             try:
