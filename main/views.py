@@ -818,8 +818,6 @@ def _podsort_view(
     """
     Если flag то функция отрабатывает со складами
     """
-    logger.info(f"Входные параметры: {locals()}")
-
     conn = None
     try:
 
@@ -1195,6 +1193,7 @@ def business_logic_podsort(
         warehouse_filter, parametrs,
         turnover_change, all_filters, request = None
 ):
+    logger.info(f"Входные параметры: {locals()}")
     export_mode = parametrs['export_mode']
     current_ids = get_current_nmids()
 
