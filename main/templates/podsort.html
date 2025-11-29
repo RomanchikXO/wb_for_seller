@@ -299,7 +299,7 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="podsort-data">
                     {% for item in items %}
                         <tr {% if item.color == "red" %} class="row-red" {% elif item.color == "green" %} class="row-green" {% endif %}>
                             <td>
@@ -878,32 +878,71 @@ function updateTags(selectElement) {
                 });
             });
         });
-        document.getElementById('export-btn').addEventListener('click', () => {
+        const
+        exportBtn = document.getElementById('export-btn');
+
+        function lockExportButton() {
+            exportBtn.disabled = true;
+            exportBtn.classList.add('btn-secondary');
+            exportBtn.classList.remove('btn-outline-success');
+            exportBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Формирование...';
+        }
+
+        function unlockExportButton() {
+            exportBtn.disabled = false;
+            exportBtn.classList.remove('btn-secondary');
+            exportBtn.classList.add('btn-outline-success');
+            exportBtn.innerHTML = '<i class="bi bi-file-earmark-arrow-up me-1"></i> Выгрузить в Excel';
+        }
+
+        exportBtn.addEventListener('click', () => {
+            const tableBody = document.getElementById('podsort-data');
+
+            // Проверяем, есть ли хотя бы одна строка
+            if (!tableBody || tableBody.children.length === 0) {
+                lockExportButton(); // приводим к стандартизированному виду
+                setTimeout(() => {
+                    alert("Невозможно выполнить экспорт: данные отсутствуют.");
+                    unlockExportButton();
+                }, 150);
+                return;
+            }
+
+            lockExportButton();
+
             const urlParams = new URLSearchParams(window.location.search);
             const params = {};
+
             for (const key of urlParams.keys()) {
-              const values = urlParams.getAll(key); // получаем все значения ключа
-              params[key] = values.length > 1 ? values : values[0];
+                const values = urlParams.getAll(key);
+                params[key] = values.length > 1 ? values : values[0];
             }
+
             fetch("{% url 'export_excel_podsort' %}", {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}',
-              },
-              body: JSON.stringify({ params })
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({ params })
             })
             .then(resp => {
-              if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
-              return resp.blob(); // ждём файл
+                if (!resp.ok) throw new Error('Сервер не ответил корректно на Excel-экспорт');
+                return resp.blob();
             })
             .then(blob => {
-              const link = document.createElement('a');
-              link.href = window.URL.createObjectURL(blob);
-              link.download = "podsort_export.xlsx";
-              link.click();
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = "podsort_export.xlsx";
+                link.click();
             })
-            .catch(err => console.error('Ошибка при экспорте в Excel:', err));
+            .catch(err => {
+                console.error('Ошибка при экспорте в Excel:', err);
+                alert('Ошибка экспорта.');
+            })
+            .finally(() => {
+                unlockExportButton();
+            });
         });
     </script>
 {% endblock %}
