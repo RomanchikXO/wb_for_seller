@@ -1630,8 +1630,12 @@ def export_excel_podsort(request):
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
 
-    all_filters = get_all_filters(nmid_filter, list(without_color_filter),
-                                  list(sizes_filter), list(colors_filter))
+    all_filters = get_all_filters(
+        nmid_filter,
+        [without_color_filter],
+        [sizes_filter],
+        [colors_filter]
+    )
 
     response = business_logic_podsort(
         warehouse_filter, parametrs,
