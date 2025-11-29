@@ -1168,7 +1168,6 @@ def get_all_filters(
         sizes_filter,
         colors_filter
 ):
-    logger.info(f"Входные параметры: {locals()}")
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
@@ -1632,9 +1631,9 @@ def export_excel_podsort(request):
 
     all_filters = get_all_filters(
         nmid_filter,
-        [without_color_filter],
-        [sizes_filter],
-        [colors_filter]
+        [without_color_filter] if any([without_color_filter, sizes_filter, colors_filter]) else without_color_filter,
+        [sizes_filter] if any([without_color_filter, sizes_filter, colors_filter]) else sizes_filter,
+        [colors_filter] if any([without_color_filter, sizes_filter, colors_filter]) else colors_filter
     )
 
     response = business_logic_podsort(
