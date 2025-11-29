@@ -1167,7 +1167,7 @@ def get_all_filters(
         without_color_filter,
         sizes_filter,
         colors_filter
-):
+)->list:
     wc_filter = (
         without_color_filter[0].split(',')
         if without_color_filter and without_color_filter[0].strip() not in ['', '[]']
@@ -1304,10 +1304,10 @@ def business_logic_podsort(
     except Exception as e:
         logger.error(f"Какая то ошибка {e}")
 
-
+parametrs, all_filters, warehouse_filter, turnover_change = dict(), list(), [], 0
 @login_required_cust
 def podsort_view(request):
-
+    global parametrs, all_filters, warehouse_filter, turnover_change
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
                         'page', 'abc_filter']
@@ -1365,7 +1365,6 @@ def podsort_view(request):
         raise
 
     all_filters = get_all_filters(nmid_filter, without_color_filter, sizes_filter, colors_filter)
-
 
     response = business_logic_podsort(
         warehouse_filter, parametrs,
@@ -1568,77 +1567,10 @@ def make_data_to_load_excel(data: list) -> List[list]:
 @login_required_cust
 def export_excel_podsort(request):
     """Выгрузить Excel файл из страницы подсортировщика"""
-    try:
-        payload = json.loads(request.body)
-        params: dict = payload.get("params", {})
-
-        session_keys = [
-            'per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
-            'page', 'abc_filter'
-        ]
-        for key in session_keys:
-            value = params.get(key)
-            if value:
-                request.session[key] = value
-
-        export_mode = True
-        nmid_filter = params.get('nmid', [])
-        without_color_filter = params.get('wc_filter', "")  # ткань
-        sizes_filter = params.get('sz_filter', [])
-        colors_filter = params.get('cl_filter', [])
-        warehouse_filter = params.get('warehouse', "")
-        alltags_filter = params.get('alltagstb', "")
-        per_page = int(request.session.get('per_page', int(params.get('per_page', 10))))
-        page_number = int(request.session.get('page', int(params.get('page', 1))))
-        sort_by = request.session.get('sort_by', params.get("sort_by", ""))  # значение по умолчанию
-        order = request.session.get('order', params.get("order", ""))  # asc / desc
-        abc_filter = request.session.get('abc_filter', params.get("abc_filter", ""))
-        period_ord = int(request.session.get('period_ord', int(params.get('period_ord', 14))))
-        turnover_change = int(request.session.get('turnover_change', int(params.get('turnover_change', 40))))
-
-        try:
-            result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
-            if result:
-                our_g, category_g = result
-            else:
-                our_g, category_g = 0, 0
-        except Exception as e:
-            logger.error(f"Ошибка при получении Addindicators: {e}")
-            our_g, category_g = 0, 0
-
-        flag_list: bool = any([without_color_filter, sizes_filter, colors_filter, warehouse_filter])
-        parametrs = {
-            "export_mode": export_mode,
-            "our_g": our_g,
-            "category_g": category_g,
-            "nmid_filter": [nmid_filter] if nmid_filter and isinstance(nmid_filter, str) else nmid_filter,
-            "without_color_filter": [without_color_filter] if flag_list else without_color_filter,
-            "sizes_filter": [sizes_filter] if flag_list else sizes_filter,
-            "colors_filter": [colors_filter] if flag_list else colors_filter,
-            "warehouse_filter": [warehouse_filter] if flag_list else warehouse_filter,
-            "alltags_filter": alltags_filter,
-            "per_page": per_page,
-            "page_number": page_number,
-            "sort_by": sort_by,
-            "order": order,
-            "abc_filter": abc_filter,
-            "period_ord": period_ord,
-            "turnover_change": turnover_change,
-        }
-        logger.info(f"экспорт {parametrs}")
-    except Exception as e:
-        logger.error(f"Ошибка приготовления параметров {e}")
-        raise
-
-    all_filters = get_all_filters(
-        parametrs["nmid_filter"],
-        parametrs["without_color_filter"],
-        parametrs["sizes_filter"],
-        parametrs["colors_filter"]
-    )
+    parametrs["export_mode"] = True
 
     response = business_logic_podsort(
-        parametrs["warehouse_filter"], parametrs,
+        warehouse_filter, parametrs,
         turnover_change, all_filters
     )
 
