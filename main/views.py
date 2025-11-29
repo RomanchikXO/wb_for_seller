@@ -1606,7 +1606,7 @@ def export_excel_podsort(request):
             logger.error(f"Ошибка при получении Addindicators: {e}")
             our_g, category_g = 0, 0
 
-        flag_list: bool = any(without_color_filter, sizes_filter, colors_filter, warehouse_filter)
+        flag_list: bool = any([without_color_filter, sizes_filter, colors_filter, warehouse_filter])
         parametrs = {
             "export_mode": export_mode,
             "our_g": our_g,
