@@ -1611,7 +1611,7 @@ def export_excel_podsort(request):
             "export_mode": export_mode,
             "our_g": our_g,
             "category_g": category_g,
-            "nmid_filter": [nmid_filter] if nmid_filter else nmid_filter,
+            "nmid_filter": [nmid_filter] if nmid_filter and len(nmid_filter)==1 else nmid_filter,
             "without_color_filter": [without_color_filter] if flag_list else without_color_filter,
             "sizes_filter": [sizes_filter] if flag_list else sizes_filter,
             "colors_filter": [colors_filter] if flag_list else colors_filter,
