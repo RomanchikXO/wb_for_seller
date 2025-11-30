@@ -12,14 +12,11 @@ sudo apt install -y docker-compose
 # не забываем создать .env файл и credentials.json
 
 # запускаем
-docker-compose up --build -d
+docker-compose build
+docker-compose up -d
 
-# если надо остановить
-docker-compose down
-
-# после git pull
-docker-compose down
-docker-compose up --build -d
+# (собираем статик файлы )
+docker compose exec django python manage.py collectstatic --noinput
 
 # при изменениях в tasks/ parsers/ tasks.py funcs_db.py celery_config.py mpstat.py logging_config.py logg_set.py
 # автоматически на сервере celery_worker перезапускается
