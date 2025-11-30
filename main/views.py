@@ -1304,6 +1304,7 @@ def business_logic_podsort(
     except Exception as e:
         logger.error(f"Какая то ошибка {e}")
 
+
 parametrs, all_filters, warehouse_filter, turnover_change = dict(), list(), [], 0
 @login_required_cust
 def podsort_view(request):
@@ -1359,7 +1360,6 @@ def podsort_view(request):
             "period_ord": period_ord,
             "turnover_change": turnover_change,
         }
-        logger.info(f"Основа {parametrs}")
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")
         raise
@@ -1371,6 +1371,11 @@ def podsort_view(request):
         turnover_change, all_filters, request
     )
     return response
+
+
+@login_required_cust
+def autoresponse(request):
+    return render(request, "autoresponse.html")
 
 
 @require_POST
