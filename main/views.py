@@ -12,7 +12,7 @@ from parsers.wildberies import get_uuid
 from tasks.set_price_on_wb_from_repricer import get_marg, get_price_with_all_disc
 
 import csv
-from myapp.models import Price, Stocks, Repricer, WbLk, Tags, nmids as nmids_db, Addindicators
+from myapp.models import Price, Stocks, Repricer, WbLk, Tags, nmids as nmids_db, Addindicators, Keywords
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
@@ -1376,6 +1376,193 @@ def podsort_view(request):
 @login_required_cust
 def autoresponse(request):
     return render(request, "autoresponse.html")
+
+
+# API endpoints для автоответов
+@login_required_cust
+def autoresponse_status_api(request):
+    """Получение и установка статуса вкл/выкл автоответов"""
+    if request.method == 'GET':
+        # Тестовые данные - в реальности брать из БД
+        return JsonResponse({'enabled': False})
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            enabled = data.get('enabled', False)
+            # Здесь должна быть логика сохранения в БД
+            # Пока возвращаем тестовые данные
+            logger.info(f"Статус автоответов изменен на: {enabled}")
+            return JsonResponse({'status': 'ok', 'enabled': enabled})
+        except Exception as e:
+            logger.error(f"Ошибка обновления статуса автоответов: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+
+
+@login_required_cust
+def autoresponse_articles_api(request):
+    """Получение и обновление списка артикулов"""
+    if request.method == 'GET':
+        try:
+            # Получаем артикулы из базы данных
+            current_ids = get_current_nmids()
+            if not current_ids:
+                return JsonResponse({'articles': []})
+            
+            # Получаем vendorcode из базы
+            sql_query = """
+                SELECT nmid, vendorcode, use_auto_response  
+                FROM myapp_nmids 
+                WHERE nmid IN ({})
+            """.format(', '.join(map(str, current_ids[:50])))  # Ограничиваем 50 артикулами для теста
+            
+            conn = connect_to_database()
+            test_articles = []
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(sql_query)
+                    rows = cursor.fetchall()
+                    columns = [desc[0] for desc in cursor.description]
+                    
+                    for i, row in enumerate(rows):
+                        row_dict = dict(zip(columns, row))
+                        test_articles.append({
+                            'nmid': row_dict['nmid'],
+                            'vendorcode': row_dict.get('vendorcode', ''),
+                            'enabled': row_dict['use_auto_response']
+                        })
+            finally:
+                conn.close()
+            
+            return JsonResponse({'articles': test_articles})
+        except Exception as e:
+            logger.error(f"Ошибка получения артикулов: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            nmid = data.get('nmid')
+            enabled = data.get('enabled', False)
+            
+            if not nmid:
+                return JsonResponse({'status': 'error', 'error': 'Не указан nmid'}, status=400)
+
+            nmids_db.objects.filter(nmid=nmid).update(use_auto_response=enabled)
+
+            logger.info(f"Статус артикула {nmid} изменен на: {enabled}")
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            logger.error(f"Ошибка обновления артикула: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+
+
+@login_required_cust
+def autoresponse_keywords_api(request):
+    """CRUD операции для ключевых слов"""
+    if request.method == 'GET':
+        try:
+            keywords = Keywords.objects.all().values('id', 'keyword', 'is_stop', 'is_positive', 'status')
+            keywords_list = [
+                {
+                    'id': kw['id'],
+                    'keyword': kw['keyword'],
+                    'is_stop': kw['is_stop'],
+                    'is_positive': kw['is_positive'],
+                    'status': kw['status']
+                }
+                for kw in keywords
+            ]
+            return JsonResponse({'keywords': keywords_list})
+        except Exception as e:
+            logger.error(f"Ошибка получения ключевых слов: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    
+    elif request.method == 'POST':
+        # Добавление нового ключевого слова или стоп слова
+        try:
+            data = json.loads(request.body)
+            keyword_text = data.get('keyword', '').strip()
+            is_stop = data.get('is_stop', False)
+            
+            if not keyword_text:
+                return JsonResponse({'status': 'error', 'error': 'Ключевое слово не может быть пустым'}, status=400)
+            
+            # Проверяем, не существует ли уже такое слово
+            if Keywords.objects.filter(keyword=keyword_text, is_stop=is_stop).exists():
+                return JsonResponse({'status': 'error', 'error': 'Такое слово уже существует'}, status=400)
+            
+            keyword = Keywords.objects.create(
+                keyword=keyword_text,
+                is_stop=is_stop,
+                is_positive=not is_stop,  # Если не стоп слово, то положительное
+                status=True  # По умолчанию включено
+            )
+            logger.info(f"Добавлено {'стоп слово' if is_stop else 'ключевое слово'}: {keyword_text}")
+            return JsonResponse({'status': 'ok', 'id': keyword.id})
+        except Exception as e:
+            logger.error(f"Ошибка добавления ключевого слова: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    
+    elif request.method == 'PUT':
+        # Обновление ключевого слова (keyword или status)
+        try:
+            data = json.loads(request.body)
+            keyword_id = data.get('id')
+            
+            if not keyword_id:
+                return JsonResponse({'status': 'error', 'error': 'Не указан ID ключевого слова'}, status=400)
+            
+            try:
+                keyword = Keywords.objects.get(id=keyword_id)
+            except Keywords.DoesNotExist:
+                return JsonResponse({'status': 'error', 'error': 'Ключевое слово не найдено'}, status=404)
+            
+            # Обновляем keyword, если передан
+            if 'keyword' in data:
+                keyword_text = data.get('keyword', '').strip()
+                if not keyword_text:
+                    return JsonResponse({'status': 'error', 'error': 'Ключевое слово не может быть пустым'}, status=400)
+                
+                # Проверяем, не существует ли уже такое слово (кроме текущего)
+                if Keywords.objects.filter(keyword=keyword_text, is_stop=keyword.is_stop).exclude(id=keyword_id).exists():
+                    return JsonResponse({'status': 'error', 'error': 'Такое слово уже существует'}, status=400)
+                
+                keyword.keyword = keyword_text
+                keyword.save(update_fields=['keyword'])
+                logger.info(f"Обновлено ключевое слово ID {keyword_id}: {keyword_text}")
+            
+            # Обновляем status, если передан
+            if 'status' in data:
+                keyword.status = data.get('status', False)
+                keyword.save(update_fields=['status'])
+                logger.info(f"Обновлен статус ключевого слова ID {keyword_id}: {keyword.status}")
+            
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            logger.error(f"Ошибка обновления ключевого слова: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
+    
+    elif request.method == 'DELETE':
+        # Удаление ключевого слова
+        try:
+            data = json.loads(request.body)
+            keyword_id = data.get('id')
+            
+            if not keyword_id:
+                return JsonResponse({'status': 'error', 'error': 'Не указан ID ключевого слова'}, status=400)
+            
+            try:
+                keyword = Keywords.objects.get(id=keyword_id)
+                keyword_text = keyword.keyword
+                keyword.delete()
+                logger.info(f"Удалено ключевое слово ID {keyword_id}: {keyword_text}")
+                return JsonResponse({'status': 'ok'})
+            except Keywords.DoesNotExist:
+                return JsonResponse({'status': 'error', 'error': 'Ключевое слово не найдено'}, status=404)
+        except Exception as e:
+            logger.error(f"Ошибка удаления ключевого слова: {e}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=400)
 
 
 @require_POST

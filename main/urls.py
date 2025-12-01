@@ -26,5 +26,8 @@ urlpatterns = [
     path('warehousewb/api/add-data/', views.get_warehousewb_add_data, name='warehousewb-add-data'),
     path('warehousewb/api/submit-supply/', views.warehousewb_submit_supply, name='warehousewb-submit-supply'),
     path('api/google-webhook/', views.google_webhook_view, name='google_webhook'),
-    path('autoresponse/', views.autoresponse, name='autoresponse')
+    path('autoresponse/', views.autoresponse, name='autoresponse'),
+    path('autoresponse/api/status/', views.autoresponse_status_api, name='autoresponse_status_api'),
+    path('autoresponse/api/articles/', views.autoresponse_articles_api, name='autoresponse_articles_api'),
+    path('autoresponse/api/keywords/', views.autoresponse_keywords_api, name='autoresponse_keywords_api'),
 ]
