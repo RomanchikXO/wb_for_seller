@@ -147,6 +147,14 @@ class Questions(models.Model):
         verbose_name_plural = "Вопросы WB"
 
 
+class Keywords(models.Model):
+    keyword = models.CharField(max_length=255)
+    is_stop = models.BooleanField(default=False) # стоп слово (не изменять после создания)
+    is_positive = models.BooleanField(default=False) # положительное слово (не изменять после создания)
+    status = models.BooleanField(default=False) # для включения/отключения ключевиков
+
+    class Meta:
+        verbose_name_plural = "Ключевые и Стоп слова"
 
 class nmids(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
@@ -168,6 +176,7 @@ class nmids(models.Model):
     updated_at = models.DateTimeField() # Дата изменения карточки товара (по данным WB)
     added_db = models.DateTimeField(auto_now_add=True) # по МСК
     is_active = models.BooleanField(default=True) # поле для понимания нужен им товар или нет
+    use_auto_response = models.BooleanField(default=False) # Используется ли в автоответах ?
 
     class Meta:
         unique_together = ['nmid', 'lk']

@@ -1,6 +1,13 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
-                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators)
+                     ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators,
+                     Keywords)
+
+
+class KeywordsAdmin(admin.ModelAdmin):
+    list_display = ('keyword', 'is_stop', 'is_positive', 'status')
+    search_fields = ('keyword',)
+    list_filter = ('is_stop', 'is_positive')
 
 
 class AddindicatorsAdmin(admin.ModelAdmin):
@@ -109,6 +116,7 @@ class RepricerAdmin(admin.ModelAdmin):
     search_fields = ('nmid',)
     ordering = ('is_active',)
 
+admin.site.register(Keywords, KeywordsAdmin)
 admin.site.register(Repricer, RepricerAdmin)
 admin.site.register(Orders, OrdersAdmin)
 admin.site.register(Stocks, StocksAdmin)
