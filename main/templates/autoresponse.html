@@ -1,10 +1,590 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base_with_sidebar.html" %}
 
-</body>
-</html>
+{% block title %}Автоответы на отзывы{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .keyword-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background-color: #f8f9fa;
+        }
+        .keyword-item:hover {
+            background-color: #e9ecef;
+        }
+        .keyword-item.disabled {
+            opacity: 0.6;
+        }
+        .article-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .article-item:hover {
+            background-color: #f8f9fa;
+        }
+        .keyword-input {
+            flex: 1;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+{% endblock %}
+
+{% block main_content %}
+    {% csrf_token %}
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">Автоответы на отзывы</h2>
+                <p class="text-muted mb-0">Управление автоматическими ответами на отзывы покупателей</p>
+            </div>
+            <div class="form-check form-switch fs-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="autoresponseToggle" style="width: 3rem; height: 1.5rem;">
+                <label class="form-check-label ms-2" for="autoresponseToggle">Включить автоответы</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Список артикулов -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Артикулы</h5>
+                        <button class="btn btn-sm btn-primary" id="refreshArticles">
+                            <i class="bi bi-arrow-clockwise"></i> Обновить
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="articleSearch" placeholder="Поиск артикула...">
+                        </div>
+                        <div id="articlesList" style="max-height: 500px; overflow-y: auto;">
+                            <!-- Список артикулов будет загружен через API -->
+                            <div class="text-center text-muted">
+                                <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ключевые слова и стоп слова -->
+            <div class="col-md-6 mb-4">
+                <div class="row">
+                    <!-- Ключевые слова -->
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Ключевые слова</h5>
+                                <button class="btn btn-sm btn-success" id="addKeywordBtn">
+                                    <i class="bi bi-plus-circle"></i> Добавить
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="keywordsList">
+                                    <!-- Список ключевых слов будет загружен через API -->
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Стоп слова -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Стоп слова</h5>
+                                <button class="btn btn-sm btn-success" id="addStopWordBtn">
+                                    <i class="bi bi-plus-circle"></i> Добавить
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="stopWordsList">
+                                    <!-- Список стоп слов будет загружен через API -->
+                                    <div class="text-center text-muted">
+                                        <i class="bi bi-arrow-repeat spin"></i> Загрузка...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let articles = [];
+        let keywords = [];
+        let stopWords = [];
+        let isEnabled = false;
+
+        // Загрузка данных при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStatus();
+            loadArticles();
+            loadKeywords();
+
+            // Обработчики событий
+            document.getElementById('autoresponseToggle').addEventListener('change', toggleAutoresponse);
+            document.getElementById('refreshArticles').addEventListener('click', loadArticles);
+            document.getElementById('addKeywordBtn').addEventListener('click', addKeyword);
+            document.getElementById('addStopWordBtn').addEventListener('click', addStopWord);
+            document.getElementById('articleSearch').addEventListener('input', filterArticles);
+        });
+
+        // Загрузка статуса вкл/выкл
+        async function loadStatus() {
+            try {
+                const response = await fetch("{% url 'autoresponse_status_api' %}");
+                const data = await response.json();
+                isEnabled = data.enabled;
+                document.getElementById('autoresponseToggle').checked = isEnabled;
+            } catch (error) {
+                console.error('Ошибка загрузки статуса:', error);
+            }
+        }
+
+        // Переключение статуса
+        async function toggleAutoresponse(event) {
+            const enabled = event.target.checked;
+            try {
+                const response = await fetch("{% url 'autoresponse_status_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ enabled: enabled })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    isEnabled = enabled;
+                    showNotification('Статус успешно обновлен', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления статуса');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления статуса:', error);
+                event.target.checked = !enabled; // Откатываем изменение
+                showNotification('Ошибка обновления статуса', 'danger');
+            }
+        }
+
+        // Загрузка списка артикулов
+        async function loadArticles() {
+            try {
+                const response = await fetch("{% url 'autoresponse_articles_api' %}");
+                const data = await response.json();
+                articles = data.articles || [];
+                renderArticles();
+            } catch (error) {
+                console.error('Ошибка загрузки артикулов:', error);
+                document.getElementById('articlesList').innerHTML = 
+                    '<div class="text-danger">Ошибка загрузки артикулов</div>';
+            }
+        }
+
+        // Отображение списка артикулов
+        function renderArticles(filteredArticles = null) {
+            const list = document.getElementById('articlesList');
+            const articlesToShow = filteredArticles || articles;
+
+            if (articlesToShow.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center">Артикулы не найдены</div>';
+                return;
+            }
+
+            list.innerHTML = articlesToShow.map(article => `
+                <div class="article-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="article_${article.nmid}" 
+                               ${article.enabled ? 'checked' : ''}
+                               onchange="toggleArticle(${article.nmid}, this.checked)">
+                        <label class="form-check-label" for="article_${article.nmid}">
+                            <strong>${article.nmid}</strong>
+                            ${article.vendorcode ? `<span class="text-muted">(${article.vendorcode})</span>` : ''}
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Фильтрация артикулов
+        function filterArticles(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            const filtered = articles.filter(article => 
+                article.nmid.toString().includes(searchTerm) ||
+                (article.vendorcode && article.vendorcode.toLowerCase().includes(searchTerm))
+            );
+            renderArticles(filtered);
+        }
+
+        // Переключение артикула
+        async function toggleArticle(nmid, enabled) {
+            try {
+                const response = await fetch("{% url 'autoresponse_articles_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ nmid: nmid, enabled: enabled })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    // Обновляем локальный массив
+                    const article = articles.find(a => a.nmid === nmid);
+                    if (article) {
+                        article.enabled = enabled;
+                    }
+                    showNotification('Статус артикула обновлен', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления артикула');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления артикула:', error);
+                // Откатываем изменение
+                const checkbox = document.getElementById(`article_${nmid}`);
+                if (checkbox) checkbox.checked = !enabled;
+                showNotification('Ошибка обновления артикула', 'danger');
+            }
+        }
+
+        // Загрузка ключевых слов
+        async function loadKeywords() {
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}");
+                const data = await response.json();
+                const allKeywords = data.keywords || [];
+                keywords = allKeywords.filter(k => !k.is_stop);
+                stopWords = allKeywords.filter(k => k.is_stop);
+                renderKeywords();
+                renderStopWords();
+            } catch (error) {
+                console.error('Ошибка загрузки ключевых слов:', error);
+                document.getElementById('keywordsList').innerHTML = 
+                    '<div class="text-danger">Ошибка загрузки ключевых слов</div>';
+                document.getElementById('stopWordsList').innerHTML = 
+                    '<div class="text-danger">Ошибка загрузки стоп слов</div>';
+            }
+        }
+
+        // Отображение ключевых слов
+        function renderKeywords() {
+            const list = document.getElementById('keywordsList');
+
+            if (keywords.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center">Ключевые слова не добавлены</div>';
+                return;
+            }
+
+            list.innerHTML = keywords.map((keyword) => `
+                <div class="keyword-item ${!keyword.status ? 'disabled' : ''}">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="keyword_status_${keyword.id}" 
+                               ${keyword.status ? 'checked' : ''}
+                               onchange="toggleKeywordStatus(${keyword.id}, this.checked)">
+                    </div>
+                    <input type="text" class="form-control keyword-input" 
+                           value="${escapeHtml(keyword.keyword)}" 
+                           id="keyword_${keyword.id}"
+                           onblur="updateKeyword(${keyword.id}, this.value)">
+                    <button class="btn btn-sm btn-danger" onclick="deleteKeyword(${keyword.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Отображение стоп слов
+        function renderStopWords() {
+            const list = document.getElementById('stopWordsList');
+
+            if (stopWords.length === 0) {
+                list.innerHTML = '<div class="text-muted text-center">Стоп слова не добавлены</div>';
+                return;
+            }
+
+            list.innerHTML = stopWords.map((stopWord) => `
+                <div class="keyword-item ${!stopWord.status ? 'disabled' : ''}">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               id="stopword_status_${stopWord.id}" 
+                               ${stopWord.status ? 'checked' : ''}
+                               onchange="toggleStopWordStatus(${stopWord.id}, this.checked)">
+                    </div>
+                    <input type="text" class="form-control keyword-input" 
+                           value="${escapeHtml(stopWord.keyword)}" 
+                           id="stopword_${stopWord.id}"
+                           onblur="updateStopWord(${stopWord.id}, this.value)">
+                    <button class="btn btn-sm btn-danger" onclick="deleteStopWord(${stopWord.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Добавление нового ключевого слова
+        async function addKeyword() {
+            const word = prompt('Введите новое ключевое слово:');
+            if (!word || !word.trim()) return;
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ keyword: word.trim(), is_stop: false })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    await loadKeywords(); // Перезагружаем список
+                    showNotification('Ключевое слово добавлено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка добавления ключевого слова');
+                }
+            } catch (error) {
+                console.error('Ошибка добавления ключевого слова:', error);
+                showNotification('Ошибка добавления ключевого слова', 'danger');
+            }
+        }
+
+        // Добавление нового стоп слова
+        async function addStopWord() {
+            const word = prompt('Введите новое стоп слово:');
+            if (!word || !word.trim()) return;
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ keyword: word.trim(), is_stop: true })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    await loadKeywords(); // Перезагружаем список
+                    showNotification('Стоп слово добавлено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка добавления стоп слова');
+                }
+            } catch (error) {
+                console.error('Ошибка добавления стоп слова:', error);
+                showNotification('Ошибка добавления стоп слова', 'danger');
+            }
+        }
+
+        // Обновление ключевого слова
+        async function updateKeyword(id, word) {
+            if (!word || !word.trim()) {
+                showNotification('Ключевое слово не может быть пустым', 'warning');
+                await loadKeywords(); // Перезагружаем для отката
+                return;
+            }
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id, keyword: word.trim() })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    showNotification('Ключевое слово обновлено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления ключевого слова');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления ключевого слова:', error);
+                await loadKeywords(); // Перезагружаем для отката
+                showNotification('Ошибка обновления ключевого слова', 'danger');
+            }
+        }
+
+        // Обновление стоп слова
+        async function updateStopWord(id, word) {
+            if (!word || !word.trim()) {
+                showNotification('Стоп слово не может быть пустым', 'warning');
+                await loadKeywords(); // Перезагружаем для отката
+                return;
+            }
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id, keyword: word.trim() })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    showNotification('Стоп слово обновлено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления стоп слова');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления стоп слова:', error);
+                await loadKeywords(); // Перезагружаем для отката
+                showNotification('Ошибка обновления стоп слова', 'danger');
+            }
+        }
+
+        // Переключение статуса ключевого слова
+        async function toggleKeywordStatus(id, status) {
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id, status: status })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    const keyword = keywords.find(k => k.id === id);
+                    if (keyword) {
+                        keyword.status = status;
+                    }
+                    renderKeywords();
+                    showNotification('Статус ключевого слова обновлен', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления статуса');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления статуса:', error);
+                await loadKeywords(); // Перезагружаем для отката
+                showNotification('Ошибка обновления статуса', 'danger');
+            }
+        }
+
+        // Переключение статуса стоп слова
+        async function toggleStopWordStatus(id, status) {
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id, status: status })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    const stopWord = stopWords.find(s => s.id === id);
+                    if (stopWord) {
+                        stopWord.status = status;
+                    }
+                    renderStopWords();
+                    showNotification('Статус стоп слова обновлен', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка обновления статуса');
+                }
+            } catch (error) {
+                console.error('Ошибка обновления статуса:', error);
+                await loadKeywords(); // Перезагружаем для отката
+                showNotification('Ошибка обновления статуса', 'danger');
+            }
+        }
+
+        // Удаление ключевого слова
+        async function deleteKeyword(id) {
+            if (!confirm('Вы уверены, что хотите удалить это ключевое слово?')) return;
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    await loadKeywords(); // Перезагружаем список
+                    showNotification('Ключевое слово удалено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка удаления ключевого слова');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления ключевого слова:', error);
+                showNotification('Ошибка удаления ключевого слова', 'danger');
+            }
+        }
+
+        // Удаление стоп слова
+        async function deleteStopWord(id) {
+            if (!confirm('Вы уверены, что хотите удалить это стоп слово?')) return;
+
+            try {
+                const response = await fetch("{% url 'autoresponse_keywords_api' %}", {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    await loadKeywords(); // Перезагружаем список
+                    showNotification('Стоп слово удалено', 'success');
+                } else {
+                    throw new Error(data.error || 'Ошибка удаления стоп слова');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления стоп слова:', error);
+                showNotification('Ошибка удаления стоп слова', 'danger');
+            }
+        }
+
+        // Вспомогательные функции
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type) {
+            // Простое уведомление через alert, можно заменить на toast
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            alertDiv.style.zIndex = '9999';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+    </script>
+{% endblock %}
