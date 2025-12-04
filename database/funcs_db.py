@@ -104,6 +104,8 @@ async def add_set_data_from_db(
 
         if "is_active" not in data and table_name == "myapp_nmids":
             data["is_active"] = True
+        if "use_auto_response" not in data and table_name == "myapp_nmids":
+            data["use_auto_response"] = False
         columns = list(data.keys())
         values = list(data.values())
 
@@ -117,7 +119,7 @@ async def add_set_data_from_db(
         update_str = ", ".join(
             f"{col} = EXCLUDED.{col}"
             for col in columns
-            if col not in conflict_fields and col not in ("tag_ids", "is_active")
+            if col not in conflict_fields and col not in ("tag_ids", "is_active", "use_auto_response")
         )
 
         # Формируем запрос

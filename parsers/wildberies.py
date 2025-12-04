@@ -534,7 +534,7 @@ async def get_nmids():
                                 vendorcode=resp["vendorCode"],
                                 brand=resp["brand"],
                                 title=resp["title"],
-                                description=resp["description"],
+                                description=resp.get("description"),
                                 needkiz=resp["needKiz"],
                                 dimensions=json.dumps(resp["dimensions"]),
                                 characteristics=json.dumps(resp["characteristics"]),
@@ -568,7 +568,7 @@ async def get_stocks_data_2_weeks():
             param = {
                 "type": "get_stocks_data",
                 "API_KEY": cab["token"],
-                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=250)), #вчерашний день с текущим временем
+                "dateFrom": str(datetime.now() + timedelta(hours=3) - timedelta(days=250)),
             }
             response = await wb_api(session, param)
 
