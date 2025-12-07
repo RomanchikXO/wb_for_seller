@@ -1313,7 +1313,7 @@ def business_logic_podsort(
                     subitem["rec_delivery"] = round(
                         subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
                     sum_rec_del += subitem["rec_delivery"]
-                if sum_rec_del:
+                if sum_rec_del and period_ord == 30 and turnover_change == 30:
                     difference = i["orders"] - (sum_rec_del + i["stock"])
                     if difference != 0:
                         subitems[_index]["rec_delivery"] += difference
