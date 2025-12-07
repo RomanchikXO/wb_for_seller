@@ -933,7 +933,7 @@ def _podsort_view(
                         )
                         if warehouse_filter and orders_with_filter[art].get(warh):
                             all_response[art]["subitems"][-1]["order_for_change_war"] = orders_with_filter[art][warh]
-
+                    # logger.info(f"all_response в _posdort: {all_response}")
                     if warehouse_filter:
                         warehouses_in_all_orders = set(all_orders[art].keys())  # склады из общих данных
                         warehouses_in_orders_with_filter = set(orders_with_filter[art].keys()) # склады из общих данных
@@ -969,7 +969,7 @@ def _podsort_view(
 
         sql_nmid = """
             SELECT p.nmid as nmid, p.vendorcode as vendorcode 
-            FROM myapp_price p 
+            FROM myapp_nmids p 
             JOIN myapp_wblk wblk 
             ON p.lk_id = wblk.id 
             WHERE """ + f"p.nmid IN ({', '.join(map(str, current_ids))})"
@@ -1011,7 +1011,7 @@ def _podsort_view(
                         key=lambda x: x["order"],
                         reverse=True
                     )
-
+                    # logger.info(f"all_response перед определением рек поставки: {all_response}")
                     for index, i in enumerate(all_response[key]["subitems"]):
                         # по просьбе заказчика от 18.08.25 учитывать нераспределенные заказы
                         # if i.get("warehouse") == "Неопределено": continue
@@ -1059,6 +1059,7 @@ def _podsort_view(
                                 all_response[key]["subitems"][index]["color"] = "white"
                         except Exception as e:
                             raise Exception(f"Ошибка: {e}. Данные: {all_response[key]['subitems']}")
+                    # logger.info(f"all_response после определения рек поставки: {all_response}")
             items = abc_classification(all_response)
 
             if sort_by in ("turnover_total", "ABC", "vendorcode", "orders", "stock", "cloth", "i_size", "i_color"):
@@ -1275,26 +1276,48 @@ def business_logic_podsort(
         for i in full_data["items"].object_list:
             if subitems := i.get("subitems"):
 
-                # сумма остатков выбранных складов для артикула
-                sum_stock_with_check_warh = sum(
-                    [subitem["stock"] for subitem in subitems if subitem["warehouse"] in warehouse_filter])
                 # сумма остатков НЕ выбранных складов для артикула
                 sum_stock_without_check_warh = sum(
                     [subitem["stock"] for subitem in subitems if subitem["warehouse"] not in warehouse_filter])
 
-                for subitem in subitems:
+                # Собираем коэффициены на которые надо будет домножать остатки не выбр складов и суммируем
+                stock_koefs = [
+                    (
+                        sum_stock_without_check_warh / subitem["order_for_change_war"]
+                        if subitem["order_for_change_war"]
+                        else 1
+                    )
+                    for subitem in subitems
+                    if subitem["warehouse"] in warehouse_filter
+                ]
+                stock_koefs = sum(stock_koefs)
+
+                # множитель на который надо будет домножать отдельные коэфы выбранных складов
+                x = sum_stock_without_check_warh / stock_koefs if stock_koefs else 1
+
+                sum_rec_del = 0
+                _index = 0
+                for index, subitem in enumerate(subitems):
                     if not subitem["warehouse"] in warehouse_filter:
                         # пропускаем не выбранные склады ибо нахер не нужныв
                         continue
-                    # какую часть занимают остатки одного склада относительно общих остатков выбранных складов
-                    stock_koef = subitem["stock"] / sum_stock_with_check_warh if sum_stock_with_check_warh else 1
+                    _index = index
+                    # высчитывает коэф на который надо будет домножать остатки не выбр складов
+                    # по заказам выбранных складов
+                    stock_koef = sum_stock_without_check_warh / subitem["order_for_change_war"] if subitem["order_for_change_war"] else 1
 
                     # распределяем остатки не выбранных складов на выбранные (на фронт они не передаются)
-                    new_stock = stock_koef * sum_stock_without_check_warh + subitem["stock"]
+                    new_stock = stock_koef * x + subitem["stock"]
 
                     # высчитывыаем поставку на основе новых остатков
                     subitem["rec_delivery"] = round(
                         subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
+                    sum_rec_del += subitem["rec_delivery"]
+                if sum_rec_del:
+                    difference = i["orders"] - (sum_rec_del + i["stock"])
+                    if difference != 0:
+                        subitems[_index]["rec_delivery"] += difference
+
         if export_mode: return full_data
         return render(
             request,
