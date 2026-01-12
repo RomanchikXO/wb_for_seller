@@ -903,8 +903,9 @@ def _podsort_view(
                     )
                     # logger.info(f"all_response перед определением рек поставки: {all_response}")
                     for index, i in enumerate(all_response[key]["subitems"]):
-                        # по просьбе заказчика от 18.08.25 учитывать нераспределенные заказы
-                        # if i.get("warehouse") == "Неопределено": continue
+                        all_response[key]["subitems"][index]["turnover"] = int(
+                            all_response[key]["subitems"][index]["stock"] / (all_response[key]["subitems"][index]["order"] / period_ord)) \
+                            if all_response[key]["subitems"][index]["order"] else all_response[key]["subitems"][index]["stock"]
                         try:
                             # считаем рек поставку для складов
                             if not warehouse_filter:
