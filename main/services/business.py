@@ -562,6 +562,13 @@ def business_logic_podsort(
 
                     # здесь считаем новую оборачиваемость
                     subitem["turnover"] = int(new_stock / (subitem["order_for_change_war"] / period_ord)) if subitem["order_for_change_war"] else new_stock
+
+                    # установим цвета
+                    if 15 <= subitem["turnover"] <= 35:
+                        subitem["color"] = "green"
+                    else:
+                        subitem["color"] = "red"
+                        i["color"] = "red"
                 if sum_rec_del and period_ord == 30 and turnover_change == 30:
                     difference = i["orders"] - (sum_rec_del + i["stock"])
                     if difference != 0:
@@ -923,6 +930,14 @@ def _podsort_view(
                                 except Exception as e:
                                     logger.error(f"Ошибка {e} во втором блоке {turnover_change} {period_ord}")
                                     raise Exception(e)
+
+                                # установим цвета
+                                if 15 <= all_response[key]["subitems"][index]["turnover"] <= 35:
+                                    all_response[key]["subitems"][index]["color"] = "green"
+                                else:
+                                    all_response[key]["subitems"][index]["color"] = "red"
+                                    all_response[key]["color"] = "red"
+
                                 if i.get("warehouse") == "Неопределено":
                                     all_response[key]["subitems"][index]["order"] = 0
                             else:
@@ -949,19 +964,6 @@ def _podsort_view(
                                 except Exception as e:
                                     logger.error(f"Ошибка {e} в третьем блоке {turnover_change} {period_ord}")
                                     raise Exception(e)
-                            # ниже просто цвета присваиваем без делений
-                            if all_response[key]["subitems"][index]["rec_delivery"] <= -100 or \
-                                    all_response[key]["subitems"][index]["rec_delivery"] >= 100:
-                                all_response[key]["subitems"][index]["color"] = "red"
-                                all_response[key]["color"] = "red" if all_response[key]["turnover_total"] < 25 else "white"
-                            elif 40 <= all_response[key]["subitems"][index]["rec_delivery"] < 100 or -40 >= \
-                                    all_response[key]["subitems"][index]["rec_delivery"] > -100:
-                                all_response[key]["subitems"][index]["color"] = "yellow"
-                            elif 0 < all_response[key]["subitems"][index]["rec_delivery"] < 40 or -1 >= \
-                                    all_response[key]["subitems"][index]["rec_delivery"] > -40:
-                                all_response[key]["subitems"][index]["color"] = "green"
-                            else:
-                                all_response[key]["subitems"][index]["color"] = "white"
                         except Exception as e:
                             raise Exception(f"Ошибка: {e}. Данные: {all_response[key]['subitems']}")
                     # logger.info(f"all_response после определения рек поставки: {all_response}")
