@@ -561,7 +561,7 @@ def business_logic_podsort(
                     sum_rec_del += subitem["rec_delivery"]
 
                     # здесь считаем новую оборачиваемость
-                    subitem["turnover"] = new_stock / (subitem["order_for_change_war"] / period_ord) if subitem["order_for_change_war"] else new_stock
+                    subitem["turnover"] = int(new_stock / (subitem["order_for_change_war"] / period_ord)) if subitem["order_for_change_war"] else new_stock
                 if sum_rec_del and period_ord == 30 and turnover_change == 30:
                     difference = i["orders"] - (sum_rec_del + i["stock"])
                     if difference != 0:
