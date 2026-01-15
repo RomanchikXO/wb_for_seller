@@ -543,7 +543,6 @@ def business_logic_podsort(
 
                 sum_rec_del = 0
                 _index = 0
-                logger.warning(warehouse_filter)
                 for index, subitem in enumerate(subitems):
                     if not subitem["warehouse"] in warehouse_filter:
                         # пропускаем не выбранные склады ибо нахер не нужныв
@@ -906,7 +905,6 @@ def _podsort_view(
                         reverse=True
                     )
                     # logger.info(f"all_response перед определением рек поставки: {all_response}")
-                    logger.warning(warehouse_filter)
                     for index, i in enumerate(all_response[key]["subitems"]):
                         try:
                             # считаем рек поставку для складов
@@ -937,8 +935,7 @@ def _podsort_view(
                                     all_response[key]["subitems"][index]["turnover"] = int(
                                         all_response[key]["subitems"][index]["stock"] / (
                                                     all_response[key]["subitems"][index]["order_for_change_war"] / period_ord)) \
-                                        if all_response[key]["subitems"][index]["order_for_change_war"] else \
-                                    all_response[key]["subitems"][index]["stock"]
+                                        if all_response[key]["subitems"][index]["order_for_change_war"] else 0
                                 except Exception as e:
                                     logger.error(f"Ошибка при расчете оборачиваемости когда выбраны склады {e}")
                                     raise Exception(e)
