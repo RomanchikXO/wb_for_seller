@@ -559,6 +559,9 @@ def business_logic_podsort(
                     subitem["rec_delivery"] = round(
                         subitem["order_for_change_war"] / period_ord * turnover_change - new_stock)
                     sum_rec_del += subitem["rec_delivery"]
+
+                    # здесь считаем новую оборачиваемость
+                    subitem["turnover"] = new_stock / (subitem["order_for_change_war"] / period_ord) if subitem["order_for_change_war"] else new_stock
                 if sum_rec_del and period_ord == 30 and turnover_change == 30:
                     difference = i["orders"] - (sum_rec_del + i["stock"])
                     if difference != 0:
@@ -903,9 +906,6 @@ def _podsort_view(
                     )
                     # logger.info(f"all_response перед определением рек поставки: {all_response}")
                     for index, i in enumerate(all_response[key]["subitems"]):
-                        all_response[key]["subitems"][index]["turnover"] = int(
-                            all_response[key]["subitems"][index]["stock"] / (all_response[key]["subitems"][index]["order"] / period_ord)) \
-                            if all_response[key]["subitems"][index]["order"] else all_response[key]["subitems"][index]["stock"]
                         try:
                             # считаем рек поставку для складов
                             if not warehouse_filter:
@@ -915,6 +915,11 @@ def _podsort_view(
                                             "order"] / period_ord * turnover_change -
                                         all_response[key]["subitems"][index]["stock"]
                                     )
+                                    all_response[key]["subitems"][index]["turnover"] = int(
+                                        all_response[key]["subitems"][index]["stock"] / (
+                                                    all_response[key]["subitems"][index]["order"] / period_ord)) \
+                                        if all_response[key]["subitems"][index]["order"] else \
+                                    all_response[key]["subitems"][index]["stock"]
                                 except Exception as e:
                                     logger.error(f"Ошибка {e} во втором блоке {turnover_change} {period_ord}")
                                     raise Exception(e)
@@ -925,6 +930,16 @@ def _podsort_view(
                                     all_response[key]["subitems"][index]["order_for_change_war"] = \
                                     all_response[key]["subitems"][index]["order"]
                                     all_response[key]["subitems"][index]["order"] = 0
+
+                                try:
+                                    all_response[key]["subitems"][index]["turnover"] = int(
+                                        all_response[key]["subitems"][index]["stock"] / (
+                                                    all_response[key]["subitems"][index]["order_for_change_war"] / period_ord)) \
+                                        if all_response[key]["subitems"][index]["order_for_change_war"] else \
+                                    all_response[key]["subitems"][index]["stock"]
+                                except Exception as e:
+                                    logger.error(f"Ошибка при расчете оборачиваемости когда выбраны склады {e}")
+                                    raise Exception(e)
 
                                 try:
                                     all_response[key]["subitems"][index]["rec_delivery"] = int(
