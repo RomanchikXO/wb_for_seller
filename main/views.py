@@ -720,7 +720,8 @@ def make_data_to_load_excel(data: list) -> List[list]:
             subitem["order"] if subitem else 0,
             subitem["rec_delivery"] if subitem else 0,
             subitem["stock"] if subitem else 0,
-            subitem["time_available"] if subitem else 0
+            subitem["time_available"] if subitem else 0,
+            subitem["turnover"] if subitem else 0
         ]
         for item in data
         for subitem in item.get("subitems") or [None]
@@ -747,7 +748,7 @@ def export_excel_podsort(request):
     # Заголовки родительской таблицы
     headers = [
         "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Теги",
-        "Оборачиваемость общая", "Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии"
+        "Оборачиваемость общая", "Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии", "Оборачиваемость склада"
     ]
 
     row_num = 1
