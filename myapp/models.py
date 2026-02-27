@@ -255,7 +255,7 @@ class Stocks(models.Model):
 
     class Meta:
         unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
-        verbose_name_plural = "Отстаки товаров на складах"
+        verbose_name_plural = "Остатки товаров на складах"
 
     def __str__(self):
         return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
