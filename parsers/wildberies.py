@@ -577,7 +577,17 @@ async def get_stocks_data_2_weeks():
                 logger.error("Ошибка подключения к БД")
                 raise
             try:
+                # Ключи актуальных остатков из текущего ответа WB для конкретного кабинета.
+                current_keys = set()
+
                 for quant in response:
+                    stock_key = (
+                        quant["nmId"],
+                        quant.get("supplierArticle"),
+                        quant.get("warehouseName"),
+                    )
+                    current_keys.add(stock_key)
+
                     await add_set_data_from_db(
                         conn=conn,
                         table_name="myapp_stocks",
@@ -601,6 +611,43 @@ async def get_stocks_data_2_weeks():
 
                         ),
                         conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
+                    )
+
+                existing_rows = await conn.fetch(
+                    """
+                    SELECT nmid, supplierarticle, warehousename
+                    FROM myapp_stocks
+                    WHERE lk_id = $1
+                    """,
+                    cab["id"],
+                )
+
+                existing_keys = {
+                    (row["nmid"], row["supplierarticle"], row["warehousename"])
+                    for row in existing_rows
+                }
+                stale_keys = existing_keys - current_keys
+
+                if stale_keys:
+                    delete_query = """
+                        DELETE FROM myapp_stocks
+                        WHERE lk_id = $1
+                          AND nmid = $2
+                          AND (
+                                (supplierarticle IS NULL AND $3 IS NULL)
+                                OR supplierarticle = $3
+                              )
+                          AND (
+                                (warehousename IS NULL AND $4 IS NULL)
+                                OR warehousename = $4
+                              )
+                    """
+                    await conn.executemany(
+                        delete_query,
+                        [
+                            (cab["id"], nmid, supplierarticle, warehousename)
+                            for nmid, supplierarticle, warehousename in stale_keys
+                        ],
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
