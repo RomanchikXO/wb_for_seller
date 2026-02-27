@@ -633,14 +633,8 @@ async def get_stocks_data_2_weeks():
                         DELETE FROM myapp_stocks
                         WHERE lk_id = $1
                           AND nmid = $2
-                          AND (
-                                (supplierarticle IS NULL AND $3 IS NULL)
-                                OR supplierarticle = $3
-                              )
-                          AND (
-                                (warehousename IS NULL AND $4 IS NULL)
-                                OR warehousename = $4
-                              )
+                          AND supplierarticle IS NOT DISTINCT FROM $3::text
+                          AND warehousename IS NOT DISTINCT FROM $4::text
                     """
                     await conn.executemany(
                         delete_query,
