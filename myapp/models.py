@@ -261,6 +261,25 @@ class Stocks(models.Model):
         return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
 
 
+class Warhouses(models.Model):
+    address = models.CharField(max_length=255, help_text="Адрес склада")
+    name = models.CharField(max_length=255, help_text="Название склада")
+    city = models.CharField(max_length=255, help_text="Город")
+    id = models.AutoField(primary_key=True, help_text="ID склада")
+    longitude = models.FloatField(help_text="Долгота")
+    latitude = models.FloatField(help_text="Широта")
+    cargoType = models.IntegerField(help_text="Тип товара, который принимает склад: 1 — малогабаритный товар (МГТ), 2 — сверхгабаритный товар (СГТ), 3 — крупногабаритный товар (КГТ+)")
+    deliveryType = models.IntegerField(help_text="Тип доставки, который принимает склад: 1 — доставка на склад WB (FBS), 2 — доставка силами продавца (DBS), 3 — доставка курьером WB (DBW), 5 — самовывоз (C&C), 6 — экспресс-доставка силами продавца (ЕDBS)")
+    federalDistrict = models.CharField(max_length=255, help_text="Федеральный округ склада WB. Если null, склад находится за пределами РФ или федеральный округ не указан")
+    selected = models.BooleanField(default=False, help_text="Выбран ли склад")
+
+    class Meta:
+        verbose_name_plural = "Склады"
+
+    def __str__(self):
+        return self.name
+
+
 class Orders(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1) #lk_id в бд
     date = models.DateTimeField() #Дата и время заказа. Это поле соответствует параметру dateFrom в запросе, если параметр flag=1. Если часовой пояс не указан, то берётся Московское время (UTC+3)

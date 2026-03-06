@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
                      ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators,
-                     Keywords)
+                     Keywords, Warhouses)
 
 
 class KeywordsAdmin(admin.ModelAdmin):
@@ -116,6 +116,14 @@ class RepricerAdmin(admin.ModelAdmin):
     search_fields = ('nmid',)
     ordering = ('is_active',)
 
+
+class WarhousesAdmin(admin.ModelAdmin):
+    list_display = ('name', 'id', 'address', 'city', 'cargoType', 'deliveryType', 'federalDistrict', 'selected')
+    search_fields = ('name', 'address', 'city', 'federalDistrict')
+    ordering = ('name',)
+
+
+admin.site.register(Warhouses, WarhousesAdmin)
 admin.site.register(Keywords, KeywordsAdmin)
 admin.site.register(Repricer, RepricerAdmin)
 admin.site.register(Orders, OrdersAdmin)
