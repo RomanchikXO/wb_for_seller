@@ -603,7 +603,7 @@ async def get_warhouse():
                 await conn.close()
 
 
-async def get_stocks_data_2_weeks():
+async def get_stocks_data():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
 
     for cab in cabinets:
@@ -620,14 +620,27 @@ async def get_stocks_data_2_weeks():
                 logger.error("Ошибка подключения к БД")
                 raise
             try:
+                warhouses = await conn.fetch('SELECT id, name FROM "myapp_warhouses"')
+                warehouse_ids_by_name = {
+                    row["name"]: row["id"]
+                    for row in warhouses
+                }
+
                 # Ключи актуальных остатков из текущего ответа WB для конкретного кабинета.
                 current_keys = set()
 
                 for quant in response:
+                    barcode = int(quant["barcode"]) if quant.get("barcode") else None
+                    if barcode is None:
+                        continue
+
+                    warehousename = quant["warehouseName"]
+                    warhouse_id = warehouse_ids_by_name.get(warehousename)
+
                     stock_key = (
                         quant["nmId"],
-                        quant.get("supplierArticle"),
-                        quant.get("warehouseName"),
+                        barcode,
+                        warehousename,
                     )
                     current_keys.add(stock_key)
 
@@ -637,10 +650,11 @@ async def get_stocks_data_2_weeks():
                         data=dict(
                             lk_id=cab["id"],
                             lastchangedate=parse_datetime(quant["lastChangeDate"]),
-                            warehousename=quant["warehouseName"],
+                            warehousename=warehousename,
+                            warhouse_id_id=warhouse_id,
                             supplierarticle=quant["supplierArticle"],
                             nmid=quant["nmId"],
-                            barcode=int(quant["barcode"]) if quant.get("barcode") else None,
+                            barcode=barcode,
                             quantity=quant["quantity"],
                             inwaytoclient=quant["inWayToClient"],
                             inwayfromclient=quant["inWayFromClient"],
@@ -653,12 +667,12 @@ async def get_stocks_data_2_weeks():
                             added_db=datetime.now() + timedelta(hours=3)
 
                         ),
-                        conflict_fields=['nmid', 'lk_id', 'supplierarticle', 'warehousename']
+                        conflict_fields=['nmid', 'lk_id', 'barcode', 'warehousename']
                     )
 
                 existing_rows = await conn.fetch(
                     """
-                    SELECT nmid, supplierarticle, warehousename
+                    SELECT nmid, barcode, warehousename
                     FROM myapp_stocks
                     WHERE lk_id = $1
                     """,
@@ -666,7 +680,7 @@ async def get_stocks_data_2_weeks():
                 )
 
                 existing_keys = {
-                    (row["nmid"], row["supplierarticle"], row["warehousename"])
+                    (row["nmid"], row["barcode"], row["warehousename"])
                     for row in existing_rows
                 }
                 stale_keys = existing_keys - current_keys
@@ -676,14 +690,14 @@ async def get_stocks_data_2_weeks():
                         DELETE FROM myapp_stocks
                         WHERE lk_id = $1
                           AND nmid = $2
-                          AND supplierarticle IS NOT DISTINCT FROM $3::text
+                          AND barcode IS NOT DISTINCT FROM $3::bigint
                           AND warehousename IS NOT DISTINCT FROM $4::text
                     """
                     await conn.executemany(
                         delete_query,
                         [
-                            (cab["id"], nmid, supplierarticle, warehousename)
-                            for nmid, supplierarticle, warehousename in stale_keys
+                            (cab["id"], nmid, barcode, warehousename)
+                            for nmid, barcode, warehousename in stale_keys
                         ],
                     )
             except Exception as e:
