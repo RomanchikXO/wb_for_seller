@@ -266,6 +266,7 @@ class Warhouses(models.Model):
     name = models.CharField(max_length=255, help_text="Название склада")
     city = models.CharField(max_length=255, help_text="Город")
     id = models.AutoField(primary_key=True, help_text="ID склада")
+    updated_at = models.DateTimeField(auto_now_add=True, null=True)
     longitude = models.FloatField(help_text="Долгота")
     latitude = models.FloatField(help_text="Широта")
     cargoType = models.IntegerField(help_text="Тип товара, который принимает склад: 1 — малогабаритный товар (МГТ), 2 — сверхгабаритный товар (СГТ), 3 — крупногабаритный товар (КГТ+)")
