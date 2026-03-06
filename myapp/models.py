@@ -271,7 +271,7 @@ class Warhouses(models.Model):
     latitude = models.FloatField(help_text="Широта")
     cargoType = models.IntegerField(help_text="Тип товара, который принимает склад: 1 — малогабаритный товар (МГТ), 2 — сверхгабаритный товар (СГТ), 3 — крупногабаритный товар (КГТ+)")
     deliveryType = models.IntegerField(help_text="Тип доставки, который принимает склад: 1 — доставка на склад WB (FBS), 2 — доставка силами продавца (DBS), 3 — доставка курьером WB (DBW), 5 — самовывоз (C&C), 6 — экспресс-доставка силами продавца (ЕDBS)")
-    federalDistrict = models.CharField(max_length=255, help_text="Федеральный округ склада WB. Если null, склад находится за пределами РФ или федеральный округ не указан")
+    federalDistrict = models.CharField(max_length=255, null=True, help_text="Федеральный округ склада WB. Если null, склад находится за пределами РФ или федеральный округ не указан")
     selected = models.BooleanField(default=False, help_text="Выбран ли склад")
 
     class Meta:
