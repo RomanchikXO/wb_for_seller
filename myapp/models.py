@@ -251,6 +251,29 @@ class Warhouses(models.Model):
         return self.name
 
 
+class WarehouseAlias(models.Model):
+    source_name = models.CharField(max_length=255, help_text="Название склада из внешнего источника")
+    normalized_name = models.CharField(max_length=255, db_index=True, help_text="Нормализованное название склада")
+    source_type = models.CharField(max_length=50, default="stocks", help_text="Источник названия: stocks, orders и т.д.")
+    warehouse = models.ForeignKey(
+        Warhouses,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="aliases",
+        help_text="Канонический склад из справочника",
+    )
+    is_active = models.BooleanField(default=True, help_text="Участвует ли алиас в автоматическом сопоставлении")
+
+    class Meta:
+        unique_together = ("source_name", "source_type")
+        verbose_name = "Алиас склада"
+        verbose_name_plural = "Алиасы складов"
+
+    def __str__(self):
+        return f"{self.source_name} -> {self.warehouse or 'Не сопоставлен'}"
+
+
 class Stocks(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
     lastchangedate = models.DateTimeField(help_text="Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)")

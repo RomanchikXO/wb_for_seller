@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
                      ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators,
-                     Keywords, Warhouses)
+                     Keywords, Warhouses, WarehouseAlias)
 
 
 class KeywordsAdmin(admin.ModelAdmin):
@@ -90,7 +90,7 @@ class StocksAdmin(admin.ModelAdmin):
     list_display = (
         'supplierarticle', 'nmid', 'barcode', 'get_warhouse_id',
         'quantity', 'inwaytoclient', 'inwayfromclient',
-        'quantityfull', 'warehousename', 'lastchangedate',
+        'quantityfull', 'warehousename', 'get_linked_warehouse', 'lastchangedate',
         'isrealization',
     )
     list_filter = ('warehousename', 'issupply', 'isrealization')
@@ -101,6 +101,11 @@ class StocksAdmin(admin.ModelAdmin):
         return obj.warhouse_id_id
 
     get_warhouse_id.short_description = 'ID склада'
+
+    def get_linked_warehouse(self, obj):
+        return obj.warhouse_id
+
+    get_linked_warehouse.short_description = 'Связанный склад'
 
 class OrdersAdmin(admin.ModelAdmin):
     list_display = (
@@ -128,7 +133,15 @@ class WarhousesAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
 
+class WarehouseAliasAdmin(admin.ModelAdmin):
+    list_display = ('source_name', 'source_type', 'warehouse', 'normalized_name', 'is_active')
+    list_filter = ('source_type', 'is_active', 'warehouse')
+    search_fields = ('source_name', 'normalized_name', 'warehouse__name')
+    ordering = ('source_type', 'source_name')
+
+
 admin.site.register(Warhouses, WarhousesAdmin)
+admin.site.register(WarehouseAlias, WarehouseAliasAdmin)
 admin.site.register(Keywords, KeywordsAdmin)
 admin.site.register(Repricer, RepricerAdmin)
 admin.site.register(Orders, OrdersAdmin)

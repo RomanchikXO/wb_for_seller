@@ -15,6 +15,7 @@ import math
 import logging
 import io
 import csv
+import re
 from context_logger import ContextLogger
 from itertools import chain
 from myapp.models import Price
@@ -33,6 +34,32 @@ headers = {
 def get_uuid()-> str:
     generated_uuid = str(uuid.uuid4())
     return generated_uuid
+
+
+def normalize_warehouse_name(name: str) -> str:
+    if not name:
+        return ""
+
+    normalized = name.lower().replace("ё", "е")
+    normalized = re.sub(r"\bсц\b", " ", normalized)
+    normalized = normalized.replace("кгт+", " ")
+    normalized = re.sub(r"\bсгт\b|\bкгт\b", " ", normalized)
+    normalized = re.sub(r"[()\-/,]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def build_unique_normalized_map(names_to_ids: dict[str, int]) -> dict[str, int]:
+    normalized_candidates: dict[str, set[int]] = {}
+    for name, object_id in names_to_ids.items():
+        normalized_name = normalize_warehouse_name(name)
+        normalized_candidates.setdefault(normalized_name, set()).add(object_id)
+
+    return {
+        normalized_name: next(iter(object_ids))
+        for normalized_name, object_ids in normalized_candidates.items()
+        if normalized_name and len(object_ids) == 1
+    }
 
 
 def generate_random_user_agent() -> str:
@@ -625,9 +652,35 @@ async def get_stocks_data():
                     row["name"]: row["id"]
                     for row in warhouses
                 }
+                warehouse_ids_by_normalized_name = build_unique_normalized_map(warehouse_ids_by_name)
+
+                alias_rows = await conn.fetch(
+                    '''
+                    SELECT source_name, normalized_name, warehouse_id
+                    FROM "myapp_warehousealias"
+                    WHERE source_type = $1 AND is_active = TRUE
+                    ''',
+                    "stocks",
+                )
+                alias_ids_by_name = {
+                    row["source_name"]: row["warehouse_id"]
+                    for row in alias_rows
+                    if row["warehouse_id"] is not None
+                }
+                alias_normalized_candidates = {}
+                for row in alias_rows:
+                    if row["warehouse_id"] is None or not row["normalized_name"]:
+                        continue
+                    alias_normalized_candidates.setdefault(row["normalized_name"], set()).add(row["warehouse_id"])
+                alias_ids_by_normalized_name = {
+                    normalized_name: next(iter(object_ids))
+                    for normalized_name, object_ids in alias_normalized_candidates.items()
+                    if len(object_ids) == 1
+                }
 
                 # Ключи актуальных остатков из текущего ответа WB для конкретного кабинета.
                 current_keys = set()
+                unknown_aliases = {}
 
                 for quant in response:
                     barcode = int(quant["barcode"]) if quant.get("barcode") else None
@@ -635,7 +688,15 @@ async def get_stocks_data():
                         continue
 
                     warehousename = quant["warehouseName"]
-                    warhouse_id = warehouse_ids_by_name.get(warehousename)
+                    normalized_warehousename = normalize_warehouse_name(warehousename)
+                    warhouse_id = (
+                        alias_ids_by_name.get(warehousename)
+                        or alias_ids_by_normalized_name.get(normalized_warehousename)
+                        or warehouse_ids_by_name.get(warehousename)
+                        or warehouse_ids_by_normalized_name.get(normalized_warehousename)
+                    )
+                    if warhouse_id is None and warehousename not in unknown_aliases:
+                        unknown_aliases[warehousename] = normalized_warehousename
 
                     stock_key = (
                         quant["nmId"],
@@ -699,6 +760,24 @@ async def get_stocks_data():
                             (cab["id"], nmid, barcode, warehousename)
                             for nmid, barcode, warehousename in stale_keys
                         ],
+                    )
+
+                if unknown_aliases:
+                    await conn.executemany(
+                        '''
+                        INSERT INTO "myapp_warehousealias" ("source_name", "normalized_name", "source_type", "is_active")
+                        VALUES ($1, $2, $3, TRUE)
+                        ON CONFLICT ("source_name", "source_type")
+                        DO UPDATE SET "normalized_name" = EXCLUDED."normalized_name"
+                        ''',
+                        [
+                            (source_name, normalized_name, "stocks")
+                            for source_name, normalized_name in unknown_aliases.items()
+                        ],
+                    )
+                    logger.warning(
+                        f"Не удалось автоматически сопоставить {len(unknown_aliases)} складов из отчета остатков. "
+                        f"Добавил их в алиасы складов для ручной настройки."
                     )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
