@@ -88,7 +88,7 @@ class NmidsAdmin(admin.ModelAdmin):
 
 class StocksAdmin(admin.ModelAdmin):
     list_display = (
-        'supplierarticle', 'nmid', 'barcode',
+        'supplierarticle', 'nmid', 'barcode', 'get_warhouse_id',
         'quantity', 'inwaytoclient', 'inwayfromclient',
         'quantityfull', 'warehousename', 'lastchangedate',
         'isrealization',
@@ -96,6 +96,11 @@ class StocksAdmin(admin.ModelAdmin):
     list_filter = ('warehousename', 'issupply', 'isrealization')
     search_fields = ('supplierarticle', 'barcode', 'nmid')
     ordering = ('-lastchangedate',)
+
+    def get_warhouse_id(self, obj):
+        return obj.warhouse_id_id
+
+    get_warhouse_id.short_description = 'ID склада'
 
 class OrdersAdmin(admin.ModelAdmin):
     list_display = (

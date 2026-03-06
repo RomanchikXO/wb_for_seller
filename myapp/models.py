@@ -230,36 +230,6 @@ class Shipments(models.Model):
         unique_together = ['shipnum', 'lk']
         verbose_name_plural = "Бронирование поставок"
 
-class Stocks(models.Model):
-    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)  # lk_id в бд
-    lastchangedate = models.DateTimeField() #Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)
-    warehousename = models.CharField(max_length=255, null=True) #Название склада
-    supplierarticle = models.CharField(max_length=255) #Артикул продавца
-    nmid = models.IntegerField() #Артикул
-    barcode = models.BigIntegerField(null=True) #Баркод
-    quantity = models.IntegerField() #Количество, доступное для продажи (сколько можно добавить в корзину)
-    inwaytoclient = models.IntegerField() #В пути к клиенту
-    inwayfromclient = models.IntegerField() #В пути от клиента
-    quantityfull = models.IntegerField(default=0) #Полное (непроданное) количество, которое числится за складом (= quantity + в пути)
-    category = models.CharField(max_length=255, null=True) #Категория
-    techsize = models.CharField(max_length=255, null=True) #Размер
-    issupply = models.BooleanField(default=False) #Договор поставки (внутренние технологические данные)
-    isrealization = models.BooleanField(default=False) #Договор реализации (внутренние технологические данные)
-    sccode = models.CharField(max_length=255, null=True) #Код контракта (внутренние технологические данные)
-    added_db = models.DateTimeField(auto_now_add=True, null=True)  # по МСК время обновления в бд
-    updated_at = models.DateTimeField(auto_now_add=True, null=True) # по сути то же что и выше но в UTC
-    days_in_stock_last_3 = models.IntegerField(null=True, default=0)
-    days_in_stock_last_7 = models.IntegerField(null=True, default=0)
-    days_in_stock_last_14 = models.IntegerField(null=True, default=0)
-    days_in_stock_last_30 = models.IntegerField(null=True, default=0)
-
-    class Meta:
-        unique_together = ['nmid', 'lk', 'supplierarticle', 'warehousename']
-        verbose_name_plural = "Остатки товаров на складах"
-
-    def __str__(self):
-        return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
-
 
 class Warhouses(models.Model):
     address = models.CharField(max_length=255, help_text="Адрес склада")
@@ -279,6 +249,38 @@ class Warhouses(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Stocks(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+    lastchangedate = models.DateTimeField(help_text="Дата и время обновления информации в сервисе. Это поле соответствует параметру dateFrom в запросе. Если часовой пояс не указан, то берётся Московское время (UTC+3)")
+    warehousename = models.CharField(max_length=255, null=True, help_text="Название склада")
+    warhouse_id = models.ForeignKey(Warhouses, on_delete=models.SET_NULL, null=True, blank=True, help_text="ID склада")
+    supplierarticle = models.CharField(max_length=255, help_text="Артикул продавца")
+    nmid = models.IntegerField(help_text="Артикул")
+    barcode = models.BigIntegerField(null=True, help_text="Баркод")
+    quantity = models.IntegerField(help_text="Количество, доступное для продажи (сколько можно добавить в корзину)")
+    inwaytoclient = models.IntegerField(help_text="В пути к клиенту")
+    inwayfromclient = models.IntegerField(help_text="В пути от клиента")
+    quantityfull = models.IntegerField(default=0, help_text="Полное (непроданное) количество, которое числится за складом (= quantity + в пути)")
+    category = models.CharField(max_length=255, null=True, help_text="Категория")
+    techsize = models.CharField(max_length=255, null=True, help_text="Размер")
+    issupply = models.BooleanField(default=False, help_text="Договор поставки (внутренние технологические данные)")
+    isrealization = models.BooleanField(default=False, help_text="Договор реализации (внутренние технологические данные)")
+    sccode = models.CharField(max_length=255, null=True, help_text="Код контракта (внутренние технологические данные)")
+    added_db = models.DateTimeField(auto_now_add=True, null=True, help_text="по МСК время обновления в бд")
+    updated_at = models.DateTimeField(auto_now_add=True, null=True, help_text="по сути то же что и выше но в UTC")
+    days_in_stock_last_3 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 3 дня")
+    days_in_stock_last_7 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 7 дней")
+    days_in_stock_last_14 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 14 дней")
+    days_in_stock_last_30 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 30 дней")
+
+    class Meta:
+        unique_together = ['nmid', 'lk', 'barcode', 'warehousename']
+        verbose_name_plural = "Остатки товаров на складах"
+
+    def __str__(self):
+        return f"{self.supplierarticle} | {self.techsize} | {self.quantity} шт."
 
 
 class Orders(models.Model):
