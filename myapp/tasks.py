@@ -2,7 +2,7 @@ from celery import shared_task
 import asyncio
 
 from parsers.wildberies import (get_nmids, get_stocks_data_2_weeks, get_orders, get_stock_age_by_period,
-                                get_qustions, get_stat_products, get_supplies)
+                                get_qustions, get_stat_products, get_supplies, get_warhouse)
 from tasks.google_get_warhouses import get_area_warehouses
 from tasks.google_our_prices import set_prices_on_google, get_products_and_prices, get_black_price_spp
 from tasks.set_price_on_wb_from_repricer import set_price_on_wb_from_repricer
@@ -32,6 +32,14 @@ def get_supplies_task():
     logger.info("🟢 Обновляем стату по поставкам в БД")
     asyncio.run(get_supplies())
     logger.info("Стата по поставкам в БД обновлена")
+
+
+@shared_task
+@with_task_context("get_warhouse_task")
+def get_warhouse_task():
+    logger.info("🟢 Обновляем склады в БД")
+    asyncio.run(get_warhouse())
+    logger.info("Склады в БД обновлены")
 
 
 @shared_task

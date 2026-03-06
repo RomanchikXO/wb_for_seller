@@ -370,6 +370,11 @@ async def wb_api(session, param):
 
         view = "get"
 
+    if param["type"] == "get_warhouse":
+        # метод для получения складов
+        API_URL = "https://marketplace-api.wildberries.ru/api/v3/offices"
+        view = "get"
+
     if param["type"] == "set_price_and_discount":
         # Метод устанавливает цены и скидки для товаров.
         # Максимум 10 запросов за 6 секунд
@@ -558,6 +563,44 @@ async def get_nmids():
                 else:
                     param["updatedAt"] = response["cursor"]["updatedAt"]
                     param["nmID"] = response["cursor"]["nmID"]
+
+
+async def get_warhouse():
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    for cab in cabinets:
+        async with aiohttp.ClientSession() as session:
+            param = {
+                "type": "get_warhouse",
+                "API_KEY": cab["token"],
+            }
+            response = await wb_api(session, param)
+
+            conn = await async_connect_to_database()
+            if not conn:
+                logger.error("Ошибка подключения к БД")
+                raise
+            try:
+                for resp in response:
+                    await add_set_data_from_db(
+                        conn=conn,
+                        table_name="myapp_warhouses",
+                        data=dict(
+                            name=resp["name"],
+                            address=resp["address"],
+                            city=resp["city"],
+                            id=resp["id"],
+                            longitude=resp["longitude"],
+                            latitude=resp["latitude"],
+                            cargoType=resp["cargoType"],
+                            deliveryType=resp["deliveryType"],
+                            federalDistrict=resp["federalDistrict"],
+                            selected=resp["selected"],
+                        )
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка при добавлении складов в БД. Error: {e}")
+            finally:
+                await conn.close()
 
 
 async def get_stocks_data_2_weeks():
