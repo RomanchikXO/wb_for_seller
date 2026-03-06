@@ -99,6 +99,9 @@ async def add_set_data_from_db(
             return
 
     try:
+        def quote_ident(identifier: str) -> str:
+            return '"' + identifier.replace('"', '""') + '"'
+
         if not data.get("updated_at"):
             data["updated_at"] = datetime.now()
 
@@ -110,21 +113,21 @@ async def add_set_data_from_db(
         values = list(data.values())
 
         placeholders = ", ".join(f"${i+1}" for i in range(len(columns)))
-        columns_str = ", ".join(columns)
+        columns_str = ", ".join(quote_ident(col) for col in columns)
 
         # Строим строку для конфликтующих полей
-        conflict_columns_str = ", ".join(conflict_fields)
+        conflict_columns_str = ", ".join(quote_ident(col) for col in conflict_fields)
 
         # Строим update-часть для ON CONFLICT
         update_str = ", ".join(
-            f"{col} = EXCLUDED.{col}"
+            f"{quote_ident(col)} = EXCLUDED.{quote_ident(col)}"
             for col in columns
             if col not in conflict_fields and col not in ("tag_ids", "is_active", "use_auto_response")
         )
 
         # Формируем запрос
         query = f"""
-            INSERT INTO {table_name} ({columns_str})
+            INSERT INTO {quote_ident(table_name)} ({columns_str})
             VALUES ({placeholders})
             ON CONFLICT ({conflict_columns_str}) DO UPDATE SET {update_str}
         """
