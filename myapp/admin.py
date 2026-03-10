@@ -79,9 +79,9 @@ class CeleryLogAdmin(admin.ModelAdmin):
 class NmidsAdmin(admin.ModelAdmin):
     list_display = (
         'nmid', 'title', 'brand', 'vendorcode', 'subjectname', 'needkiz',
-        'lk', 'created_at', 'updated_at', 'added_db'
+        'lk', 'created_at', 'updated_at', 'added_db', 'is_active'
     )
-    list_filter = ('brand', 'subjectname', 'needkiz', 'lk')
+    list_filter = ('is_active', 'brand', 'subjectname', 'needkiz', 'lk')
     search_fields = ('nmid', 'vendorcode', 'title', 'brand', 'nmuuid')
     ordering = ('-added_db',)
     date_hierarchy = 'added_db'
