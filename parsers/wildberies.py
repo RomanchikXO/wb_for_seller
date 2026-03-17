@@ -1048,22 +1048,30 @@ async def _process_stock_by_day_for_cabinet(cab: dict, request_dates: list[date]
                         )
                     else:
                         for warehouse_name, stock_value in warehouse_stock.items():
-                            await add_set_data_from_db(
-                                conn=conn,
-                                table_name="myapp_stockbyday",
-                                data=dict(
-                                    lk_id=cab["id"],
-                                    vendorcode=meta["vendorcode"],
-                                    name=meta["name"],
-                                    nmid=nmid,
-                                    subject=meta["subject"],
-                                    brand=meta["brand"],
-                                    size="",
-                                    warehouse=warehouse_name,
-                                    date_wb=target_day,
-                                    stock=stock_value,
-                                ),
-                                conflict_fields=["lk_id", "vendorcode", "nmid", "warehouse", "date_wb"],
+                            await conn.execute(
+                                """
+                                INSERT INTO myapp_stockbyday (
+                                    lk_id, vendorcode, name, nmid, subject, brand,
+                                    size, warehouse, date_wb, stock
+                                )
+                                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                                ON CONFLICT (lk_id, vendorcode, nmid, warehouse, date_wb) DO UPDATE SET
+                                    name = EXCLUDED.name,
+                                    subject = EXCLUDED.subject,
+                                    brand = EXCLUDED.brand,
+                                    size = EXCLUDED.size,
+                                    stock = EXCLUDED.stock
+                                """,
+                                cab["id"],
+                                meta["vendorcode"],
+                                meta["name"],
+                                nmid,
+                                meta["subject"],
+                                meta["brand"],
+                                "",
+                                warehouse_name,
+                                target_day,
+                                stock_value,
                             )
 
                     if request_index < total_requests:
