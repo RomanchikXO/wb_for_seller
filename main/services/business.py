@@ -86,16 +86,7 @@ async def get_articles(pool, nmid_query):
                     WHERE (elem->>'id')::int = 14177449
                     LIMIT 1
                 ) AS i_color,
-                vendorcode,
-                (
-                    SELECT COALESCE(json_agg(t.tag), '[]'::json)
-                    FROM myapp_tags t
-                    WHERE t.id = ANY(
-                        SELECT jsonb_array_elements_text(tag_ids)::int
-                        FROM myapp_nmids n2
-                        WHERE n2.id = myapp_nmids.id
-                    )
-                ) AS tag_ids
+                vendorcode
             FROM myapp_nmids
             WHERE {nmid_query}
         """
@@ -109,8 +100,7 @@ async def get_articles(pool, nmid_query):
                     "id": row['id'],
                     "cloth": row['cloth'],
                     "i_color": row['i_color'],
-                    "vendorcode": row['vendorcode'],
-                    "tag_ids": row['tag_ids']
+                    "vendorcode": row['vendorcode']
                 }
                 for row in rows
             }
@@ -729,7 +719,6 @@ def _podsort_view(
 
         warehouse_filter = parametrs["warehouse_filter"] if flag else ""
 
-        alltags_filter = parametrs["alltags_filter"]
         per_page = parametrs["per_page"]
         page_number = parametrs["page_number"]
 
@@ -747,19 +736,12 @@ def _podsort_view(
             for art, index in articles.items():
                 if not all_response.get(art):
                     all_response[art] = {}
-                if alltags_filter:
-                    if not set(index["tag_ids"]) & set(
-                            alltags_filter):  # если два массива не имеют хотя бы одну строку общую
-                        if art in all_response:
-                            all_response.pop(art)
-                        continue
 
                 all_response[art]["id"] = index["id"]
                 all_response[art]["article"] = art
                 all_response[art]["cloth"] = index["cloth"]
                 all_response[art]["i_color"] = index["i_color"]
                 all_response[art]["vendorcode"] = index["vendorcode"]
-                all_response[art]["tags"] = index["tag_ids"]
 
                 low_vendor = index["vendorcode"].lower()
                 if "11ww" in low_vendor or "3240" in low_vendor:
@@ -999,15 +981,6 @@ def _podsort_view(
             page_obj = []
             paginator = None
 
-        sql_query = """SELECT DISTINCT tag FROM myapp_tags"""
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(sql_query)
-                rows = cursor.fetchall()
-                alltags = [row[0] for row in rows] if rows else []
-        except Exception as e:
-            logger.error(f"Сбой при получении всех тегов. Error: {e}")
-
         try:
             all_articles = nmids_db.objects.values('nmid', 'is_active')
             all_articles = [{'nmid': item['nmid'], 'status': item['is_active']} for item in all_articles]
@@ -1017,7 +990,6 @@ def _podsort_view(
         return {
                 "warehouses": warehouses,
                 "warehouse_filter": warehouse_filter,
-                "alltags_filter": alltags_filter,
                 "nmids": combined_list,
                 "nmid_filter": nmid_filter,
                 "without_color_filter": parametrs['without_color_filter'],
@@ -1038,7 +1010,6 @@ def _podsort_view(
                 "filter_options_without_color": filter_options_without_color,
                 "filter_options_sizes": filter_options_sizes,
                 "filter_options_colors": filter_options_colors,
-                "alltags": alltags,
                 "our_g": parametrs['our_g'],
                 "category_g": parametrs['category_g'],
                 "all_articles": all_articles,

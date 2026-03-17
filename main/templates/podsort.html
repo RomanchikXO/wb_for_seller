@@ -223,15 +223,6 @@
                             </select>
                         </th>
                         <th>
-                            <select id="tags_all_select" name="alltagstb" class="form-select" multiple>
-                                {% for alltagstb in alltags %}
-                                    <option value="{{ alltagstb }}" {% if alltagstb|stringformat:"s" in alltags_filter %}selected{% endif %}>
-                                        {{ alltagstb }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </th>
-                        <th>
                             <div class="btn-group align-self-end">
                                 <button type="submit" class="btn btn-primary">Фильтровать</button>
                             </div>
@@ -243,7 +234,7 @@
                         <th>Артикул постащика</th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=cloth&order={% if sort_by == "cloth" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Ткань
                                 {% if sort_by == "cloth" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -252,7 +243,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_color&order={% if sort_by == "i_color" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_color&order={% if sort_by == "i_color" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Цвет
                                 {% if sort_by == "i_color" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -261,7 +252,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_size&order={% if sort_by == "i_size" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=i_size&order={% if sort_by == "i_size" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Размер
                                 {% if sort_by == "i_size" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -270,7 +261,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=orders&order={% if sort_by == "orders" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Заказы
                                 {% if sort_by == "orders" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -279,7 +270,7 @@
                         </th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=stock&order={% if sort_by == "stock" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=stock&order={% if sort_by == "stock" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Остатки
                                 {% if sort_by == "stock" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -287,10 +278,9 @@
                             </a>
                         </th>
                         <th>АВС по размерам</th>
-                        <th>Теги</th>
                         <th>
                             <a style="color: black"
-                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
+                               href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}per_page={{ per_page }}&period_ord={{ period_ord }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&sort_by=turnover_total&order={% if sort_by == "turnover_total" and order == "asc" %}desc{% else %}asc{% endif %}">
                                 Оборачиваемость
                                 {% if sort_by == "turnover_total" %}
                                     {% if order == "asc" %}▲{% else %}▼{% endif %}
@@ -331,23 +321,10 @@
                             <td>{{ item.orders }}</td>
                             <td>{{ item.stock }}</td>
                             <td>{{ item.ABC }}</td>
-                            <td>
-                                <select class="form-select tags-select"
-                                        multiple
-                                        data-article="{{ item.article }}"
-                                        id="tags-select-{{ item.id }}">
-                                    {% for tag in alltags %}
-                                        <option value="{{ tag }}"
-                                                {% if tag in item.tags %}selected{% endif %}>
-                                            {{ tag }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </td>
                             <td>{{ item.turnover_total }}</td>
                         </tr>
                         <tr class="collapse" id="subitems-{{ item.id }}">
-                            <td colspan="10">
+                            <td colspan="9">
                                 <table class="table table-sm table-bordered">
                                     <thead>
                                         <tr>
@@ -388,13 +365,13 @@
                     {% with base_params="&per_page="|add:per_page|add:"&order="|add:order|add:"&sort_by="|add:sort_by %}
                         {% if items.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.previous_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">«</a>
                             </li>
                         {% endif %}
 
                         {% if items.number > 3 %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page=1&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">1</a>
                             </li>
                             {% if items.number > 4 %}
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -404,7 +381,7 @@
                         {% for num in paginator.page_range %}
                             {% if num >= items.number|add:"-2" and num <= items.number|add:"2" %}
                                 <li class="page-item {% if items.number == num %}active{% endif %}">
-                                    <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
+                                    <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ num }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ num }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -414,13 +391,13 @@
                                 <li class="page-item disabled"><span class="page-link">…</span></li>
                             {% endif %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ paginator.num_pages }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">{{ paginator.num_pages }}</a>
                             </li>
                         {% endif %}
 
                         {% if items.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}{% for af in alltags_filter %}alltagstb={{ af }}&{% endfor %}page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
+                                <a class="page-link" href="?{% for id in nmid_filter %}nmid={{ id }}&{% endfor %}{% for id in without_color_filter %}wc_filter={{ id }}&{% endfor %}{% for id in sizes_filter %}sz_filter={{ id }}&{% endfor %}{% for id in colors_filter %}cl_filter={{ id }}&{% endfor %}{% for wh in warehouse_filter %}warehouse={{ wh }}&{% endfor %}page={{ items.next_page_number }}&per_page={{ per_page }}&turnover_change={{ turnover_change }}&abc_filter={{ abc_filter }}&period_ord={{ period_ord }}{{ base_params }}">»</a>
                             </li>
                         {% endif %}
                     {% endwith %}
@@ -446,9 +423,6 @@
                 {% endfor %}
                 {% for wh in warehouse_filter %}
                     <input type="hidden" name="warehouse" value="{{ wh }}">
-                {% endfor %}
-                {% for af in alltags_filter %}
-                    <input type="hidden" name="alltagstb" value="{{ af }}">
                 {% endfor %}
                 <input type="hidden" name="turnover_change" value="{{ turnover_change }}">
                 <input type="hidden" name="period_ord" value="{{ period_ord }}">
@@ -556,112 +530,10 @@
     </script>
 
     <script>
-        const updateTimeouts = {};
         let currentCategoryGrowth = parseInt($('#category-growth').val()) || 0;
         let currentOurGrowth = parseInt($('#our-growth').val()) || 0;
 
         $(document).ready(function () {
-            $('.tags-select').each(function() {
-                const selectElement = this;
-                $(this).select2({
-                    placeholder: 'Выберите теги или введите новый',
-                    allowClear: true,
-                    width: '200px',
-                    closeOnSelect: false,
-                    tags: true,
-                    createTag: function (params) {
-                        const term = $.trim(params.term);
-
-                        if (term === '') {
-                            return null;
-                        }
-
-                        const existingOption = $(this).find("option").filter(function () {
-                            return $(this).val().toLowerCase() === term.toLowerCase();
-                        });
-
-                        if (existingOption.length) {
-                            return null;
-                        }
-
-                        return {
-                            id: term,
-                            text: term + ' (новый)',
-                            newTag: true
-                        };
-                    }
-                }).on('select2:select', function(e) {
-                    const data = e.params.data;
-
-                    if (data.newTag) {
-                        const newTagName = data.id;
-
-                        fetch("{% url 'add_tag' %}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                            },
-                            body: JSON.stringify(newTagName)
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(responseData => {
-                            // Сначала удаляем временную опцию с пометкой "(новый)"
-                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
-
-                            // Добавляем постоянную опцию в текущий селект
-                            $(selectElement).append(new Option(newTagName, newTagName, true, true));
-
-                            // Добавляем новый тег во ВСЕ остальные селекты тегов на странице
-                            $('.tags-select').not(selectElement).each(function() {
-                                // Проверяем, что тег еще не существует в этом селекте
-                                if ($(this).find(`option[value="${newTagName}"]`).length === 0) {
-                                    $(this).append(new Option(newTagName, newTagName, false, false));
-                                }
-                            });
-
-                            // Добавляем новый тег в фильтр тегов
-                            if ($('#tags_all_select').find(`option[value="${newTagName}"]`).length === 0) {
-                                $('#tags_all_select').append(new Option(newTagName, newTagName, false, false));
-                            }
-
-                            // Обновляем Select2 для текущего элемента
-                            $(selectElement).trigger('change');
-
-                            triggerUpdateTags(selectElement);
-                        })
-                        .catch(error => {
-                            console.error('Ошибка при добавлении нового тега:', error);
-                            // Удаляем опцию при ошибке
-                            $(selectElement).find(`option[value="${newTagName}"]`).remove();
-                            $(selectElement).trigger('change');
-                        });
-                    } else {
-                        triggerUpdateTags(selectElement);
-                    }
-                }).on('select2:unselect', function(e) {
-                    triggerUpdateTags(selectElement);
-                }).on('select2:clear', function(e) {
-                    // Предотвращаем открытие dropdown при очистке
-                    e.preventDefault();
-
-                    // Очищаем все выбранные опции
-                    $(this).val(null).trigger('change');
-
-                    // Обновляем теги на сервере
-                    triggerUpdateTags(this);
-
-                    // Закрываем dropdown если он открыт
-                    $(this).select2('close');
-                });
-            });
-
-            // Остальные Select2 инициализации остаются без изменений
             $('#nmid-select').select2({
                 placeholder: 'Введите артикул для поиска',
                 allowClear: true,
@@ -670,12 +542,6 @@
 
             $('#warehouse-select').select2({
                 placeholder: 'Введите склад для поиска',
-                allowClear: true,
-                width: '100%'
-            });
-
-            $('#tags_all_select').select2({
-                placeholder: 'Введите теги для поиска',
                 allowClear: true,
                 width: '100%'
             });
@@ -816,49 +682,6 @@ function updateCalculatedValues() {
         } else {
             $(this).next('.calculated-value').text('');
         }
-    });
-}
-
-function triggerUpdateTags(selectElement) {
-    // Проверяем, что это действительно селект тегов
-    if (!$(selectElement).hasClass('tags-select')) {
-        return;
-    }
-
-    const article = selectElement.getAttribute('data-article');
-
-    if (updateTimeouts[article]) {
-        clearTimeout(updateTimeouts[article]);
-    }
-
-    updateTimeouts[article] = setTimeout(() => {
-        updateTags(selectElement);
-        delete updateTimeouts[article];
-    }, 300);
-}
-
-function updateTags(selectElement) {
-    const article = selectElement.getAttribute('data-article');
-    const selectedTags = Array.from(selectElement.selectedOptions).map(option => option.value);
-
-    fetch("{% url 'set_tags' %}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify({
-            [article]: selectedTags
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .catch(error => {
-        console.error('Ошибка при обновлении тегов:', error);
     });
 }
     </script>

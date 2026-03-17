@@ -10,7 +10,7 @@ from parsers.wildberies import get_uuid
 from tasks.set_price_on_wb_from_repricer import get_marg, get_price_with_all_disc
 
 import csv
-from myapp.models import Price, Repricer, WbLk, Tags, nmids as nmids_db, Addindicators, Keywords
+from myapp.models import Price, Repricer, WbLk, nmids as nmids_db, Addindicators, Keywords
 from django.shortcuts import render
 from decorators import login_required_cust
 from django.views.decorators.http import require_POST
@@ -283,10 +283,10 @@ parametrs, all_filters, warehouse_filter, turnover_change = dict(), list(), [], 
 def podsort_view(request):
     global parametrs, all_filters, warehouse_filter, turnover_change
     try:
-        session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'alltagstb', 'sort_by', 'order',
+        session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order',
                         'page', 'abc_filter']
         for key in session_keys:
-            value = request.GET.getlist(key) if key in ['nmid', 'warehouse', 'alltagstb'] else request.GET.get(key)
+            value = request.GET.getlist(key) if key in ['nmid', 'warehouse'] else request.GET.get(key)
             if value:
                 request.session[key] = value
 
@@ -296,7 +296,6 @@ def podsort_view(request):
         sizes_filter = request.GET.getlist('sz_filter', [])
         colors_filter = request.GET.getlist('cl_filter', [])
         warehouse_filter = request.GET.getlist('warehouse', "")
-        alltags_filter = request.GET.getlist('alltagstb', "")
         per_page = int(request.session.get('per_page', int(request.GET.get('per_page', 10))))
         page_number = int(request.session.get('page', int(request.GET.get('page', 1))))
         sort_by = request.session.get('sort_by', request.GET.get("sort_by", ""))  # значение по умолчанию
@@ -324,7 +323,6 @@ def podsort_view(request):
             "sizes_filter": sizes_filter,
             "colors_filter": colors_filter,
             "warehouse_filter": warehouse_filter,
-            "alltags_filter": alltags_filter,
             "per_page": per_page,
             "page_number": page_number,
             "sort_by": sort_by,
@@ -595,41 +593,6 @@ def category_growth(request):
 
 @require_POST
 @login_required_cust
-def set_tags(request):
-    """
-        обновляем теги у товара
-    """
-    try:
-        data = json.loads(request.body)
-        for nmid, tags in data.items():
-            if tags:
-                tag_ids = list(Tags.objects.filter(tag__in=tags).values_list('id', flat=True))
-            else:
-                tag_ids = []
-            nmids_db.objects.filter(nmid=nmid).update(tag_ids=tag_ids)
-    except Exception as e:
-        logger.error(f"Ошибка добавления тегов к артикулу: {e}")
-        return JsonResponse({"error": str(e)})
-    return JsonResponse({'status': 'ok'})
-
-
-@require_POST
-@login_required_cust
-def add_tag(request):
-    try:
-        data = json.loads(request.body)
-        """
-        тут должны добавляться новые теги в базу с тегами 
-        """
-        Tags.objects.create(tag=data)
-    except Exception as e:
-        logger.error(f"Ошибка добавления тега в БД с тегами: {e}")
-        return JsonResponse({"error": str(e)})
-    return JsonResponse({'status': 'ok'})
-
-
-@require_POST
-@login_required_cust
 def export_excel(request):
     current_headers = {
         "nmid": "Артикул",
@@ -714,7 +677,6 @@ def make_data_to_load_excel(data: list) -> List[list]:
             item["orders"],
             item["stock"],
             item["ABC"],
-            item["tags"],
             item["turnover_total"],
             subitem["warehouse"] if subitem else "",
             subitem["order"] if subitem else 0,
@@ -747,7 +709,7 @@ def export_excel_podsort(request):
 
     # Заголовки родительской таблицы
     headers = [
-        "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам", "Теги",
+        "Артикул", "Артикул поставщика", "Ткань", "Цвет", "Размер", "Заказы", "Остатки", "АВС по размерам",
         "Оборачиваемость общая", "Склад", "Заказы", "Рек. поставка", "Остатки", "Дней в наличии", "Оборачиваемость склада"
     ]
 
