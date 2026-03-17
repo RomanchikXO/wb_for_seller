@@ -12,3 +12,4 @@ __pycache__/
 /myapp/migrations/
 /main/migrations/
 /celerybeat-schedule
+.DS_Store
