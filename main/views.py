@@ -761,6 +761,261 @@ def export_excel_podsort(request):
     return response
 
 
+@require_POST
+@login_required_cust
+def export_excel_podsort_orders_stock(request):
+    """Выгрузка Excel по заказам и остаткам с разбивкой по дням и складам."""
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        payload = {}
+
+    body_params = payload.get("params", {})
+
+    def _to_list(value):
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(v) for v in value if str(v).strip()]
+        return [str(value)] if str(value).strip() else []
+
+    raw_period_ord = body_params.get("period_ord", parametrs.get("period_ord", 14))
+    if isinstance(raw_period_ord, list):
+        raw_period_ord = raw_period_ord[0] if raw_period_ord else 14
+    try:
+        period_ord = int(raw_period_ord)
+    except (TypeError, ValueError):
+        period_ord = 14
+    stock100_raw = body_params.get("stock100", parametrs.get("stock100_days_only", False))
+    stock100_days_only = str(stock100_raw).lower() in ("1", "true", "on", "yes")
+
+    nmid_filter = _to_list(body_params.get("nmid"))
+    without_color_filter = _to_list(body_params.get("wc_filter"))
+    sizes_filter = _to_list(body_params.get("sz_filter"))
+    colors_filter = _to_list(body_params.get("cl_filter"))
+    selected_warehouses = _to_list(body_params.get("warehouse"))
+
+    all_filters_local = get_all_filters(
+        nmid_filter,
+        without_color_filter,
+        sizes_filter,
+        colors_filter
+    )
+    current_ids = get_current_nmids()
+
+    if all_filters_local:
+        all_filters_local = list(set.intersection(*all_filters_local))
+        selected_nmids = list(set(map(str, current_ids)) & set(all_filters_local))
+    else:
+        selected_nmids = [str(nmid) for nmid in current_ids]
+
+    selected_nmids = [int(nmid) for nmid in selected_nmids if str(nmid).isdigit()]
+    if not selected_nmids:
+        selected_nmids = [0]
+
+    now_msk = datetime.now() + timedelta(hours=3)
+    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
+    period_map = {
+        3: yesterday_end - timedelta(days=3),
+        7: yesterday_end - timedelta(days=7),
+        14: yesterday_end - timedelta(weeks=2),
+        30: yesterday_end - timedelta(days=30),
+        45: yesterday_end - timedelta(days=45),
+    }
+    period_start = period_map.get(period_ord, period_map[14])
+
+    conn = connect_to_database()
+    try:
+        if stock100_days_only:
+            sql_query = """
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                eligible_story_days AS (
+                    SELECT DISTINCT
+                        ss.lk_id,
+                        ss.nmid,
+                        ss.date_wb
+                    FROM myapp_storystock ss
+                    WHERE
+                        ss.date_wb >= %s::date
+                        AND ss.stockcount >= 100
+                ),
+                orders_agg AS (
+                    SELECT
+                        o.supplierarticle AS article,
+                        DATE(o.date + interval '3 hour') AS day,
+                        COALESCE(rwm.min_warehouse, 'Неопределено') AS warehouse,
+                        COUNT(*) AS orders_count
+                    FROM myapp_orders o
+                    LEFT JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    JOIN eligible_story_days esd
+                        ON esd.lk_id = o.lk_id
+                        AND esd.nmid = o.nmid
+                        AND esd.date_wb = DATE(o.date + interval '3 hour')
+                    WHERE
+                        o.date >= %s
+                        AND o.date <= %s
+                        AND o.nmid = ANY(%s)
+                    GROUP BY o.supplierarticle, DATE(o.date + interval '3 hour'), COALESCE(rwm.min_warehouse, 'Неопределено')
+                ),
+                stocks_agg AS (
+                    SELECT
+                        s.vendorcode AS article,
+                        s.date_wb AS day,
+                        COALESCE(s.warehouse, 'Неопределено') AS warehouse,
+                        SUM(s.stock) AS stock_count
+                    FROM myapp_stockbyday s
+                    WHERE
+                        s.date_wb >= %s::date
+                        AND s.date_wb <= %s::date
+                        AND s.nmid = ANY(%s)
+                    GROUP BY s.vendorcode, s.date_wb, COALESCE(s.warehouse, 'Неопределено')
+                )
+                SELECT
+                    COALESCE(o.article, s.article) AS article,
+                    COALESCE(o.day, s.day) AS day,
+                    COALESCE(o.warehouse, s.warehouse) AS warehouse,
+                    COALESCE(o.orders_count, 0) AS orders_count,
+                    COALESCE(s.stock_count, 0) AS stock_count
+                FROM orders_agg o
+                FULL OUTER JOIN stocks_agg s
+                    ON o.article = s.article
+                    AND o.day = s.day
+                    AND o.warehouse = s.warehouse
+                """
+            params = [
+                period_start.date(),
+                period_start,
+                yesterday_end,
+                selected_nmids,
+                period_start.date(),
+                yesterday_end.date(),
+                selected_nmids,
+            ]
+        else:
+            sql_query = """
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                orders_agg AS (
+                    SELECT
+                        o.supplierarticle AS article,
+                        DATE(o.date + interval '3 hour') AS day,
+                        COALESCE(rwm.min_warehouse, 'Неопределено') AS warehouse,
+                        COUNT(*) AS orders_count
+                    FROM myapp_orders o
+                    LEFT JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    WHERE
+                        o.date >= %s
+                        AND o.date <= %s
+                        AND o.nmid = ANY(%s)
+                    GROUP BY o.supplierarticle, DATE(o.date + interval '3 hour'), COALESCE(rwm.min_warehouse, 'Неопределено')
+                ),
+                stocks_agg AS (
+                    SELECT
+                        s.vendorcode AS article,
+                        s.date_wb AS day,
+                        COALESCE(s.warehouse, 'Неопределено') AS warehouse,
+                        SUM(s.stock) AS stock_count
+                    FROM myapp_stockbyday s
+                    WHERE
+                        s.date_wb >= %s::date
+                        AND s.date_wb <= %s::date
+                        AND s.nmid = ANY(%s)
+                    GROUP BY s.vendorcode, s.date_wb, COALESCE(s.warehouse, 'Неопределено')
+                )
+                SELECT
+                    COALESCE(o.article, s.article) AS article,
+                    COALESCE(o.day, s.day) AS day,
+                    COALESCE(o.warehouse, s.warehouse) AS warehouse,
+                    COALESCE(o.orders_count, 0) AS orders_count,
+                    COALESCE(s.stock_count, 0) AS stock_count
+                FROM orders_agg o
+                FULL OUTER JOIN stocks_agg s
+                    ON o.article = s.article
+                    AND o.day = s.day
+                    AND o.warehouse = s.warehouse
+                """
+            params = [
+                period_start,
+                yesterday_end,
+                selected_nmids,
+                period_start.date(),
+                yesterday_end.date(),
+                selected_nmids,
+            ]
+
+        if selected_warehouses:
+            sql_query += """
+                WHERE COALESCE(o.warehouse, s.warehouse) = ANY(%s)
+            """
+            params.append(selected_warehouses)
+
+        sql_query += """
+            ORDER BY COALESCE(o.day, s.day) DESC, COALESCE(o.article, s.article), COALESCE(o.warehouse, s.warehouse);
+        """
+
+        with conn.cursor() as cursor:
+            cursor.execute(sql_query, params)
+            rows = cursor.fetchall()
+    finally:
+        conn.close()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Заказы+Остатки"
+
+    headers = ["Артикул", "Дата", "Склад", "Кол-во заказов", "Кол-во остатков"]
+    header_font = Font(bold=True)
+
+    for col_num, column_title in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = column_title
+        cell.font = header_font
+
+    for row_num, row in enumerate(rows, start=2):
+        article, day, warehouse, orders_count, stock_count = row
+        ws.cell(row=row_num, column=1, value=article)
+        ws.cell(row=row_num, column=2, value=day.strftime("%Y-%m-%d") if day else "")
+        ws.cell(row=row_num, column=3, value=warehouse)
+        ws.cell(row=row_num, column=4, value=orders_count)
+        ws.cell(row=row_num, column=5, value=stock_count)
+
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column
+        for cell in col:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        ws.column_dimensions[get_column_letter(column)].width = max_length + 2
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+
+    response = HttpResponse(
+        stream,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=podsort_orders_stocks_export.xlsx'
+    return response
+
+
 @login_required_cust
 def margin_view(request):
     return render(

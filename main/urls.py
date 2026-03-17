@@ -14,6 +14,7 @@ urlpatterns = [
     path('podsort/', views.podsort_view, name='podsort'),
     path('podsort/set_stat_nmid/', views.set_stat_nmid, name='set_stat_nmid'),
     path('podsort/export_excel_podsort/', views.export_excel_podsort, name='export_excel_podsort'),
+    path('podsort/export_excel_podsort_orders_stock/', views.export_excel_podsort_orders_stock, name='export_excel_podsort_orders_stock'),
     path('podsort/category_growth/', views.category_growth, name='category_growth'),
     path('podsort/our_growth/', views.our_growth, name='our_growth'),
     path('margin/', views.margin_view, name='margin'),
