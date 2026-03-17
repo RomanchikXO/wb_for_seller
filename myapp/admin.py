@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (WbLk, Groups, CustomUser, Price, CeleryLog, nmids, Stocks, Orders, Repricer, Questions,
                      ProductsStat, Supplies, Shipments, Betweenwarhouses, AreaWarehouses, Tags, Addindicators,
-                     Keywords, Warhouses, WarehouseAlias, StoryStock)
+                     Keywords, Warhouses, WarehouseAlias, StoryStock, StockByDay)
 
 
 class KeywordsAdmin(admin.ModelAdmin):
@@ -58,6 +58,13 @@ class StoryStockAdmin(admin.ModelAdmin):
     search_fields = ('nmid', 'vendorcode', 'name', 'subjectname', 'brandname')
     ordering = ('-date_wb',)
     list_filter = ('date_wb', 'lk')
+
+
+class StockByDayAdmin(admin.ModelAdmin):
+    list_display = ('date_wb', 'vendorcode', 'nmid', 'stock', 'warehouse', 'size')
+    search_fields = ('vendorcode', 'nmid', 'name', 'brand', 'subject')
+    list_filter = ('date_wb', 'warehouse', 'brand', 'subject')
+    ordering = ('-date_wb',)
 
 
 class QuestionsAdmin(admin.ModelAdmin):
@@ -162,6 +169,7 @@ admin.site.register(Price, PriceAdmin)
 admin.site.register(Questions, QuestionsAdmin)
 admin.site.register(ProductsStat, ProductsStatAdmin)
 admin.site.register(StoryStock, StoryStockAdmin)
+admin.site.register(StockByDay, StockByDayAdmin)
 admin.site.register(Supplies, SuppliesAdmin)
 admin.site.register(Shipments, ShipmentsAdmin)
 admin.site.register(Betweenwarhouses, BetweenwarhousesAdmin)

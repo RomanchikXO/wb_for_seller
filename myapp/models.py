@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password
+from django.core.validators import MinValueValidator
 
 
 class Addindicators(models.Model):
@@ -136,6 +137,24 @@ class StoryStock(models.Model):
     class Meta:
         unique_together = ['lk', 'date_wb', 'nmid']
         verbose_name_plural = "Срез остатков по товарам"
+
+
+class StockByDay(models.Model):
+    vendorcode = models.CharField(max_length=255, db_index=True, help_text="Артикул продавца")
+    name = models.CharField(max_length=500, null=True, blank=True, help_text="Название")
+    nmid = models.IntegerField(null=True, blank=True, help_text="Артикул WB")
+    subject = models.CharField(max_length=255, null=True, blank=True, help_text="Предмет")
+    brand = models.CharField(max_length=255, null=True, blank=True, help_text="Бренд")
+    size = models.CharField(max_length=255, null=True, blank=True, help_text="Размер")
+    warehouse = models.CharField(max_length=255, null=True, blank=True, help_text="Склад")
+    date_wb = models.DateField(help_text="Дата остатка")
+    stock = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+        help_text="Остаток на дату (только > 0)",
+    )
+
+    def __str__(self):
+        return f"{self.vendorcode} | {self.nmid} | {self.date_wb} | {self.stock}"
 
 
 class Repricer(models.Model):
