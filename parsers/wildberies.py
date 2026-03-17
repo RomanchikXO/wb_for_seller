@@ -1231,7 +1231,8 @@ async def get_stock_age_by_period():
                                 3: "days_in_stock_last_3",
                                 7: "days_in_stock_last_7",
                                 14: "days_in_stock_last_14",
-                                30: "days_in_stock_last_30"
+                                30: "days_in_stock_last_30",
+                                45: "days_in_stock_last_45"
                             }
                             column_period = column_map.get(period_get)
                             if not column_period:
@@ -1265,7 +1266,7 @@ async def get_stock_age_by_period():
                         finally:
                             await conn.close()
 
-    for period in [3, 7, 14, 30]:
+    for period in [3, 7, 14, 30, 45]:
         tasks = []
         for cab in cabinets:
             id_report = get_uuid()  # 👉 делаем тут

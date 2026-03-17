@@ -317,6 +317,7 @@ class Stocks(models.Model):
     days_in_stock_last_7 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 7 дней")
     days_in_stock_last_14 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 14 дней")
     days_in_stock_last_30 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 30 дней")
+    days_in_stock_last_45 = models.IntegerField(null=True, default=0, help_text="Количество дней на складе за последние 45 дней")
 
     class Meta:
         unique_together = ['nmid', 'lk', 'barcode', 'warehousename']

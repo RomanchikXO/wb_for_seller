@@ -451,6 +451,7 @@ def business_logic_podsort(
     seven_days_ago = yesterday_end - timedelta(days=7)
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
     thirty_days_ago = yesterday_end - timedelta(days=30)
+    forty_five_days_ago = yesterday_end - timedelta(days=45)
     period_ord = parametrs["period_ord"]
     if period_ord == 3:
         period = tree_days_ago
@@ -464,6 +465,9 @@ def business_logic_podsort(
     elif period_ord == 30:
         period = thirty_days_ago
         name_column_available = "days_in_stock_last_30"
+    elif period_ord == 45:
+        period = forty_five_days_ago
+        name_column_available = "days_in_stock_last_45"
 
     try:
         warehouses, all_orders, warh_stock, articles = async_to_sync(fetch_all_data)(
@@ -712,7 +716,7 @@ def _podsort_view(
     try:
 
         turnover_periods = [a for a in range(25, 71, 5)] # оборачиваемость для фронта
-        order_periods = [3, 7, 14, 30] # заказы для фронта
+        order_periods = [3, 7, 14, 30, 45] # заказы для фронта
         page_sizes = [5, 10, 20, 50, 100] # кол-во отоброажаемых строк
         abc_vars = ["Все товары", "A", "B", "C", "Новинки"] # фильтр
         nmid_filter = parametrs["nmid_filter"]
