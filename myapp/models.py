@@ -140,6 +140,7 @@ class StoryStock(models.Model):
 
 
 class StockByDay(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=4, null=True, blank=True)
     vendorcode = models.CharField(max_length=255, db_index=True, help_text="Артикул продавца")
     name = models.CharField(max_length=500, null=True, blank=True, help_text="Название")
     nmid = models.IntegerField(null=True, blank=True, help_text="Артикул WB")
@@ -153,8 +154,9 @@ class StockByDay(models.Model):
         help_text="Остаток на дату (только > 0)",
     )
 
-    def __str__(self):
-        return f"{self.vendorcode} | {self.nmid} | {self.date_wb} | {self.stock}"
+    class Meta:
+        unique_together = ['lk', 'vendorcode', 'nmid', 'warehouse', 'date_wb']
+        verbose_name_plural = "Остатки по дням на складах"
 
 
 class Repricer(models.Model):
