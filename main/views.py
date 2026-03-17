@@ -284,6 +284,7 @@ def podsort_view(request):
     global parametrs, all_filters, warehouse_filter, turnover_change
     try:
         session_keys = ['per_page', 'period_ord', 'turnover_change', 'nmid', 'warehouse', 'sort_by', 'order',
+                        'stock100',
                         'page', 'abc_filter']
         for key in session_keys:
             value = request.GET.getlist(key) if key in ['nmid', 'warehouse'] else request.GET.get(key)
@@ -303,6 +304,8 @@ def podsort_view(request):
         abc_filter = request.session.get('abc_filter', request.GET.get("abc_filter", ""))
         period_ord = int(request.session.get('period_ord', int(request.GET.get('period_ord', 14))))
         turnover_change = int(request.session.get('turnover_change', int(request.GET.get('turnover_change', 40))))
+        stock100_raw = request.session.get('stock100', request.GET.get('stock100', '0'))
+        stock100_days_only = str(stock100_raw).lower() in ('1', 'true', 'on', 'yes')
 
         try:
             result = Addindicators.objects.filter(id=1).values_list('our_g', 'category_g').first()
@@ -330,6 +333,7 @@ def podsort_view(request):
             "abc_filter": abc_filter,
             "period_ord": period_ord,
             "turnover_change": turnover_change,
+            "stock100_days_only": stock100_days_only,
         }
     except Exception as e:
         logger.error(f"Ошибка приготовления параметров {e}")

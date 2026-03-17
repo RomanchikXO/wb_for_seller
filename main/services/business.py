@@ -14,44 +14,92 @@ from django.shortcuts import render
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
-async def get_all_orders(pool, nmid_query_filter, period):
+async def get_all_orders(pool, nmid_query_filter, period, stock100_days_only: bool = False):
     # итоговая структура: { nmid: { warehouse: count } }
     all_orders = {}
 
-    # заказы для каждого склада
-    sql_query = f"""
-            WITH region_warehouse_min AS (
+    if stock100_days_only:
+        sql_query = f"""
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                eligible_story_days AS (
+                    SELECT DISTINCT
+                        ss.lk_id,
+                        ss.nmid,
+                        ss.date_wb
+                    FROM myapp_storystock ss
+                    WHERE
+                        ss.date_wb >= $2::date
+                        AND ss.stockcount >= 100
+                ),
+                orders_with_warehouse AS (
+                    SELECT
+                        o.nmid,
+                        rwm.min_warehouse
+                    FROM myapp_orders o
+                    JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    JOIN eligible_story_days esd
+                        ON esd.lk_id = o.lk_id
+                        AND esd.nmid = o.nmid
+                        AND esd.date_wb = DATE(o.date + interval '3 hour')
+                    WHERE
+                        o.date >= $1
+                        AND {nmid_query_filter}
+                )
                 SELECT
-                    area,
-                    (SELECT key
-                     FROM jsonb_each_text(warehouses)
-                     ORDER BY (value)::int
-                     LIMIT 1) AS min_warehouse
-                FROM myapp_areawarehouses
-            ),
-            orders_with_warehouse AS (
+                    nmid,
+                    min_warehouse AS warehouse_with_min_value,
+                    COUNT(*) AS order_count
+                FROM orders_with_warehouse
+                GROUP BY nmid, min_warehouse
+                ORDER BY order_count DESC;
+            """
+    else:
+        # заказы для каждого склада
+        sql_query = f"""
+                WITH region_warehouse_min AS (
+                    SELECT
+                        area,
+                        (SELECT key
+                         FROM jsonb_each_text(warehouses)
+                         ORDER BY (value)::int
+                         LIMIT 1) AS min_warehouse
+                    FROM myapp_areawarehouses
+                ),
+                orders_with_warehouse AS (
+                    SELECT
+                        o.nmid,
+                        rwm.min_warehouse
+                    FROM myapp_orders o
+                    JOIN region_warehouse_min rwm
+                        ON o.regionname = rwm.area
+                    WHERE
+                        o.date >= $1
+                        AND {nmid_query_filter}
+                )
                 SELECT
-                    o.nmid,
-                    rwm.min_warehouse
-                FROM myapp_orders o
-                JOIN region_warehouse_min rwm
-                    ON o.regionname = rwm.area
-                WHERE
-                    o.date >= $1
-                    AND {nmid_query_filter}
-            )
-            SELECT
-                nmid,
-                min_warehouse AS warehouse_with_min_value,
-                COUNT(*) AS order_count
-            FROM orders_with_warehouse
-            GROUP BY nmid, min_warehouse
-            ORDER BY order_count DESC;
-        """
+                    nmid,
+                    min_warehouse AS warehouse_with_min_value,
+                    COUNT(*) AS order_count
+                FROM orders_with_warehouse
+                GROUP BY nmid, min_warehouse
+                ORDER BY order_count DESC;
+            """
 
     try:
         async with pool.acquire() as conn:
-            rows = await conn.fetch(sql_query, period)
+            if stock100_days_only:
+                rows = await conn.fetch(sql_query, period, period.date())
+            else:
+                rows = await conn.fetch(sql_query, period)
 
             result = defaultdict(dict)
             for row in rows:
@@ -112,7 +160,7 @@ async def get_articles(pool, nmid_query):
     return articles
 
 
-async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_query):
+async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_query, stock100_days_only: bool = False):
     """Главная функция для параллельных запросов"""
     pool = await async_connect_to_database()
     if pool is None:
@@ -121,7 +169,7 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
     try:
         results = await asyncio.gather(
             get_warh(pool),
-            get_all_orders(pool, nmid_query_filter, period),
+            get_all_orders(pool, nmid_query_filter, period, stock100_days_only),
             get_warh_stock(pool, name_column_available, nmid_query),
             get_articles(pool, nmid_query)
         )
@@ -431,6 +479,7 @@ def business_logic_podsort(
         turnover_change, all_filters, request = None
 ):
     export_mode = parametrs['export_mode']
+    stock100_days_only = parametrs.get("stock100_days_only", False)
     current_ids = get_current_nmids()
 
     if all_filters:
@@ -474,13 +523,19 @@ def business_logic_podsort(
             nmid_query_filter,
             period,
             name_column_available,
-            nmid_query
+            nmid_query,
+            stock100_days_only
         )
     except Exception as e:
         logger.exception(f"Ошибка при параллельном получении данных: {e}")
 
     if warehouse_filter:
-        orders_with_filter = get_orders_with_filter(nmid_query_filter, warehouse_filter, period)
+        orders_with_filter = get_orders_with_filter(
+            nmid_query_filter,
+            warehouse_filter,
+            period,
+            stock100_days_only
+        )
     # Если складов не было возвращаем сразу результат
     try:
         if not warehouse_filter:
@@ -596,7 +651,12 @@ async def get_warh(pool):
     return warehouses
 
 
-def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], period) -> Dict:
+def get_orders_with_filter(
+        nmid_query_filter: str,
+        warehouse_filter: List[str],
+        period,
+        stock100_days_only: bool = False
+) -> Dict:
     """
     Вызывается только если передан warehouse_filter
     Распределяет все заказы для каждого артикула на склады
@@ -610,40 +670,89 @@ def get_orders_with_filter(nmid_query_filter: str, warehouse_filter: List[str], 
     """
     conn = connect_to_database()
 
-    sql_query = f"""
-                        WITH region_warehouse_min AS (
+    if stock100_days_only:
+        sql_query = f"""
+                            WITH region_warehouse_min AS (
+                                SELECT
+                                    area,
+                                    (SELECT key
+                                     FROM jsonb_each_text(warehouses)
+                                     WHERE key = ANY(%s)
+                                     ORDER BY (value)::int
+                                     LIMIT 1) AS min_warehouse
+                                FROM myapp_areawarehouses
+                            ),
+                            eligible_story_days AS (
+                                SELECT DISTINCT
+                                    ss.lk_id,
+                                    ss.nmid,
+                                    ss.date_wb
+                                FROM myapp_storystock ss
+                                WHERE
+                                    ss.date_wb >= %s
+                                    AND ss.stockcount >= 100
+                            ),
+                            orders_with_warehouse AS (
+                                SELECT
+                                    o.nmid,
+                                    rwm.min_warehouse
+                                FROM myapp_orders o
+                                JOIN region_warehouse_min rwm
+                                    ON o.regionname = rwm.area
+                                JOIN eligible_story_days esd
+                                    ON esd.lk_id = o.lk_id
+                                    AND esd.nmid = o.nmid
+                                    AND esd.date_wb = DATE(o.date + interval '3 hour')
+                                WHERE
+                                    o.date >= %s
+                                AND {nmid_query_filter}
+                            )
                             SELECT
-                                area,
-                                (SELECT key
-                                 FROM jsonb_each_text(warehouses)
-                                 WHERE key = ANY(%s)
-                                 ORDER BY (value)::int
-                                 LIMIT 1) AS min_warehouse
-                            FROM myapp_areawarehouses
-                        ),
-                        orders_with_warehouse AS (
+                                nmid,
+                                COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
+                                COUNT(*) AS order_count
+                            FROM orders_with_warehouse
+                            GROUP BY nmid, min_warehouse
+                            ORDER BY order_count DESC;
+                        """
+    else:
+        sql_query = f"""
+                            WITH region_warehouse_min AS (
+                                SELECT
+                                    area,
+                                    (SELECT key
+                                     FROM jsonb_each_text(warehouses)
+                                     WHERE key = ANY(%s)
+                                     ORDER BY (value)::int
+                                     LIMIT 1) AS min_warehouse
+                                FROM myapp_areawarehouses
+                            ),
+                            orders_with_warehouse AS (
+                                SELECT
+                                    o.nmid,
+                                    rwm.min_warehouse
+                                FROM myapp_orders o
+                                JOIN region_warehouse_min rwm
+                                    ON o.regionname = rwm.area
+                                WHERE
+                                    o.date >= %s
+                                AND {nmid_query_filter}
+                            )
                             SELECT
-                                o.nmid,
-                                rwm.min_warehouse
-                            FROM myapp_orders o
-                            JOIN region_warehouse_min rwm
-                                ON o.regionname = rwm.area
-                            WHERE
-                                o.date >= %s
-                            AND {nmid_query_filter}
-                        )
-                        SELECT
-                            nmid,
-                            COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
-                            COUNT(*) AS order_count
-                        FROM orders_with_warehouse
-                        GROUP BY nmid, min_warehouse
-                        ORDER BY order_count DESC;
-                    """
+                                nmid,
+                                COALESCE(min_warehouse, 'Неопределено') AS warehouse_with_min_value,
+                                COUNT(*) AS order_count
+                            FROM orders_with_warehouse
+                            GROUP BY nmid, min_warehouse
+                            ORDER BY order_count DESC;
+                        """
 
     with conn.cursor() as cursor:
         try:
-            cursor.execute(sql_query, (warehouse_filter, period))
+            if stock100_days_only:
+                cursor.execute(sql_query, (warehouse_filter, period.date(), period))
+            else:
+                cursor.execute(sql_query, (warehouse_filter, period))
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
 
@@ -729,6 +838,7 @@ def _podsort_view(
         sort_by = parametrs["sort_by"]
         order = parametrs["order"]
         abc_filter = parametrs["abc_filter"]
+        stock100_days_only = parametrs.get("stock100_days_only", False)
 
         turnover_change = parametrs["turnover_change"]
 
@@ -1016,6 +1126,7 @@ def _podsort_view(
                 "filter_options_colors": filter_options_colors,
                 "our_g": parametrs['our_g'],
                 "category_g": parametrs['category_g'],
+                "stock100_days_only": stock100_days_only,
                 "all_articles": all_articles,
             }
     finally:
