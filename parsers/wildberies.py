@@ -20,12 +20,14 @@ from context_logger import ContextLogger
 from itertools import chain
 from myapp.models import Price
 from asgiref.sync import sync_to_async
+from parsers.utils import _to_int, _to_float
 
 
 logger = ContextLogger(logging.getLogger("parsers"))
 
 STORY_STOCK_FIRST_RUN_REQUESTS = 46
 STORY_STOCK_REQUEST_DELAY_SECONDS = 62
+STOCK_BY_DAY_REQUEST_DELAY_SECONDS = 22
 
 
 headers = {
@@ -63,20 +65,6 @@ def build_unique_normalized_map(names_to_ids: dict[str, int]) -> dict[str, int]:
         for normalized_name, object_ids in normalized_candidates.items()
         if normalized_name and len(object_ids) == 1
     }
-
-
-def _to_int(value, default: int = 0) -> int:
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
-
-
-def _to_float(value, default: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
 
 
 def generate_random_user_agent() -> str:
@@ -326,6 +314,24 @@ async def wb_api(session, param):
         if param.get("dateTo"):  # int: Дата конца периода в формате Unix timestamp
             params["dateTo"] = param["dateTo"]
         view = "get"
+
+    if param["type"] == "get_story_stock_by_day":
+        API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/products/sizes"
+        data = {
+            "nmID": param["nmID"],
+            "currentPeriod": {
+                "start": param["start"],
+                "end": param["end"],
+            },
+            "stockType": param.get("stockType", ""),
+            "skipDeletedNm": param.get("skipDeletedNm", True), # Скрыть удалённые товары
+            "orderBy": {
+                "field": param.get("orderBy", "stockCount"),
+                "mode": param.get("mode", "desc"), # asc - по возрастанию, desc - по убыванию
+            },
+            "includeOffice": param.get("includeOffice", True), # bool: включить склады
+        }
+        view = "post"
 
     if param["type"] == "get_story_stock":
         API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/products/products"
@@ -932,6 +938,162 @@ async def get_story_stock():
             logger.exception(f"Ошибка в get_story_stock для кабинета {cab['name']}: {e}")
         finally:
             await conn.close()
+
+
+def _extract_office_stock(metrics: dict) -> int:
+    return _to_int((metrics or {}).get("stockCount"))
+
+
+def _aggregate_stock_by_warehouse(response_data: dict) -> dict[str, int]:
+    """
+    Собирает остатки по складам из ответа stocks-report/products/sizes.
+    Приоритет: sizes[].offices (детальнее), fallback: data.offices.
+    """
+    warehouse_stock: dict[str, int] = {}
+    sizes = (response_data or {}).get("sizes") or []
+
+    if sizes:
+        for size_item in sizes:
+            for office in (size_item or {}).get("offices") or []:
+                warehouse_name = (office or {}).get("officeName")
+                if not warehouse_name:
+                    continue
+                stock = _extract_office_stock((office or {}).get("metrics") or {})
+                if stock > 0:
+                    warehouse_stock[warehouse_name] = warehouse_stock.get(warehouse_name, 0) + stock
+        return warehouse_stock
+
+    for office in (response_data or {}).get("offices") or []:
+        warehouse_name = (office or {}).get("officeName")
+        if not warehouse_name:
+            continue
+        stock = _extract_office_stock((office or {}).get("metrics") or {})
+        if stock > 0:
+            warehouse_stock[warehouse_name] = warehouse_stock.get(warehouse_name, 0) + stock
+    return warehouse_stock
+
+
+async def _load_active_nmids_for_cabinet(cabinet_id: int) -> dict[int, dict]:
+    rows = await get_data_from_db(
+        "myapp_nmids",
+        ["nmid", "vendorcode", "title", "subjectname", "brand"],
+        conditions={"lk_id": cabinet_id},
+        additional_conditions="is_active = TRUE",
+    )
+    if not rows:
+        return {}
+
+    data = {}
+    for row in rows:
+        nmid_value = row.get("nmid")
+        if nmid_value is None:
+            continue
+        data[_to_int(nmid_value)] = {
+            "vendorcode": row.get("vendorcode") or str(nmid_value),
+            "name": row.get("title"),
+            "subject": row.get("subjectname"),
+            "brand": row.get("brand"),
+        }
+    return data
+
+
+async def _process_stock_by_day_for_cabinet(cab: dict, request_dates: list[date]) -> None:
+    active_products = await _load_active_nmids_for_cabinet(cab["id"])
+    if not active_products:
+        logger.info(
+            f"get_story_stock_by_day: кабинет {cab['name']} ({cab['id']}) "
+            f"- нет активных nmids (is_active=True)"
+        )
+        return
+
+    conn = await async_connect_to_database()
+    if not conn:
+        logger.error(f"Ошибка подключения к БД в get_story_stock_by_day. Кабинет {cab['name']}")
+        return
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            total_requests = len(active_products) * len(request_dates)
+            request_index = 0
+
+            for nmid, meta in active_products.items():
+                for target_day in request_dates:
+                    request_index += 1
+                    period_day = target_day.strftime("%Y-%m-%d")
+                    param = {
+                        "type": "get_story_stock_by_day",
+                        "API_KEY": cab["token"],
+                        "nmID": nmid,
+                        "start": period_day,
+                        "end": period_day,
+                        "skipDeletedNm": True,
+                        "orderBy": "stockCount",
+                        "mode": "desc",
+                        "includeOffice": True,
+                    }
+
+                    response = await wb_api(session, param)
+                    response_data = (response or {}).get("data") or {}
+                    warehouse_stock = _aggregate_stock_by_warehouse(response_data)
+
+                    if response is None:
+                        logger.error(
+                            f"Пустой ответ get_story_stock_by_day. Кабинет {cab['name']}, "
+                            f"nmid={nmid}, период={period_day}"
+                        )
+                    elif not warehouse_stock:
+                        logger.info(
+                            f"get_story_stock_by_day: кабинет {cab['name']}, nmid={nmid}, "
+                            f"период={period_day} - остатков > 0 нет"
+                        )
+                    else:
+                        for warehouse_name, stock_value in warehouse_stock.items():
+                            await add_set_data_from_db(
+                                conn=conn,
+                                table_name="myapp_stockbyday",
+                                data=dict(
+                                    lk_id=cab["id"],
+                                    vendorcode=meta["vendorcode"],
+                                    name=meta["name"],
+                                    nmid=nmid,
+                                    subject=meta["subject"],
+                                    brand=meta["brand"],
+                                    size="",
+                                    warehouse=warehouse_name,
+                                    date_wb=target_day,
+                                    stock=stock_value,
+                                ),
+                                conflict_fields=["lk_id", "vendorcode", "nmid", "warehouse", "date_wb"],
+                            )
+
+                    if request_index < total_requests:
+                        await asyncio.sleep(STOCK_BY_DAY_REQUEST_DELAY_SECONDS)
+    except Exception as e:
+        logger.exception(
+            f"Ошибка в get_story_stock_by_day для кабинета {cab['name']} ({cab['id']}): {e}"
+        )
+    finally:
+        await conn.close()
+
+
+async def get_story_stock_by_day():
+    """
+    Для каждого кабинета собирает активные nmids (is_active=True) и запрашивает
+    остатки по складам за сегодня и завтра. Ограничение API соблюдается:
+    максимум 1 запрос в 22 секунды на один кабинет.
+    """
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={"groups_id": 1})
+    if not cabinets:
+        logger.warning("Не найдены кабинеты для get_story_stock_by_day")
+        return
+
+    today = date.today()
+    request_dates = [today, today + timedelta(days=1)]
+
+    await asyncio.gather(*[
+        _process_stock_by_day_for_cabinet(cab, request_dates)
+        for cab in cabinets
+    ])
 
 
 async def get_orders():
