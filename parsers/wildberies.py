@@ -6,7 +6,7 @@ import time
 import aiohttp
 from database.DataBase import async_connect_to_database
 from database.funcs_db import get_data_from_db, add_set_data_from_db
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.utils.dateparse import parse_datetime
 import json
 import uuid
@@ -23,6 +23,9 @@ from asgiref.sync import sync_to_async
 
 
 logger = ContextLogger(logging.getLogger("parsers"))
+
+STORY_STOCK_FIRST_RUN_REQUESTS = 46
+STORY_STOCK_REQUEST_DELAY_SECONDS = 62
 
 
 headers = {
@@ -60,6 +63,20 @@ def build_unique_normalized_map(names_to_ids: dict[str, int]) -> dict[str, int]:
         for normalized_name, object_ids in normalized_candidates.items()
         if normalized_name and len(object_ids) == 1
     }
+
+
+def _to_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _to_float(value, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def generate_random_user_agent() -> str:
@@ -309,6 +326,33 @@ async def wb_api(session, param):
         if param.get("dateTo"):  # int: Дата конца периода в формате Unix timestamp
             params["dateTo"] = param["dateTo"]
         view = "get"
+
+    if param["type"] == "get_story_stock":
+        API_URL = "https://seller-analytics-api.wildberries.ru/api/v2/stocks-report/products/products"
+        story_stock_statuses = [
+            "deficient",
+            "actual",
+            "balanced",
+            "nonActual",
+            "nonLiquid",
+            "invalidData"
+        ]
+        data = {
+            "currentPeriod": {
+                "start": param["start"],
+                "end": param["end"],
+            },
+            "stockType": param.get("stockType", ""),
+            "skipDeletedNm": param.get("skipDeletedNm", True), # Скрыть удалённые товары
+            "orderBy": {
+                "field": param.get("orderBy", "stockCount"),
+                "mode": param.get("mode", "desc"), # asc - по возрастанию, desc - по убыванию
+            },
+            "availabilityFilters": param.get("availabilityFilters", story_stock_statuses), # list[str]
+            "limit": param.get("limit", 1000), # int: Максимальное количество товаров
+            "offset": param.get("offset", 0), # int: Смещение
+        }
+        view = "post"
 
     if param["type"] == "warehouse_data":
         # Максимум 3 запроса в минуту на один аккаунт продавца
@@ -783,6 +827,111 @@ async def get_stocks_data():
                 logger.error(f"Ошибка при добавлении остатков в БД. Error: {e}")
             finally:
                 await conn.close()
+
+
+async def get_story_stock():
+    """
+    Сохраняет срез по товарам из API stocks-report/products/products.
+    Первый запуск для кабинета: 46 запросов (сегодня и 45 дней назад) с паузой 62 сек.
+    Последующие запуски: 2 запроса за текущую дату и вчера.
+    """
+    cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    if not cabinets:
+        logger.warning("Не найдены кабинеты для get_story_stock")
+        return
+
+    today = date.today()
+
+    for cab in cabinets:
+        conn = await async_connect_to_database()
+        if not conn:
+            logger.error(f"Ошибка подключения к БД в get_story_stock. Кабинет {cab['name']}")
+            continue
+
+        try:
+            story_stock_count = await conn.fetchval(
+                """
+                SELECT COUNT(*)
+                FROM myapp_storystock
+                WHERE lk_id = $1
+                """,
+                cab["id"]
+            )
+
+            is_first_run = (story_stock_count or 0) == 0
+            request_dates = (
+                [today - timedelta(days=i) for i in range(STORY_STOCK_FIRST_RUN_REQUESTS)]
+                if is_first_run else
+                [today, today - timedelta(days=1)]
+            )
+
+            logger.info(
+                f"get_story_stock: кабинет {cab['name']} ({cab['id']}), "
+                f"{'первый запуск' if is_first_run else 'обычный запуск'}, "
+                f"запросов: {len(request_dates)}"
+            )
+
+            async with aiohttp.ClientSession() as session:
+                for index, current_day in enumerate(request_dates):
+                    period_day = current_day.strftime('%Y-%m-%d')
+                    param = {
+                        "type": "get_story_stock",
+                        "API_KEY": cab["token"],
+                        "start": period_day,
+                        "end": period_day,
+                        "skipDeletedNm": True,
+                        "orderBy": "stockCount",
+                        "mode": "desc",
+                        "limit": 1000,
+                        "offset": 0,
+                    }
+                    response = await wb_api(session, param)
+                    items = (((response or {}).get("data") or {}).get("items")) or []
+
+                    if response is None:
+                        logger.error(
+                            f"Пустой ответ get_story_stock. Кабинет {cab['name']}. "
+                            f"Период: {period_day}"
+                        )
+                    else:
+                        for item in items:
+                            nmid = item.get("nmID")
+                            if nmid is None:
+                                continue
+
+                            metrics = item.get("metrics") or {}
+                            await add_set_data_from_db(
+                                conn=conn,
+                                table_name="myapp_storystock",
+                                data=dict(
+                                    lk_id=cab["id"],
+                                    date_wb=current_day,
+                                    nmid=_to_int(nmid),
+                                    subjectname=item.get("subjectName"),
+                                    name=item.get("name"),
+                                    vendorcode=item.get("vendorCode"),
+                                    brandname=item.get("brandName"),
+                                    orderscount=_to_int(metrics.get("ordersCount")),
+                                    orderssum=_to_float(metrics.get("ordersSum")),
+                                    buyoutcount=_to_int(metrics.get("buyoutCount")),
+                                    buyoutsum=_to_float(metrics.get("buyoutSum")),
+                                    stockcount=_to_int(metrics.get("stockCount")),
+                                ),
+                                conflict_fields=["lk_id", "date_wb", "nmid"]
+                            )
+
+                        logger.info(
+                            f"get_story_stock: кабинет {cab['name']}, период {period_day}, "
+                            f"сохранено записей: {len(items)}"
+                        )
+
+                    if index < len(request_dates) - 1:
+                        await asyncio.sleep(STORY_STOCK_REQUEST_DELAY_SECONDS)
+
+        except Exception as e:
+            logger.exception(f"Ошибка в get_story_stock для кабинета {cab['name']}: {e}")
+        finally:
+            await conn.close()
 
 
 async def get_orders():

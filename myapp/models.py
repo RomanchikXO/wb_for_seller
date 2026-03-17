@@ -118,6 +118,26 @@ class ProductsStat(models.Model):
         verbose_name_plural = "Статистика товаров"
 
 
+class StoryStock(models.Model):
+    lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
+    date_wb = models.DateField(help_text="Дата среза из отчета")
+    nmid = models.IntegerField(help_text="Артикул WB")
+    subjectname = models.CharField(max_length=255, null=True, blank=True)
+    name = models.CharField(max_length=500, null=True, blank=True)
+    vendorcode = models.CharField(max_length=255, null=True, blank=True)
+    brandname = models.CharField(max_length=255, null=True, blank=True)
+    orderscount = models.IntegerField(default=0)
+    orderssum = models.FloatField(default=0)
+    buyoutcount = models.IntegerField(default=0)
+    buyoutsum = models.FloatField(default=0)
+    stockcount = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    class Meta:
+        unique_together = ['lk', 'date_wb', 'nmid']
+        verbose_name_plural = "Срез остатков по товарам"
+
+
 class Repricer(models.Model):
     lk = models.ForeignKey(WbLk, on_delete=models.CASCADE, default=1)
     nmid = models.IntegerField()
