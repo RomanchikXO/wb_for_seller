@@ -1087,7 +1087,7 @@ async def _process_stock_by_day_for_cabinet(cab: dict, request_dates: list[date]
 async def get_story_stock_by_day():
     """
     Для каждого кабинета собирает активные nmids (is_active=True) и запрашивает
-    остатки по складам за сегодня и завтра. Ограничение API соблюдается:
+    остатки по складам только за вчерашний день. Ограничение API соблюдается:
     максимум 1 запрос в 22 секунды на один кабинет.
     """
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={"groups_id": 1})
@@ -1095,8 +1095,8 @@ async def get_story_stock_by_day():
         logger.warning("Не найдены кабинеты для get_story_stock_by_day")
         return
 
-    today = date.today()
-    request_dates = [today, today + timedelta(days=1)]
+    msk_today = (datetime.now() + timedelta(hours=3)).date()
+    request_dates = [msk_today - timedelta(days=1)]
 
     await asyncio.gather(*[
         _process_stock_by_day_for_cabinet(cab, request_dates)
