@@ -858,8 +858,8 @@ def export_excel_podsort_orders_stock(request):
                         AND esd.nmid = o.nmid
                         AND esd.date_wb = DATE(o.date + interval '3 hour')
                     WHERE
-                        o.date >= %s
-                        AND o.date <= %s
+                        DATE(o.date + interval '3 hour') >= %s::date
+                        AND DATE(o.date + interval '3 hour') <= %s::date
                         AND o.nmid = ANY(%s)
                     GROUP BY o.supplierarticle, DATE(o.date + interval '3 hour'), COALESCE(rwm.min_warehouse, 'Неопределено')
                 ),
@@ -890,8 +890,8 @@ def export_excel_podsort_orders_stock(request):
                 """
             params = [
                 period_start.date(),
-                period_start,
-                yesterday_end,
+                period_start.date(),
+                yesterday_end.date(),
                 selected_nmids,
                 period_start.date(),
                 yesterday_end.date(),
@@ -918,8 +918,8 @@ def export_excel_podsort_orders_stock(request):
                     LEFT JOIN region_warehouse_min rwm
                         ON o.regionname = rwm.area
                     WHERE
-                        o.date >= %s
-                        AND o.date <= %s
+                        DATE(o.date + interval '3 hour') >= %s::date
+                        AND DATE(o.date + interval '3 hour') <= %s::date
                         AND o.nmid = ANY(%s)
                     GROUP BY o.supplierarticle, DATE(o.date + interval '3 hour'), COALESCE(rwm.min_warehouse, 'Неопределено')
                 ),
@@ -949,8 +949,8 @@ def export_excel_podsort_orders_stock(request):
                     AND o.warehouse = s.warehouse
                 """
             params = [
-                period_start,
-                yesterday_end,
+                period_start.date(),
+                yesterday_end.date(),
                 selected_nmids,
                 period_start.date(),
                 yesterday_end.date(),
