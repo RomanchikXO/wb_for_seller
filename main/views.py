@@ -814,15 +814,12 @@ def export_excel_podsort_orders_stock(request):
         selected_nmids = [0]
 
     now_msk = datetime.now() + timedelta(hours=3)
-    yesterday_end = now_msk.replace(hour=23, minute=59, second=59, microsecond=0) - timedelta(days=1)
-    period_map = {
-        3: yesterday_end - timedelta(days=3),
-        7: yesterday_end - timedelta(days=7),
-        14: yesterday_end - timedelta(weeks=2),
-        30: yesterday_end - timedelta(days=30),
-        45: yesterday_end - timedelta(days=45),
-    }
-    period_start = period_map.get(period_ord, period_map[14])
+    yesterday_start = (now_msk - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_end = yesterday_start.replace(hour=23, minute=59, second=59, microsecond=0)
+
+    supported_periods = {3, 7, 14, 30, 45}
+    period_days = period_ord if period_ord in supported_periods else 14
+    period_start = yesterday_start - timedelta(days=period_days - 1)
 
     conn = connect_to_database()
     try:

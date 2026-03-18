@@ -839,7 +839,7 @@ async def get_story_stock():
     """
     Сохраняет срез по товарам из API stocks-report/products/products.
     Первый запуск для кабинета: 46 запросов (сегодня и 45 дней назад) с паузой 62 сек.
-    Последующие запуски: 2 запроса за текущую дату и вчера.
+    Последующие запуски: 1 запрос за вчерашнюю дату.
     """
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
     if not cabinets:
@@ -868,7 +868,7 @@ async def get_story_stock():
             request_dates = (
                 [today - timedelta(days=i) for i in range(STORY_STOCK_FIRST_RUN_REQUESTS)]
                 if is_first_run else
-                [today, today - timedelta(days=1)]
+                [today - timedelta(days=1)]
             )
 
             logger.info(
