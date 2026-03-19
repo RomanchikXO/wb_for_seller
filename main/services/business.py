@@ -409,25 +409,32 @@ def get_filter_by_articles(current_ids, clothes: bool = False, sizes: bool = Fal
 
 
 def abc_classification(data: dict):
-    # Шаг 1: Сортируем по количеству заказов (убывание)
     try:
-        sorted_items = sorted(data.items(), key=lambda x: x[1]["orders"], reverse=True)
+        sorted_items = sorted(
+            data.items(),
+            key=lambda x: x[1].get("orders", 0),
+            reverse=True
+        )
+        total_orders = sum(max(item[1].get("orders", 0), 0) for item in sorted_items)
 
-        # Шаг 2: Присваиваем категорию
-        for i, (art, info) in enumerate(sorted_items):
-            vendorcode = info["vendorcode"].lower()
-            if ("тв" in vendorcode or "мрк" in vendorcode or "тм2270" in vendorcode or "тм3270" in vendorcode or "тм4270" in vendorcode
-                    or "мр3250" in vendorcode or "мр3260" in vendorcode or "мр3270" in vendorcode or "мр4270" in vendorcode
-                    or "бл3250" in vendorcode or "бл3260" in vendorcode or "бл3270" in vendorcode or "бл4270" in vendorcode):
-                info["ABC"] = "Новинки"
-            elif ("240" in vendorcode or "250" in vendorcode or "11ww" in vendorcode or "33ww" in vendorcode
-                    or "55ww" in vendorcode or "66ww" in vendorcode):
-                info["ABC"] = "A"
-            elif ("260" in vendorcode or "4270" in vendorcode or "44ww" in vendorcode or "77ww" in vendorcode
-                  or "88ww" in vendorcode):
-                info["ABC"] = "B"
-            elif "3270" in vendorcode or "2270" in vendorcode or "22ww" in vendorcode:
+        if total_orders <= 0:
+            for _, info in sorted_items:
                 info["ABC"] = "C"
+            return dict(sorted_items)
+
+        cumulative_share = 0.0
+        for _, info in sorted_items:
+            # Класс определяем по доле до текущего артикула:
+            # первые 80% -> A, следующие 15% -> B, остаток -> C.
+            if cumulative_share < 0.80:
+                info["ABC"] = "A"
+            elif cumulative_share < 0.95:
+                info["ABC"] = "B"
+            else:
+                info["ABC"] = "C"
+
+            orders = max(info.get("orders", 0), 0)
+            cumulative_share += orders / total_orders
     except Exception as e:
         raise Exception(f"Ошибка abc классификатора: {e}")
     return dict(sorted_items)
@@ -827,7 +834,7 @@ def _podsort_view(
         turnover_periods = [a for a in range(25, 71, 5)] # оборачиваемость для фронта
         order_periods = [3, 7, 14, 30, 45] # заказы для фронта
         page_sizes = [5, 10, 20, 50, 100] # кол-во отоброажаемых строк
-        abc_vars = ["Все товары", "A", "B", "C", "Новинки"] # фильтр
+        abc_vars = ["Все товары", "A", "B", "C"] # фильтр
         nmid_filter = parametrs["nmid_filter"]
 
         warehouse_filter = parametrs["warehouse_filter"] if flag else ""
