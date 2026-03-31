@@ -82,6 +82,7 @@ services:
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
       PYTHONPATH: /app
+    restart: unless-stopped
 
   worker:
     build: .
@@ -89,7 +90,7 @@ services:
       - .:/app
       - /etc/localtime:/etc/localtime:ro
     container_name: celery_worker
-    restart: always
+    restart: unless-stopped
     depends_on:
       - redis
     command: ["celery", "-A", "django_app.celery_config", "worker", "--loglevel=info", "--pidfile="]
@@ -100,7 +101,7 @@ services:
       - .:/app
       - /etc/localtime:/etc/localtime:ro
     container_name: celery_beat
-    restart: always
+    restart: unless-stopped
     depends_on:
       - redis
     command: ["celery", "-A", "django_app.celery_config", "beat", "--loglevel=info", "--pidfile=", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler"]
