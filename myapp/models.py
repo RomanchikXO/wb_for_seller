@@ -37,7 +37,7 @@ class WbLk(models.Model):
     # myapp_wblk
     groups = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True) #groups_id в бд
     name = models.CharField(max_length=255)
-    token = models.CharField(max_length=400)
+    token = models.CharField(max_length=600)
     number = models.BigIntegerField(default=0, null=True)
     cookie = models.TextField(default='', null=True)
     authorizev3 = models.TextField(default='', null=True)
