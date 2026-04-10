@@ -31,14 +31,25 @@ async def get_all_orders(pool, nmid_query_filter, period, period_ord: int, stock
                     FROM myapp_areawarehouses
                 ),
                 eligible_story_days AS (
-                    SELECT DISTINCT
-                        ss.lk_id,
-                        ss.nmid,
-                        ss.date_wb
-                    FROM myapp_storystock ss
-                    WHERE
-                        ss.date_wb >= $2::date
-                        AND ss.stockcount >= 100
+                    SELECT
+                        ranked.lk_id,
+                        ranked.nmid,
+                        ranked.date_wb
+                    FROM (
+                        SELECT
+                            ss.lk_id,
+                            ss.nmid,
+                            ss.date_wb,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY ss.lk_id, ss.nmid
+                                ORDER BY ss.date_wb DESC
+                            ) AS rn
+                        FROM myapp_storystock ss
+                        WHERE
+                            ss.date_wb >= $2::date
+                            AND ss.stockcount >= 100
+                    ) ranked
+                    WHERE ranked.rn <= $3
                 ),
                 orders_with_warehouse AS (
                     SELECT
@@ -98,7 +109,7 @@ async def get_all_orders(pool, nmid_query_filter, period, period_ord: int, stock
     try:
         async with pool.acquire() as conn:
             if stock100_days_only:
-                rows = await conn.fetch(sql_query, period, period.date())
+                rows = await conn.fetch(sql_query, period, period.date(), period_ord)
             else:
                 rows = await conn.fetch(sql_query, period)
 
@@ -107,9 +118,6 @@ async def get_all_orders(pool, nmid_query_filter, period, period_ord: int, stock
                 nmid = row["nmid"]
                 warehouse = row["warehouse_with_min_value"]
                 count = row["order_count"]
-                if stock100_days_only:
-                    scaled_count = count * period_ord / STOCK100_LOOKBACK_DAYS
-                    count = int(scaled_count + 0.5)
                 result[nmid][warehouse] = count
 
             all_orders = dict(result)
@@ -706,14 +714,25 @@ def get_orders_with_filter(
                                 FROM myapp_areawarehouses
                             ),
                             eligible_story_days AS (
-                                SELECT DISTINCT
-                                    ss.lk_id,
-                                    ss.nmid,
-                                    ss.date_wb
-                                FROM myapp_storystock ss
-                                WHERE
-                                    ss.date_wb >= %s
-                                    AND ss.stockcount >= 100
+                                SELECT
+                                    ranked.lk_id,
+                                    ranked.nmid,
+                                    ranked.date_wb
+                                FROM (
+                                    SELECT
+                                        ss.lk_id,
+                                        ss.nmid,
+                                        ss.date_wb,
+                                        ROW_NUMBER() OVER (
+                                            PARTITION BY ss.lk_id, ss.nmid
+                                            ORDER BY ss.date_wb DESC
+                                        ) AS rn
+                                    FROM myapp_storystock ss
+                                    WHERE
+                                        ss.date_wb >= %s
+                                        AND ss.stockcount >= 100
+                                ) ranked
+                                WHERE ranked.rn <= %s
                             ),
                             orders_with_warehouse AS (
                                 SELECT
@@ -773,7 +792,7 @@ def get_orders_with_filter(
     with conn.cursor() as cursor:
         try:
             if stock100_days_only:
-                cursor.execute(sql_query, (warehouse_filter, period.date(), period))
+                cursor.execute(sql_query, (warehouse_filter, period.date(), period_ord, period))
             else:
                 cursor.execute(sql_query, (warehouse_filter, period))
             rows = cursor.fetchall()
@@ -786,9 +805,6 @@ def get_orders_with_filter(
                 nmid = entry['nmid']
                 warehouse = entry['warehouse_with_min_value']
                 count = entry['order_count']
-                if stock100_days_only:
-                    scaled_count = count * period_ord / STOCK100_LOOKBACK_DAYS
-                    count = int(scaled_count + 0.5)
                 result[nmid][warehouse] = count
 
             orders_with_filter = dict(result)
