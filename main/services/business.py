@@ -13,8 +13,9 @@ from django.shortcuts import render
 
 
 logger = ContextLogger(logging.getLogger("parsers"))
+STOCK100_LOOKBACK_DAYS = 183
 
-async def get_all_orders(pool, nmid_query_filter, period, stock100_days_only: bool = False):
+async def get_all_orders(pool, nmid_query_filter, period, period_ord: int, stock100_days_only: bool = False):
     # итоговая структура: { nmid: { warehouse: count } }
     all_orders = {}
 
@@ -106,6 +107,9 @@ async def get_all_orders(pool, nmid_query_filter, period, stock100_days_only: bo
                 nmid = row["nmid"]
                 warehouse = row["warehouse_with_min_value"]
                 count = row["order_count"]
+                if stock100_days_only:
+                    scaled_count = count * period_ord / STOCK100_LOOKBACK_DAYS
+                    count = int(scaled_count + 0.5)
                 result[nmid][warehouse] = count
 
             all_orders = dict(result)
@@ -160,7 +164,14 @@ async def get_articles(pool, nmid_query):
     return articles
 
 
-async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_query, stock100_days_only: bool = False):
+async def fetch_all_data(
+        nmid_query_filter,
+        period,
+        period_ord: int,
+        name_column_available,
+        nmid_query,
+        stock100_days_only: bool = False
+):
     """Главная функция для параллельных запросов"""
     pool = await async_connect_to_database()
     if pool is None:
@@ -169,7 +180,7 @@ async def fetch_all_data(nmid_query_filter, period, name_column_available, nmid_
     try:
         results = await asyncio.gather(
             get_warh(pool),
-            get_all_orders(pool, nmid_query_filter, period, stock100_days_only),
+            get_all_orders(pool, nmid_query_filter, period, period_ord, stock100_days_only),
             get_warh_stock(pool, name_column_available, nmid_query),
             get_articles(pool, nmid_query)
         )
@@ -508,6 +519,7 @@ def business_logic_podsort(
     two_weeks_ago = yesterday_end - timedelta(weeks=2)
     thirty_days_ago = yesterday_end - timedelta(days=30)
     forty_five_days_ago = yesterday_end - timedelta(days=45)
+    stock100_lookback_period = yesterday_end - timedelta(days=STOCK100_LOOKBACK_DAYS)
     period_ord = parametrs["period_ord"]
     if period_ord == 3:
         period = tree_days_ago
@@ -524,11 +536,13 @@ def business_logic_podsort(
     elif period_ord == 45:
         period = forty_five_days_ago
         name_column_available = "days_in_stock_last_45"
+    orders_period = stock100_lookback_period if stock100_days_only else period
 
     try:
         warehouses, all_orders, warh_stock, articles = async_to_sync(fetch_all_data)(
             nmid_query_filter,
-            period,
+            orders_period,
+            period_ord,
             name_column_available,
             nmid_query,
             stock100_days_only
@@ -540,7 +554,8 @@ def business_logic_podsort(
         orders_with_filter = get_orders_with_filter(
             nmid_query_filter,
             warehouse_filter,
-            period,
+            orders_period,
+            period_ord,
             stock100_days_only
         )
     # Если складов не было возвращаем сразу результат
@@ -662,6 +677,7 @@ def get_orders_with_filter(
         nmid_query_filter: str,
         warehouse_filter: List[str],
         period,
+        period_ord: int,
         stock100_days_only: bool = False
 ) -> Dict:
     """
@@ -770,6 +786,9 @@ def get_orders_with_filter(
                 nmid = entry['nmid']
                 warehouse = entry['warehouse_with_min_value']
                 count = entry['order_count']
+                if stock100_days_only:
+                    scaled_count = count * period_ord / STOCK100_LOOKBACK_DAYS
+                    count = int(scaled_count + 0.5)
                 result[nmid][warehouse] = count
 
             orders_with_filter = dict(result)
