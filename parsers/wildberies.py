@@ -1108,59 +1108,96 @@ async def get_orders():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
-            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
+            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=30)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+
             param = {
                 "type": "orders",
                 "API_KEY": cab["token"],
-                "date_from": str(date_from),
+                "date_from": date_from.strftime("%Y-%m-%dT%H:%M:%S"),
                 "flag": 0
             }
             response = await wb_api(session, param)
+
+            if not isinstance(response, list):
+                logger.error(
+                    f"Некорректный ответ WB в get_orders. Кабинет: {cab['name']}. "
+                    f"dateFrom={param['date_from']}. Ответ: {response}"
+                )
+                continue
+            if not response:
+                logger.info(
+                    f"В get_orders нет новых заказов. Кабинет: {cab['name']}. "
+                    f"dateFrom={param['date_from']}"
+                )
+                continue
+
             conn = await async_connect_to_database()
             if not conn:
                 logger.warning("Ошибка подключения к БД")
                 raise
+            saved_count = 0
+            skipped_count = 0
             try:
                 for order in response:
-                    await add_set_data_from_db(
-                        conn=conn,
-                        table_name="myapp_orders",
-                        data=dict(
-                            lk_id=cab["id"],
-                            date=parse_datetime(order["date"]),
-                            lastchangedate=parse_datetime(order["lastChangeDate"]),
-                            warehousename=order["warehouseName"].replace("Виртуальный ", "") if order["warehouseName"].startswith("Виртуальный") else order["warehouseName"],
-                            warehousetype=order["warehouseType"],
-                            countryname=order["countryName"],
-                            oblastokrugname=order["oblastOkrugName"],
-                            regionname=order["regionName"],
-                            supplierarticle=order["supplierArticle"],
-                            nmid=order["nmId"],
-                            barcode=int(order["barcode"]) if order.get("barcode") else None,
-                            category=order["category"],
-                            subject=order["subject"],
-                            brand=order["brand"],
-                            techsize=order["techSize"],
-                            incomeid=order["incomeID"],
-                            issupply=order["isSupply"],
-                            isrealization=order["isRealization"],
-                            totalprice=order["totalPrice"],
-                            discountpercent=order["discountPercent"],
-                            spp=order["spp"],
-                            finishedprice=float(order["finishedPrice"]),
-                            pricewithdisc=float(order["priceWithDisc"]),
-                            iscancel=order["isCancel"],
-                            canceldate=parse_datetime(order["cancelDate"]),
-                            sticker=order["sticker"],
-                            gnumber=order["gNumber"],
-                            srid=order["srid"],
-                        ),
-                        conflict_fields=['nmid', 'lk_id', 'srid']
-                    )
+                    try:
+                        cancel_date = parse_datetime(order.get("cancelDate")) or datetime(1970, 1, 1)
+                        await add_set_data_from_db(
+                            conn=conn,
+                            table_name="myapp_orders",
+                            data=dict(
+                                lk_id=cab["id"],
+                                date=parse_datetime(order.get("date")) or datetime(1970, 1, 1),
+                                lastchangedate=parse_datetime(order.get("lastChangeDate")) or datetime(1970, 1, 1),
+                                warehousename=(
+                                    order.get("warehouseName", "").replace("Виртуальный ", "")
+                                    if order.get("warehouseName", "").startswith("Виртуальный")
+                                    else order.get("warehouseName", "")
+                                ),
+                                warehousetype=order.get("warehouseType", ""),
+                                countryname=order.get("countryName", ""),
+                                oblastokrugname=order.get("oblastOkrugName"),
+                                regionname=order.get("regionName"),
+                                supplierarticle=order.get("supplierArticle", ""),
+                                nmid=_to_int(order.get("nmId")) or 0,
+                                barcode=_to_int(order.get("barcode")),
+                                category=order.get("category", ""),
+                                subject=order.get("subject", ""),
+                                brand=order.get("brand", ""),
+                                techsize=order.get("techSize"),
+                                incomeid=_to_int(order.get("incomeID")) or 0,
+                                issupply=bool(order.get("isSupply", False)),
+                                isrealization=bool(order.get("isRealization", False)),
+                                totalprice=_to_int(order.get("totalPrice")) or 0,
+                                discountpercent=_to_int(order.get("discountPercent")) or 0,
+                                spp=_to_int(order.get("spp")) or 0,
+                                finishedprice=_to_float(order.get("finishedPrice")) or 0.0,
+                                pricewithdisc=_to_float(order.get("priceWithDisc")) or 0.0,
+                                iscancel=bool(order.get("isCancel", False)),
+                                canceldate=cancel_date,
+                                sticker=order.get("sticker", ""),
+                                gnumber=order.get("gNumber", ""),
+                                srid=order.get("srid", ""),
+                            ),
+                            conflict_fields=['nmid', 'lk_id', 'srid']
+                        )
+                        saved_count += 1
+                    except Exception as order_error:
+                        skipped_count += 1
+                        logger.error(
+                            f"Пропуск заказа в get_orders. Кабинет: {cab['name']}. "
+                            f"srid={order.get('srid')}. Error: {order_error}"
+                        )
             except Exception as e:
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
                 await conn.close()
+            logger.info(
+                f"get_orders: кабинет {cab['name']} обработан. "
+                f"Получено={len(response)}, записано={saved_count}, пропущено={skipped_count}, "
+                f"dateFrom={param['date_from']}"
+            )
 
 
 async def get_prices_from_lk(lk: dict):
