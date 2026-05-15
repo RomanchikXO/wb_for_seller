@@ -28,6 +28,9 @@ logger = ContextLogger(logging.getLogger("parsers"))
 STORY_STOCK_FIRST_RUN_REQUESTS = 46
 STORY_STOCK_REQUEST_DELAY_SECONDS = 62
 STOCK_BY_DAY_REQUEST_DELAY_SECONDS = 22
+ORDERS_CHUNK_DAYS = 7
+ORDERS_CHUNK_REQUESTS = 3
+ORDERS_REQUEST_DELAY_SECONDS = 3
 
 
 headers = {
@@ -1106,97 +1109,130 @@ async def get_story_stock_by_day():
 
 async def get_orders():
     cabinets = await get_data_from_db("myapp_wblk", ["id", "name", "token"], conditions={'groups_id': 1})
+    if not cabinets:
+        logger.warning("Не найдены кабинеты для get_orders")
+        return
+
     for cab in cabinets:
         async with aiohttp.ClientSession() as session:
-            date_from = (datetime.now() + timedelta(hours=3) - timedelta(days=30)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-
-            param = {
-                "type": "orders",
-                "API_KEY": cab["token"],
-                "date_from": date_from.strftime("%Y-%m-%dT%H:%M:%S"),
-                "flag": 0
-            }
-            response = await wb_api(session, param)
-
-            if not isinstance(response, list):
-                logger.error(
-                    f"Некорректный ответ WB в get_orders. Кабинет: {cab['name']}. "
-                    f"dateFrom={param['date_from']}. Ответ: {response}"
+            now_msk = datetime.now() + timedelta(hours=3)
+            chunk_starts = [
+                (now_msk - timedelta(days=ORDERS_CHUNK_DAYS * step)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
                 )
-                continue
-            if not response:
-                logger.info(
-                    f"В get_orders нет новых заказов. Кабинет: {cab['name']}. "
-                    f"dateFrom={param['date_from']}"
-                )
-                continue
+                for step in range(ORDERS_CHUNK_REQUESTS, 0, -1)
+            ]
 
             conn = await async_connect_to_database()
             if not conn:
                 logger.warning("Ошибка подключения к БД")
                 raise
-            saved_count = 0
-            skipped_count = 0
+            saved_count_total = 0
+            skipped_count_total = 0
+            received_count_total = 0
             try:
-                for order in response:
-                    try:
-                        cancel_date = parse_datetime(order.get("cancelDate")) or datetime(1970, 1, 1)
-                        await add_set_data_from_db(
-                            conn=conn,
-                            table_name="myapp_orders",
-                            data=dict(
-                                lk_id=cab["id"],
-                                date=parse_datetime(order.get("date")) or datetime(1970, 1, 1),
-                                lastchangedate=parse_datetime(order.get("lastChangeDate")) or datetime(1970, 1, 1),
-                                warehousename=(
-                                    order.get("warehouseName", "").replace("Виртуальный ", "")
-                                    if order.get("warehouseName", "").startswith("Виртуальный")
-                                    else order.get("warehouseName", "")
-                                ),
-                                warehousetype=order.get("warehouseType", ""),
-                                countryname=order.get("countryName", ""),
-                                oblastokrugname=order.get("oblastOkrugName"),
-                                regionname=order.get("regionName"),
-                                supplierarticle=order.get("supplierArticle", ""),
-                                nmid=_to_int(order.get("nmId")) or 0,
-                                barcode=_to_int(order.get("barcode")),
-                                category=order.get("category", ""),
-                                subject=order.get("subject", ""),
-                                brand=order.get("brand", ""),
-                                techsize=order.get("techSize"),
-                                incomeid=_to_int(order.get("incomeID")) or 0,
-                                issupply=bool(order.get("isSupply", False)),
-                                isrealization=bool(order.get("isRealization", False)),
-                                totalprice=_to_int(order.get("totalPrice")) or 0,
-                                discountpercent=_to_int(order.get("discountPercent")) or 0,
-                                spp=_to_int(order.get("spp")) or 0,
-                                finishedprice=_to_float(order.get("finishedPrice")) or 0.0,
-                                pricewithdisc=_to_float(order.get("priceWithDisc")) or 0.0,
-                                iscancel=bool(order.get("isCancel", False)),
-                                canceldate=cancel_date,
-                                sticker=order.get("sticker", ""),
-                                gnumber=order.get("gNumber", ""),
-                                srid=order.get("srid", ""),
-                            ),
-                            conflict_fields=['nmid', 'lk_id', 'srid']
-                        )
-                        saved_count += 1
-                    except Exception as order_error:
-                        skipped_count += 1
+                for chunk_index, date_from in enumerate(chunk_starts, start=1):
+                    param = {
+                        "type": "orders",
+                        "API_KEY": cab["token"],
+                        "date_from": date_from.strftime("%Y-%m-%dT%H:%M:%S"),
+                        "flag": 0
+                    }
+                    response = await wb_api(session, param)
+
+                    if not isinstance(response, list):
                         logger.error(
-                            f"Пропуск заказа в get_orders. Кабинет: {cab['name']}. "
-                            f"srid={order.get('srid')}. Error: {order_error}"
+                            f"Некорректный ответ WB в get_orders. Кабинет: {cab['name']}. "
+                            f"chunk={chunk_index}/{ORDERS_CHUNK_REQUESTS}. "
+                            f"dateFrom={param['date_from']}. Ответ: {response}"
                         )
+                        if chunk_index < ORDERS_CHUNK_REQUESTS:
+                            await asyncio.sleep(ORDERS_REQUEST_DELAY_SECONDS)
+                        continue
+                    if not response:
+                        logger.info(
+                            f"В get_orders нет новых заказов. Кабинет: {cab['name']}. "
+                            f"chunk={chunk_index}/{ORDERS_CHUNK_REQUESTS}. "
+                            f"dateFrom={param['date_from']}"
+                        )
+                        if chunk_index < ORDERS_CHUNK_REQUESTS:
+                            await asyncio.sleep(ORDERS_REQUEST_DELAY_SECONDS)
+                        continue
+
+                    received_count_total += len(response)
+                    saved_count_chunk = 0
+                    skipped_count_chunk = 0
+
+                    for order in response:
+                        try:
+                            cancel_date = parse_datetime(order.get("cancelDate")) or datetime(1970, 1, 1)
+                            await add_set_data_from_db(
+                                conn=conn,
+                                table_name="myapp_orders",
+                                data=dict(
+                                    lk_id=cab["id"],
+                                    date=parse_datetime(order.get("date")) or datetime(1970, 1, 1),
+                                    lastchangedate=parse_datetime(order.get("lastChangeDate")) or datetime(1970, 1, 1),
+                                    warehousename=(
+                                        order.get("warehouseName", "").replace("Виртуальный ", "")
+                                        if order.get("warehouseName", "").startswith("Виртуальный")
+                                        else order.get("warehouseName", "")
+                                    ),
+                                    warehousetype=order.get("warehouseType", ""),
+                                    countryname=order.get("countryName", ""),
+                                    oblastokrugname=order.get("oblastOkrugName"),
+                                    regionname=order.get("regionName"),
+                                    supplierarticle=order.get("supplierArticle", ""),
+                                    nmid=_to_int(order.get("nmId")) or 0,
+                                    barcode=_to_int(order.get("barcode")),
+                                    category=order.get("category", ""),
+                                    subject=order.get("subject", ""),
+                                    brand=order.get("brand", ""),
+                                    techsize=order.get("techSize"),
+                                    incomeid=_to_int(order.get("incomeID")) or 0,
+                                    issupply=bool(order.get("isSupply", False)),
+                                    isrealization=bool(order.get("isRealization", False)),
+                                    totalprice=_to_int(order.get("totalPrice")) or 0,
+                                    discountpercent=_to_int(order.get("discountPercent")) or 0,
+                                    spp=_to_int(order.get("spp")) or 0,
+                                    finishedprice=_to_float(order.get("finishedPrice")) or 0.0,
+                                    pricewithdisc=_to_float(order.get("priceWithDisc")) or 0.0,
+                                    iscancel=bool(order.get("isCancel", False)),
+                                    canceldate=cancel_date,
+                                    sticker=order.get("sticker", ""),
+                                    gnumber=order.get("gNumber", ""),
+                                    srid=order.get("srid", ""),
+                                ),
+                                conflict_fields=['nmid', 'lk_id', 'srid']
+                            )
+                            saved_count_chunk += 1
+                            saved_count_total += 1
+                        except Exception as order_error:
+                            skipped_count_chunk += 1
+                            skipped_count_total += 1
+                            logger.error(
+                                f"Пропуск заказа в get_orders. Кабинет: {cab['name']}. "
+                                f"chunk={chunk_index}/{ORDERS_CHUNK_REQUESTS}. "
+                                f"srid={order.get('srid')}. Error: {order_error}"
+                            )
+
+                    logger.info(
+                        f"get_orders: кабинет {cab['name']}, chunk={chunk_index}/{ORDERS_CHUNK_REQUESTS}. "
+                        f"Получено={len(response)}, записано={saved_count_chunk}, "
+                        f"пропущено={skipped_count_chunk}, dateFrom={param['date_from']}"
+                    )
+
+                    if chunk_index < ORDERS_CHUNK_REQUESTS:
+                        await asyncio.sleep(ORDERS_REQUEST_DELAY_SECONDS)
             except Exception as e:
                 logger.error(f"Ошибка при добавлении заказов в БД. Error: {e}")
             finally:
                 await conn.close()
             logger.info(
                 f"get_orders: кабинет {cab['name']} обработан. "
-                f"Получено={len(response)}, записано={saved_count}, пропущено={skipped_count}, "
-                f"dateFrom={param['date_from']}"
+                f"Получено={received_count_total}, записано={saved_count_total}, "
+                f"пропущено={skipped_count_total}. "
+                f"Окно={ORDERS_CHUNK_REQUESTS}x{ORDERS_CHUNK_DAYS}д, задержка={ORDERS_REQUEST_DELAY_SECONDS}с"
             )
 
 
