@@ -6,6 +6,7 @@ services:
     container_name: redis
     ports:
       - "6380:6379"
+    restart: unless-stopped
 
   db:
     image: postgres:15
